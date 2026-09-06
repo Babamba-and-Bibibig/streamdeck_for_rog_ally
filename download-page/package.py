@@ -15,7 +15,7 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from release_policy import MAX_PUBLIC_FILE_BYTES, private_path, public_path, read_public_file
-from check_public import inspect_bytes, report_path
+from check_public import inspect_bytes, inspect_content, report_path
 
 VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?")
 COMMANDS = ("Start OrangeDeck Agent.command", "Enable Codex Notifications.command", "Setup OrangeDeck.command")
@@ -89,7 +89,7 @@ def build(root, version):
                     if not stat.S_ISREG(metadata.st_mode):
                         raise ValueError(f"일반 소스 파일이 아닙니다: {relative}")
                     data = read_public_file(path)
-                    if inspect_bytes(data) or inspect_bytes(relative.as_posix().encode()):
+                    if inspect_content(relative, data) or inspect_bytes(relative.as_posix().encode()):
                         raise ValueError(f"Public-source privacy check failed: {report_path(relative.as_posix())}. Run scripts/check_public.py; secret values are withheld.")
                     member = tarfile.TarInfo("streamdeck/" + relative.as_posix())
                     # Never carry local owner IDs, writable/special mode bits into a release.
@@ -142,7 +142,7 @@ def validate_zip(path, version):
                     or member.extra or member.comment):
                 raise ValueError("ZIP contains non-regular permissions or unreviewed metadata")
             data = archive.read(member)  # Reading checks CRC after the size bound above.
-            if inspect_bytes(data):
+            if inspect_content(relative, data):
                 raise ValueError("ZIP privacy check failed; matching contents are withheld")
             manifest[relative] = (hashlib.sha256(data).hexdigest(), len(data), stat.S_IMODE(mode))
         if archive.comment:
@@ -172,7 +172,7 @@ def validate_archives(archive, source, version):
                 raise ValueError("TAR contains a special file, unsafe permissions or unreviewed metadata")
             with tarred.extractfile(member) as content:
                 data = content.read(MAX_PUBLIC_FILE_BYTES + 1)
-            if len(data) != member.size or inspect_bytes(data):
+            if len(data) != member.size or inspect_content(relative, data):
                 raise ValueError("TAR privacy/integrity check failed; matching contents are withheld")
             tar_manifest[relative] = (hashlib.sha256(data).hexdigest(), len(data), member.mode)
     if tar_manifest != manifest:

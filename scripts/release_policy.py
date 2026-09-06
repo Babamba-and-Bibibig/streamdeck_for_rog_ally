@@ -5,6 +5,16 @@ import stat
 
 MAX_PUBLIC_FILE_BYTES = 8 * 1024 * 1024
 
+# Exact, visually reviewed demo captures only. Append replacement hashes after
+# review; keep previous approved hashes so complete Git history remains checked.
+REVIEWED_SCREENSHOTS = {
+    "docs/screenshots/live.png": {"9211958cfcc11dda3d5c84c03b04fe371c7b42a3fc07328dd117397cecb017a3"},
+    "docs/screenshots/shortcuts.png": {"967bdb4ddde64586da58d4e826b9e8248b338970869536be3e82ff93f213841e"},
+    "docs/screenshots/projects.png": {"01b09f744bee788e4bd6e3e7d241d42030989a5f2ee0d07a36e8670bcdbc212d"},
+    "docs/screenshots/conversations.png": {"c0bc81481f39bb45685e69763156f9345a71d5ecacb4c07f6cb2fb76e4ca160c"},
+    "docs/screenshots/notifications.png": {"cb1d2cb9f50959608a184d05d72ba8f7b9a34be8d69ab8316ad77e115fedf671"},
+}
+
 
 def read_public_file(path):
     """Read a bounded regular source file without following a final symlink or FIFO."""
@@ -35,12 +45,14 @@ ROOT_FILES = {
 PUBLIC_DOCS = {
     "ARCHITECTURE.md", "CONTROLS.md", "SECURITY.md", "PROTOCOL.md", "ROADMAP.md",
     "QUICKSTART_KO.md", "NOTIFICATIONS_KO.md", "MACOS_SETUP.md", "INSTALL.md",
-    "CHANGELOG.md", "PUBLICATION.md",
+    "CHANGELOG.md", "PUBLICATION.md", "SCREENSHOTS.md",
 }
 
 
 def private_path(path):
     path = PurePosixPath(path)
+    if str(path) in REVIEWED_SCREENSHOTS:
+        return False
     return (bool(PRIVATE_PARTS.intersection(path.parts))
             or path.name in PRIVATE_NAMES
             or path.name.startswith((".env", "HANDOFF", "hooks.json.orangedeck-backup-", "id_ed25519", "id_rsa"))
@@ -66,7 +78,7 @@ def public_path(path):
     if folder == "config":
         return len(path.parts) == 2 and (path.name.endswith(".example.toml") or path.name.endswith(".plist.example"))
     if folder == "docs":
-        return len(path.parts) == 2 and path.name in PUBLIC_DOCS
+        return str(path) in REVIEWED_SCREENSHOTS or (len(path.parts) == 2 and path.name in PUBLIC_DOCS)
     if folder == "scripts":
         return len(path.parts) == 2 and path.suffix in {".py", ".sh", ".zsh"}
     if folder == "download-page":

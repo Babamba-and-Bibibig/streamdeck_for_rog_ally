@@ -58,3 +58,10 @@ id_rsa* export-ignore
 known_hosts export-ignore
 authorized_keys export-ignore
 /.ssh export-ignore
+
+# Reviewed README assets must also appear in GitHub's source ZIPs.
+/docs/screenshots/live.png -text -export-ignore
+/docs/screenshots/shortcuts.png -text -export-ignore
+/docs/screenshots/projects.png -text -export-ignore
+/docs/screenshots/conversations.png -text -export-ignore
+/docs/screenshots/notifications.png -text -export-ignore

@@ -13,7 +13,7 @@ import stat
 import subprocess
 import sys
 
-from release_policy import MAX_PUBLIC_FILE_BYTES, private_path, public_path, read_public_file
+from release_policy import MAX_PUBLIC_FILE_BYTES, REVIEWED_SCREENSHOTS, private_path, public_path, read_public_file
 
 PATTERNS = {
     "credential": re.compile(r"(?:\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16})|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY)"),
@@ -45,6 +45,15 @@ def inspect_bytes(data):
     return findings
 
 
+def inspect_content(path, data):
+    """Binary approval is bound to both the exact path and reviewed bytes."""
+    if str(path) in REVIEWED_SCREENSHOTS:
+        if len(data) <= MAX_PUBLIC_FILE_BYTES and hashlib.sha256(data).hexdigest() in REVIEWED_SCREENSHOTS[str(path)]:
+            return []
+        return [(0, "unreviewed screenshot bytes")]
+    return inspect_bytes(data)
+
+
 def git(root, *args):
     return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.PIPE)
 
@@ -60,11 +69,11 @@ def report_path(path):
     return path
 
 
-def inspect_blob(root, oid):
+def inspect_blob(root, oid, path):
     size = int(git(root, "cat-file", "-s", oid))
     if size > MAX_PUBLIC_FILE_BYTES:
         return [(0, "oversized/unreviewed content")]
-    return inspect_bytes(git(root, "cat-file", "blob", oid))
+    return inspect_content(path, git(root, "cat-file", "blob", oid))
 
 
 def scan(root, tracked=False, history=False):
@@ -83,7 +92,7 @@ def scan(root, tracked=False, history=False):
                 continue
             if stage != b"0" or not public_path(path):
                 findings.append((path, 0, "non-public tracked file"))
-            findings.extend((path, line, kind) for line, kind in inspect_blob(root, oid.decode()))
+            findings.extend((path, line, kind) for line, kind in inspect_blob(root, oid.decode(), path))
     else:
         # Walk only source roots; do not read credential/runtime/private directories.
         import os
@@ -109,13 +118,13 @@ def scan(root, tracked=False, history=False):
                 except (OSError, ValueError):
                     findings.append((relative, 0, "unreadable or oversized public source"))
                     continue
-                findings.extend((relative, line, kind) for line, kind in inspect_bytes(data))
+                findings.extend((relative, line, kind) for line, kind in inspect_content(relative, data))
     if history:
         if git(root, "rev-parse", "--is-shallow-repository").strip() == b"true":
             raise ValueError("complete history is required")
         # rev-list --objects prints only one name per blob. Walk unique root trees
         # so a private filename cannot hide behind a public alias with the same data.
-        seen_entries, blobs = set(), {}
+        seen_entries, blobs, checked_oids = set(), {}, set()
         trees = git(root, "rev-list", "--all", "--format=%T", "--no-commit-header").splitlines()
         for tree in sorted(set(trees)):
             for entry in filter(None, git(root, "ls-tree", "-rz", "--full-tree", tree.decode()).split(b"\0")):
@@ -132,14 +141,16 @@ def scan(root, tracked=False, history=False):
                 if mode not in {b"100644", b"100755"} or object_type != b"blob":
                     findings.append((label, 0, "non-regular file in history"))
                     continue
-                if oid not in blobs:
-                    blobs[oid] = inspect_blob(root, oid.decode())
-                findings.extend((label, line, kind) for line, kind in blobs[oid])
+                key = (oid, path)
+                if key not in blobs:
+                    blobs[key] = inspect_blob(root, oid.decode(), path)
+                checked_oids.add(oid)
+                findings.extend((label, line, kind) for line, kind in blobs[key])
         # Commit/tag messages and author emails are public too. Include blobs pointed
         # to directly by a tag, even when they are absent from any commit's tree.
         for entry in git(root, "rev-list", "--objects", "--all").splitlines():
             oid = entry.partition(b" ")[0]
-            if oid in blobs:
+            if oid in checked_oids:
                 continue
             kind = git(root, "cat-file", "-t", oid.decode()).strip()
             if kind not in {b"commit", b"tag", b"blob"}:

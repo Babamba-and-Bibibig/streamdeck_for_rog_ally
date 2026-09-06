@@ -4,6 +4,43 @@
 
 [한국어](README.ko.md) · [Installation](docs/INSTALL.md) · [Controls](docs/CONTROLS.md) · [Security](docs/SECURITY.md)
 
+![OrangeDeck LIVE: current question tokens, remaining quotas and project activity in the native Linux app](docs/screenshots/live.png)
+
+*Keep the work on your main PC and the progress on your handheld. Native UI screenshots below use simulated projects and conversations, with no personal machine data.*
+
+## Explore the five tabs
+
+**LIVE**, above, puts the current question's tokens and remaining quotas at a glance. The other four tabs share the same project and conversation selection. Click an image to view it at full size.
+
+<table>
+<tr>
+<td width="50%">
+<b>02 · Shortcuts</b><br>
+<a href="docs/screenshots/shortcuts.png"><img src="docs/screenshots/shortcuts.png" alt="Shortcuts tab with Approve and Reject keys highlighted for a simulated approval request" width="640"></a><br>
+A touch-friendly 5 × 2 deck. Approve or reject the displayed request once; eight keys remain unassigned.
+</td>
+<td width="50%">
+<b>03 · Projects</b><br>
+<a href="docs/screenshots/projects.png"><img src="docs/screenshots/projects.png" alt="Projects tab showing demo folders, conversation counts and recent activity" width="640"></a><br>
+Find your projects and switch the context across every tab.
+</td>
+</tr>
+<tr>
+<td width="50%">
+<b>04 · Conversations</b><br>
+<a href="docs/screenshots/conversations.png"><img src="docs/screenshots/conversations.png" alt="Conversations tab with a pinned demo conversation and other conversations in the project" width="640"></a><br>
+Pin the conversation you care about, or follow the latest activity automatically.
+</td>
+<td width="50%">
+<b>05 · Notifications</b><br>
+<a href="docs/screenshots/notifications.png"><img src="docs/screenshots/notifications.png" alt="Notifications tab with the current demo question, response and explicit command approval details" width="640"></a><br>
+Read the current question, response and approval details before deciding.
+</td>
+</tr>
+</table>
+
+Have a **ROG Ally or Steam Deck** in mind? The display needs a Linux desktop session. These captures show the Linux app with local demo data; SteamOS installation has not yet been verified. See [supported environments](#supported-environments) and [installation](#install). [Screenshot provenance](docs/SCREENSHOTS.md).
+
 OrangeDeck is an independent community project, not an official OpenAI, ASUS or Elgato product. Version **0.1.19** is an early release. The interface currently contains Korean labels; both installation prompts and project documentation are available in English and Korean.
 
 ## What it does

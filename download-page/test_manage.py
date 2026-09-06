@@ -16,6 +16,7 @@ import zipfile
 
 import manage
 import package
+from release_policy import REVIEWED_SCREENSHOTS
 
 
 class DownloadPageTests(unittest.TestCase):
@@ -75,6 +76,25 @@ class DownloadPageTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
         with zipfile.ZipFile(path, "a") as archive:
             archive.writestr("OrangeDeck-v0.1.7/streamdeck/unexpected.txt", "changed")
+        with self.assertRaises(ValueError):
+            self.prepare()
+
+    def test_reviewed_images_survive_export_but_modified_images_are_rejected(self):
+        workspace = Path(__file__).resolve().parents[1]
+        for relative in REVIEWED_SCREENSHOTS:
+            target = self.root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(workspace / relative, target)
+        (self.root / "docs/screenshots/personal.png").write_bytes(b"private fixture")
+        self.prepare()
+        archive, source = (self.root / "dist" / name for name in package.names("0.1.7"))
+        manifest = package.validate_archives(archive, source, "0.1.7")
+        self.assertNotIn("docs/screenshots/personal.png", manifest)
+        for relative in REVIEWED_SCREENSHOTS:
+            self.assertIn(relative, manifest)
+            self.assertEqual(manifest[relative][0], hashlib.sha256((workspace / relative).read_bytes()).hexdigest())
+        self.version("0.1.8")
+        (self.root / "docs/screenshots/live.png").write_bytes(b"replacement, not reviewed")
         with self.assertRaises(ValueError):
             self.prepare()
 

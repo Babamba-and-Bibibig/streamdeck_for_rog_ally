@@ -49,6 +49,7 @@
 !/docs/INSTALL.md
 !/docs/CHANGELOG.md
 !/docs/PUBLICATION.md
+!/docs/SCREENSHOTS.md
 
 !/download-page/
 /download-page/**
@@ -128,3 +129,12 @@ authorized_keys
 *.jpg
 *.jpeg
 .DS_Store
+
+# Only these five reviewed demo images may be public. The content checker pins
+# their SHA256 hashes; replacing one still requires another visual privacy review.
+!/docs/screenshots/
+!/docs/screenshots/live.png
+!/docs/screenshots/shortcuts.png
+!/docs/screenshots/projects.png
+!/docs/screenshots/conversations.png
+!/docs/screenshots/notifications.png

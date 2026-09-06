@@ -6,7 +6,7 @@ import os
 import shutil
 
 import check_public
-from release_policy import public_path
+from release_policy import REVIEWED_SCREENSHOTS, public_path
 
 
 class PublicSourceTests(unittest.TestCase):
@@ -17,11 +17,13 @@ class PublicSourceTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q", tmp], check=True)
             shutil.copy(workspace / ".gitignore", root / ".gitignore")
             public = ["README.md", "Cargo.lock", "apps/orangedeck-agent/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
-                      "config/agent.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml"]
+                      "config/agent.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
+                      "docs/SCREENSHOTS.md", *REVIEWED_SCREENSHOTS]
             private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "agent.toml", "auth.json", "received-Pairing.json",
                        "config/local/github-ssh/id_ed25519", "download-page/config.local.toml", "scripts/start-ui.sh",
                        "apps/example/local/private.rs", "crates/example/.codex/private.rs", "scripts/credentials.json",
-                       "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt"]
+                       "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt",
+                       "docs/screenshots/private.png", "docs/screenshots/local/live.png", "docs/screenshots/live.jpg"]
             for relative in public + private:
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,6 +47,75 @@ class PublicSourceTests(unittest.TestCase):
         findings = check_public.inspect_bytes(("first line\ncredential: " + value).encode())
         self.assertEqual(findings, [(2, "credential")])
         self.assertNotIn(value, repr(findings))
+
+    def test_only_reviewed_screenshot_bytes_at_the_reviewed_path_are_allowed(self):
+        workspace = Path(__file__).resolve().parents[1]
+        for path in REVIEWED_SCREENSHOTS:
+            with self.subTest(path=path):
+                data = (workspace / path).read_bytes()
+                self.assertEqual(check_public.inspect_content(path, data), [])
+                self.assertTrue(check_public.inspect_content(path, data + b"private metadata"))
+                self.assertTrue(check_public.inspect_content(path, b"replacement picture"))
+                self.assertTrue(check_public.inspect_content("README.md", data))
+                self.assertTrue(check_public.inspect_content("docs/screenshots/private.png", data))
+
+    def test_screenshot_history_checks_aliases_and_rejected_bytes_after_removal(self):
+        workspace = Path(__file__).resolve().parents[1]
+        relative = "docs/screenshots/live.png"
+        with tempfile.TemporaryDirectory(prefix="orangedeck-image-history-") as tmp:
+            root = Path(tmp)
+            def git(*args):
+                return subprocess.check_output(["git", "-C", tmp, *args], stderr=subprocess.DEVNULL)
+            git("init", "-q")
+            git("config", "user.name", "Test")
+            git("config", "user.email", "test@example.com")
+            image = root / relative
+            image.parent.mkdir(parents=True)
+            data = (workspace / relative).read_bytes()
+            image.write_bytes(data)
+            git("add", ".")
+            git("commit", "-qm", "reviewed demo image")
+            self.assertEqual(check_public.scan(root, tracked=True, history=True)[1], [])
+            # A valid image hash cannot make the same blob safe under a text path.
+            (root / "README.md").write_bytes(data)
+            git("add", ".")
+            git("commit", "-qm", "image alias fixture")
+            image.write_bytes(data + b"unreviewed metadata")
+            git("add", ".")
+            git("commit", "-qm", "changed image fixture")
+            image.write_bytes(data)
+            git("rm", "README.md")
+            git("add", ".")
+            git("commit", "-qm", "restore reviewed content")
+            self.assertEqual(check_public.scan(root, tracked=True)[1], [])
+            findings = check_public.scan(root, tracked=True, history=True)[1]
+            self.assertTrue(any("README.md" in path and kind == "binary/unreviewed content" for path, _, kind in findings))
+            self.assertTrue(any(kind == "unreviewed screenshot bytes" for _, _, kind in findings))
+
+    def test_git_source_archive_preserves_only_reviewed_screenshot_paths(self):
+        import io
+        import tarfile
+        workspace = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            def git(*args):
+                return subprocess.check_output(["git", "-C", tmp, *args], stderr=subprocess.DEVNULL)
+            git("init", "-q")
+            git("config", "user.name", "Test")
+            git("config", "user.email", "test@example.com")
+            shutil.copy(workspace / ".gitattributes", root / ".gitattributes")
+            for relative in REVIEWED_SCREENSHOTS:
+                image = root / relative
+                image.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(workspace / relative, image)
+            (root / "private.png").write_bytes(b"unreviewed fixture")
+            git("add", ".")
+            git("commit", "-qm", "archive fixture")
+            with tarfile.open(fileobj=io.BytesIO(git("archive", "HEAD"))) as archive:
+                members = archive.getnames()
+                self.assertNotIn("private.png", members)
+                for relative in REVIEWED_SCREENSHOTS:
+                    self.assertEqual(archive.extractfile(relative).read(), (workspace / relative).read_bytes())
 
     def test_device_addresses_allow_only_named_examples_and_range_notation(self):
         for value in ["100.64.0.0/10", "100.64.0.1", "100.64.0.2", "100.127.255.254"]:

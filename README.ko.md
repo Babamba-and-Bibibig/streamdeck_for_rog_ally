@@ -4,6 +4,43 @@
 
 [English](README.md) · [설치 상세](docs/INSTALL.md) · [간단 사용법](docs/QUICKSTART_KO.md) · [보안](docs/SECURITY.md)
 
+![OrangeDeck LIVE 실제 구동 화면: 현재 질의 토큰, 남은 한도와 프로젝트 작업 현황](docs/screenshots/live.png)
+
+*작업은 메인 PC에서, 진행 상황은 손안의 보조 화면에서. 아래는 개인정보가 없는 모의 프로젝트·대화로 실행한 실제 네이티브 앱 화면입니다.*
+
+## 다섯 탭 둘러보기
+
+위 **LIVE** 화면에서 현재 질의의 토큰과 남은 한도를 한눈에 확인합니다. 아래 네 탭도 같은 프로젝트·대화 선택을 공유합니다. 이미지를 누르면 원본 크기로 볼 수 있습니다.
+
+<table>
+<tr>
+<td width="50%">
+<b>02 · 단축키</b><br>
+<a href="docs/screenshots/shortcuts.png"><img src="docs/screenshots/shortcuts.png" alt="모의 승인 요청에 승인·거절 키가 활성화된 단축키 화면" width="640"></a><br>
+터치하기 편한 5 × 2 키. 표시된 요청 한 건을 승인·거절합니다. 나머지 8개 키는 미지정입니다.
+</td>
+<td width="50%">
+<b>03 · 프로젝트들</b><br>
+<a href="docs/screenshots/projects.png"><img src="docs/screenshots/projects.png" alt="모의 프로젝트 폴더와 대화 수, 최근 활동을 보여주는 프로젝트들 화면" width="640"></a><br>
+프로젝트를 찾고 모든 탭의 작업 범위를 함께 전환합니다.
+</td>
+</tr>
+<tr>
+<td width="50%">
+<b>04 · 대화</b><br>
+<a href="docs/screenshots/conversations.png"><img src="docs/screenshots/conversations.png" alt="선택한 모의 대화를 고정하고 같은 프로젝트의 대화 목록을 확인하는 화면" width="640"></a><br>
+확인할 대화를 고정하거나 가장 최근 활동을 자동으로 따라갑니다.
+</td>
+<td width="50%">
+<b>05 · 알림</b><br>
+<a href="docs/screenshots/notifications.png"><img src="docs/screenshots/notifications.png" alt="모의 현재 질문·응답과 명령 승인 요청 상세를 보여주는 알림 화면" width="640"></a><br>
+현재 질문·응답과 승인 요청의 내용을 읽고 직접 결정합니다.
+</td>
+</tr>
+</table>
+
+**ROG Ally나 Steam Deck을 보조 화면으로 쓰고 싶다면**, 먼저 Linux 데스크톱 환경이 필요합니다. 위 이미지는 Linux 앱을 로컬 모의 데이터로 촬영한 것이며 SteamOS 설치는 아직 검증하지 않았습니다. [지원 환경](#지원-환경)과 [설치 방법](#설치하기)을 확인하세요. [촬영 정보](docs/SCREENSHOTS.md).
+
 OpenAI·ASUS·Elgato의 공식 제품이 아닌 독립 커뮤니티 프로젝트입니다. **0.1.19 초기 버전**이며 화면에는 한국어 문구가 포함되어 있습니다. 설치 질문과 README는 영어·한국어를 제공합니다.
 
 ## 기능과 특징
