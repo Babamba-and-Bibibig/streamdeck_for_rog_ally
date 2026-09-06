@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OrangeDeck
+Comment=Codex companion display (run sh install.sh first)
+Exec=sh -c "exec \"${XDG_CONFIG_HOME:-$HOME/.config}/orangedeck/start-ui.sh\""
+Icon=applications-development
+Terminal=false
+Categories=Development;
+StartupNotify=true

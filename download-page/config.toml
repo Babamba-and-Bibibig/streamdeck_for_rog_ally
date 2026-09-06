@@ -1,0 +1,4 @@
+# Optional private update server. Copy to config.local.toml and fill in YOUR devices.
+bind = ""
+port = 45833
+allow = []

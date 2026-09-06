@@ -1,0 +1,55 @@
+[workspace]
+members = [
+    "apps/orangedeck-agent",
+    "apps/orangedeck-ui",
+    "crates/orangedeck-application",
+    "crates/orangedeck-domain",
+    "crates/orangedeck-infra",
+    "crates/orangedeck-protocol",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.19"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+authors = ["OrangeDeck contributors"]
+
+[workspace.dependencies]
+async-trait = "0.1.92"
+axum = { version = "0.8.9", features = ["http1", "json", "macros", "ws"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+clap = { version = "4.6.6", features = ["derive"] }
+directories = "6.0.0"
+eframe = { version = "0.36.1", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"] }
+futures-util = "0.3.34"
+gilrs = "0.11.2"
+nix = { version = "0.31.3", features = ["process", "signal"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "rustls"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0"
+subtle = "2.6.1"
+tempfile = "3"
+thiserror = "2.0.20"
+tokio = { version = "1.53.1", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-tungstenite = { version = "0.30.0", features = ["rustls-tls-native-roots"] }
+tokio-util = "0.7.19"
+toml = "1.1.5"
+tower = { version = "0.5.3", features = ["util"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+uuid = { version = "1.26.0", features = ["serde", "v4"] }
+url = "2.5.8"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+doc_markdown = "allow"
+too_many_lines = "allow"

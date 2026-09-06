@@ -1,0 +1,29 @@
+[package]
+name = "orangedeck-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+chrono.workspace = true
+clap.workspace = true
+eframe.workspace = true
+futures-util.workspace = true
+gilrs.workspace = true
+orangedeck-application = { path = "../../crates/orangedeck-application" }
+orangedeck-infra = { path = "../../crates/orangedeck-infra" }
+orangedeck-protocol = { path = "../../crates/orangedeck-protocol" }
+reqwest.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-tungstenite.workspace = true
+tokio-util.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true
+

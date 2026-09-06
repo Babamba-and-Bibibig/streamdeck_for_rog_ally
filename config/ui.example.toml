@@ -1,0 +1,5 @@
+agent_url = "http://100.64.0.1:45831"
+token_file = "~/.config/orangedeck/ui.token"
+host_label = "CODEX HOST"
+log_level = "info"
+desktop_notifications = true
