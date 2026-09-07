@@ -1,8 +1,10 @@
+<h3 align="center">🇰🇷 한국어 · 현재 페이지　|　<a href="README.en.md">🌐 English</a></h3>
+
 # OrangeDeck
 
 **Codex 작업을 옆 화면에서 확인하는 네이티브 보조 앱입니다.** Mac에서 평소처럼 Codex를 사용하면서 Linux 데스크톱이나 휴대용 기기에서 현재 대화, 토큰, 남은 한도와 승인 요청을 확인합니다.
 
-[English](README.md) · [설치 상세](docs/INSTALL.md) · [간단 사용법](docs/QUICKSTART_KO.md) · [보안](docs/SECURITY.md)
+[화면 둘러보기](#다섯-탭-둘러보기) · [바로 설치하기](#설치하기) · [간단 사용법](docs/QUICKSTART_KO.md) · [보안](docs/SECURITY.md)
 
 ![OrangeDeck LIVE 실제 구동 화면: 현재 질의 토큰, 남은 한도와 프로젝트 작업 현황](docs/screenshots/live.png)
 
@@ -186,6 +188,19 @@ python3 scripts/check_public.py --tracked --history
 
 ## 개발과 라이선스
 
-검사·모의 실행 명령은 [English README](README.md#development), 구조는 [ARCHITECTURE](docs/ARCHITECTURE.md), 변경 내역은 [CHANGELOG](docs/CHANGELOG.md)를 참고하세요. 모의 화면은 **SIMULATED MAC / LOCAL MOCK**으로 표시합니다. Codex CLI 스키마의 기록된 기준은 0.153.2이며 다른 버전은 경고와 실행 중 호환성 검사 대상으로 취급합니다.
+소스 폴더에서 아래 명령으로 검사·빌드하고 모의 화면을 실행할 수 있습니다.
+
+```sh
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo fmt --all --check
+python3 scripts/check_architecture.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 download-page/test_manage.py
+cargo build --release --workspace --locked
+./scripts/run-demo.zsh
+```
+
+[설계 구조](docs/ARCHITECTURE.md) · [변경 내역](docs/CHANGELOG.md). 모의 화면은 **SIMULATED MAC / LOCAL MOCK**으로 표시합니다. Codex CLI 스키마의 기록된 기준은 0.153.2이며 다른 버전은 경고와 실행 중 호환성 검사 대상으로 취급합니다.
 
 [MIT 라이선스](LICENSE)로 배포합니다.

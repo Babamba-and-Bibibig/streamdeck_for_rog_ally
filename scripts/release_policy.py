@@ -37,7 +37,7 @@ PRIVATE_NAMES = {"AGENTS.md", "starter.md", "setup_bridge.py", "config.local.tom
                  "start-agent.command", "enable-notifications.command", "check-agent.command", "start-ui.sh", "check-ui.sh",
                  "known_hosts", "authorized_keys"}
 ROOT_FILES = {
-    "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "README.md", "README.ko.md",
+    "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "README.md", "README.ko.md", "README.en.md",
     "LICENSE", "SECURITY.md", ".gitignore", ".gitattributes",
     "install.sh", "Setup OrangeDeck.command", "Start OrangeDeck Agent.command",
     "Enable Codex Notifications.command", "OrangeDeck.desktop",

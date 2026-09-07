@@ -8,6 +8,7 @@
 !/rust-toolchain.toml
 !/README.md
 !/README.ko.md
+!/README.en.md
 !/LICENSE
 !/SECURITY.md
 !/install.sh

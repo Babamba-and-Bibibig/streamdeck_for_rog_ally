@@ -12,7 +12,7 @@ All displayed data comes from the existing loopback **demo** Agent: `SIMULATED M
 | 04 · Conversations / 대화 | [conversations.png](screenshots/conversations.png) |
 | 05 · Notifications / 알림 | [notifications.png](screenshots/notifications.png) |
 
-To explore the same interface locally, build with `cargo build --release --workspace --locked`, then run `./scripts/run-demo.zsh` and use the five tab buttons. See the [development instructions](../README.md#development). Demo data changes while it runs, so readings and timestamps can differ.
+To explore the same interface locally, build with `cargo build --release --workspace --locked`, then run `./scripts/run-demo.zsh` and use the five tab buttons. See the [development instructions](../README.md#개발과-라이선스). Demo data changes while it runs, so readings and timestamps can differ.
 
 For maintainers: inspect every image for visible private information before publication. PNGs contain only `IHDR`, `IDAT` and `IEND` chunks, without text, EXIF or other ancillary metadata. Git, source exports and archive validation permit only these five exact paths. `scripts/release_policy.py` pins their reviewed SHA256 hashes; modified bytes are rejected even at an approved filename. Keep earlier reviewed hashes when replacing images so complete history can still be checked. All other screenshots remain private and ignored. A hash confirms reviewed bytes, not the privacy of a newly captured picture.
 
