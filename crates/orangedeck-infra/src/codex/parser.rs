@@ -294,10 +294,16 @@ pub fn parse_approval(method: &str, params: &Value) -> ApprovalRequest {
         .get("reason")
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty());
-    let command = params
+    let command_text = params
         .get("command")
-        .and_then(Value::as_str)
+        .filter(|value| !value.is_null())
+        .map(|value| {
+            value
+                .as_str()
+                .map_or_else(|| value.to_string(), str::to_owned)
+        })
         .filter(|value| !value.is_empty());
+    let command = command_text.as_deref();
     let (kind, title) = match method {
         "item/commandExecution/requestApproval" | "execCommandApproval" => {
             (ApprovalKind::CommandExecution, "COMMAND APPROVAL")
@@ -313,6 +319,11 @@ pub fn parse_approval(method: &str, params: &Value) -> ApprovalRequest {
         .unwrap_or("Codex needs an explicit decision")
         .to_owned();
     let mut details = Vec::new();
+    // The deck preview is short, but the decision view must retain the complete
+    // action. Never approve a full command/permission set using truncated details.
+    if let Some(command) = command {
+        details.push(format!("command: {command}"));
+    }
     if let Some(cwd) = params.get("cwd").and_then(Value::as_str) {
         details.push(format!("cwd: {cwd}"));
     }
@@ -321,8 +332,8 @@ pub fn parse_approval(method: &str, params: &Value) -> ApprovalRequest {
     {
         details.push(format!("reason: {reason}"));
     }
-    if let Some(changes) = params.get("fileChanges").and_then(Value::as_object) {
-        details.extend(changes.keys().take(12).map(|path| format!("file: {path}")));
+    if let Some(changes) = params.get("fileChanges") {
+        details.push(format!("file changes: {changes}"));
     }
     if let Some(root) = params.get("grantRoot").and_then(Value::as_str) {
         details.push(format!("requested root: {root}"));
@@ -330,7 +341,7 @@ pub fn parse_approval(method: &str, params: &Value) -> ApprovalRequest {
     if kind == ApprovalKind::Permissions
         && let Some(permissions) = params.get("permissions")
     {
-        details.push(format!("permissions: {}", compact_json(permissions, 600)));
+        details.push(format!("permissions: {permissions}"));
     }
     ApprovalRequest {
         id: Uuid::new_v4(),
@@ -432,10 +443,6 @@ fn truncate(value: &str, maximum: usize) -> String {
     }
 }
 
-fn compact_json(value: &Value, maximum: usize) -> String {
-    truncate(&serde_json::to_string(value).unwrap_or_default(), maximum)
-}
-
 #[cfg(test)]
 mod tests {
     use std::{collections::HashSet, path::PathBuf};
@@ -443,6 +450,74 @@ mod tests {
     use orangedeck_domain::{ProjectId, ThreadOwnership};
 
     use super::*;
+
+    #[test]
+    fn long_approval_commands_keep_their_full_tail_in_details() {
+        let command = format!("{} final-argument", "한글 argument ".repeat(100));
+        let approval = parse_approval(
+            "item/commandExecution/requestApproval",
+            &serde_json::json!({
+                "command": command,
+                "reason": "Review the entire command",
+                "transcript_path": "private-transcript-must-not-be-forwarded"
+            }),
+        );
+        assert_eq!(approval.summary.chars().count(), 503);
+        assert!(!approval.summary.contains("final-argument"));
+        assert!(approval.details.contains(&format!("command: {command}")));
+        assert!(
+            approval
+                .details
+                .contains(&"reason: Review the entire command".to_owned())
+        );
+        assert!(!approval.details.join("\n").contains("private-transcript"));
+    }
+
+    #[test]
+    fn approval_details_keep_every_file_change_and_permission() {
+        let changes: serde_json::Map<String, Value> = (0..24)
+            .map(|index| {
+                (
+                    format!("src/file-{index:02}.rs"),
+                    serde_json::json!({"diff": format!("{} final-change-{index}", "+test line\n".repeat(50))}),
+                )
+            })
+            .collect();
+        let permissions = serde_json::json!({
+            "fileSystem": {"write": (0..40).map(|index| format!("/mock/permission-{index:02}")).collect::<Vec<_>>()}
+        });
+        let params = serde_json::json!({"fileChanges": changes, "permissions": permissions});
+        let approval = parse_approval("item/permissions/requestApproval", &params);
+        for (prefix, field) in [
+            ("file changes: ", "fileChanges"),
+            ("permissions: ", "permissions"),
+        ] {
+            let detail = approval
+                .details
+                .iter()
+                .find_map(|detail| detail.strip_prefix(prefix))
+                .unwrap();
+            assert_eq!(
+                serde_json::from_str::<Value>(detail).unwrap(),
+                params[field]
+            );
+        }
+    }
+
+    #[test]
+    fn argument_array_approval_commands_preserve_argument_boundaries() {
+        let command = serde_json::json!(["test-tool", "argument with spaces", "literal;argument"]);
+        let approval = parse_approval(
+            "execCommandApproval",
+            &serde_json::json!({"command": command}),
+        );
+        let detail = approval
+            .details
+            .iter()
+            .find_map(|detail| detail.strip_prefix("command: "))
+            .unwrap();
+        assert_eq!(serde_json::from_str::<Value>(detail).unwrap(), command);
+    }
 
     #[test]
     fn complete_bucket_view_takes_precedence_over_legacy_window_and_keeps_model_scope() {

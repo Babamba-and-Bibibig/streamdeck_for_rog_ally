@@ -119,7 +119,7 @@ Read-only project discovery comes from Codex history and does not expand the act
 
 After an Agent address change, use `orangedeck-agent pairing --config /path/to/agent.toml --output /path/to/private-pairing.toml`, transfer privately and explicitly import with `orangedeck-ui pair --config /path/to/config.toml --bundle /path/to/private-pairing.toml --force`.
 
-If a token was exposed, first stop the Agent. Regenerate it using `orangedeck-agent init --force` with the intended project/settings, then transfer the new bundle and explicitly re-pair. `init --force` replaces the Agent configuration and its initial project list: review/preserve additional project settings before doing so. Old connected clients must be disconnected by stopping the Agent. See [security](SECURITY.md).
+If a token was exposed, first stop the Agent. Regenerate it using `orangedeck-agent init --force` with the intended project/settings, then transfer the new bundle and explicitly re-pair. `init --force` replaces the Agent configuration and its initial project list: review/preserve additional project settings before doing so. Old connected clients must be disconnected by stopping the Agent. See [publication and incident handling](PUBLICATION.md).
 
 ## Remove / 제거
 

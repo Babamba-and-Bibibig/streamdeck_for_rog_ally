@@ -91,6 +91,6 @@ UI decisions require fresh input for the displayed actionable request. Gray/disa
 
 `scripts/install.py` is a standard-library Python tool that checks prerequisites, builds locked Rust source, writes private per-user configuration and generates explicit launchers. It preserves existing pairing and Codex profile selection, validates existing configuration before replacing a binary, and records no credentials in source files. It does not start a login service or automatically trust hooks.
 
-`download-page/` packages and verifies the same allow-listed source for ZIP, TAR and GitHub export. Its optional tailnet download server is separate from installation and the Rust runtime. `.gitignore` defaults to excluding new files; reviewed source extensions and named documents are explicitly allowed. Packaging and Git index/history scans enforce the public-source policy separately. See [publication](PUBLICATION.md) and [security](SECURITY.md).
+`download-page/` packages and verifies the same allow-listed source for ZIP, TAR and GitHub export. Its optional tailnet download server is separate from installation and the Rust runtime. `.gitignore` defaults to excluding new files; reviewed source extensions and named documents are explicitly allowed. Packaging and Git index/history scans enforce the public-source policy separately. See [publication and incident handling](PUBLICATION.md).
 
 Windows support is deferred. Future platform work belongs in outer adapters and composition, preserving the domain and wire contract boundaries.

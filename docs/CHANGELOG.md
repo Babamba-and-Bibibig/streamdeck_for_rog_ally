@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.21
+
+- Fix incomplete approval details: retain the full command, permissions and every supplied file change for review, including argument-array commands. Only the deck preview is shortened. Existing explicit, single-request decision rules are unchanged.
+- Remove the repository's Security policy documents and their README navigation links. GitHub's built-in Security menu is controlled by GitHub; runtime authentication and automated checks remain enabled.
+- Add regression coverage for long Unicode commands, trailing arguments, more than twelve file changes and large permission sets. Real Mac approval delivery still requires device verification.
+
 ## 0.1.20
 
 - Make the default GitHub README Korean, with prominent one-click Korean/English links and matching native screenshots in each language.

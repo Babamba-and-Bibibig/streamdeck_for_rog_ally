@@ -4,7 +4,7 @@
 
 **A native companion screen for your Codex work.** Keep working on your Mac; follow the current conversation, token readings, remaining quotas and approval requests on a Linux desktop or handheld.
 
-[Explore the app](#explore-the-five-tabs) · [Install](#install) · [Installation](docs/INSTALL.md) · [Controls](docs/CONTROLS.md) · [Security](docs/SECURITY.md)
+[Explore the app](#explore-the-five-tabs) · [Install](#install) · [Installation](docs/INSTALL.md) · [Controls](docs/CONTROLS.md)
 
 ![OrangeDeck LIVE: current question tokens, remaining quotas and project activity in the native Linux app](docs/screenshots/en-live.png)
 
@@ -43,7 +43,7 @@ Read the current question, response and approval details before deciding.
 
 Have a **ROG Ally or Steam Deck** in mind? The display needs a Linux desktop session. These captures show the Linux app with local demo data; SteamOS installation has not yet been verified. See [supported environments](#supported-environments) and [installation](#install). [Screenshot provenance](docs/SCREENSHOTS.md).
 
-OrangeDeck is an independent community project, not an official OpenAI, ASUS or Elgato product. Version **0.1.20** is an early release. Click **한국어 / EN** at the top right to switch the entire interface instantly. Korean is the default; your language and key assignments are saved automatically. These English screenshots use English demo content, with **Quick setup** applied to the deck.
+OrangeDeck is an independent community project, not an official OpenAI, ASUS or Elgato product. Version **0.1.21** is an early release. Click **한국어 / EN** at the top right to switch the entire interface instantly. Korean is the default; your language and key assignments are saved automatically. These English screenshots use English demo content, with **Quick setup** applied to the deck.
 
 ## What it does
 
@@ -155,7 +155,7 @@ The commands above use the default directory `~/.config/orangedeck` on both mach
 
 Start the generated Agent and UI launchers. Click **EN** at the top right. Select a project and conversation. **AUTO ON** means follow recent activity; selecting a specific conversation pins it. Switch back with **Follow latest**.
 
-On the shortcut deck, directions/stick move across keys; physical **A** activates the selected key and **B** rejects the displayed actionable request. Read request details before deciding. Enter/Escape/Space do not approve requests. Closing an alert does not approve a request behind it. Answer ordinary Codex questions on the Agent machine.
+On the shortcut deck, directions/stick move across keys; physical **A** activates the selected key and **B** rejects the displayed actionable request. For long requests, open **Request details** and scroll through the inner details area before deciding. Agent 0.1.21 retains the complete supplied command, permissions and file-change data there. Enter/Escape/Space do not approve requests. Closing an alert does not approve a request behind it. Answer ordinary Codex questions on the Agent machine.
 
 Close the UI window to stop the display. Stop the Agent with **Ctrl+C** in its own terminal when finished. Restart with the same launchers; ordinary restarts do not need setup or hook installation again.
 
@@ -192,13 +192,13 @@ Keys 01/02 remain fixed approval decisions. Inside the editor, **A saves and B c
 
 To update, download and extract a new source version, then rerun the same `sh install.sh --role agent` or `--role ui` on the corresponding device. Existing settings, pairing, Codex profile, language and key assignments are preserved. Close the old OrangeDeck process and launch it again to use the new binary.
 
-**Updating an Agent from 0.1.18 or earlier to 0.1.20:** after restarting Agent, run `enable-notifications.command` again and review `/hooks` again. Hook sockets now follow the selected Agent configuration, which fixes new/custom macOS installations. Use the printed launcher paths if customized.
+**Updating an Agent from 0.1.18 or earlier to 0.1.21:** after restarting Agent, run `enable-notifications.command` again and review `/hooks` again. Hook sockets now follow the selected Agent configuration, which fixes new/custom macOS installations. Use the printed launcher paths if customized.
 
 ## Privacy and security
 
 The Agent can send project paths, conversation titles, selected question/response text, approval tool arguments and usage statistics to your paired display. Treat screenshots, diagnostic output and pairing files as private. Codex authentication stays on its host; OrangeDeck has no analytics service and does not upload your work to GitHub.
 
-Authenticated API clients can invoke implemented allow-listed operations, including fixed Cargo commands in registered projects and actions for OrangeDeck-owned Codex threads, even though these are not current UI tabs. Cargo build scripts and explicitly approved tools can run code with your account's permissions. Pair only trusted devices and register trusted repositories. There is no arbitrary shell endpoint or automatic approval. [Full trust boundary](docs/SECURITY.md).
+Authenticated API clients can invoke implemented allow-listed operations, including fixed Cargo commands in registered projects and actions for OrangeDeck-owned Codex threads, even though these are not current UI tabs. Cargo build scripts and explicitly approved tools can run code with your account's permissions. Pair only trusted devices and register trusted repositories. There is no arbitrary shell endpoint or automatic approval.
 
 Public packages exclude machine settings, credentials, runtime data and private session handoffs. Before committing or publishing:
 

@@ -10,7 +10,7 @@ The shared source policy is `scripts/release_policy.py`. Only reviewed source/co
 | --- | --- |
 | `apps/`, `crates/`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` | Application source and reproducible dependency/toolchain selection |
 | `install.sh`, the three `.command` launchers, `OrangeDeck.desktop`, `scripts/` | Guided installation, launchers and local release checks |
-| `README.md`, `README.ko.md`, `README.en.md`, `docs/`, `LICENSE`, `SECURITY.md` | Korean-first and English setup, features, controls and security information |
+| `README.md`, `README.ko.md`, `README.en.md`, `docs/`, `LICENSE` | Korean-first and English setup, features, controls and publication information |
 | `config/*.example.toml`, `config/*.plist.example` | Templates for each user's own environment |
 | `.github/`, `.gitignore`, `.gitattributes` | CI checks and publication exclusions; keep these hidden files |
 | Reviewed `download-page/` source and empty `config.toml` template | Optional private update tool, with no machine settings |
