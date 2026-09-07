@@ -64,6 +64,16 @@ pub struct UiPreferences {
     pub schema_version: u8,
     pub language: UiLanguage,
     pub shortcuts: [Shortcut; 8],
+    /// Stable conversation bindings; the two rows share these five slots.
+    pub conversations: [ConversationSlot; 5],
+    pub notification_sound: bool,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct ConversationSlot {
+    pub thread_id: String,
+    pub label: String,
 }
 
 impl Default for UiPreferences {
@@ -72,11 +82,24 @@ impl Default for UiPreferences {
             schema_version: 1,
             language: UiLanguage::Korean,
             shortcuts: [Shortcut::Unassigned; 8],
+            conversations: std::array::from_fn(|_| ConversationSlot::default()),
+            notification_sound: true,
         }
     }
 }
 
 impl UiPreferences {
+    pub fn valid_conversations(&self) -> bool {
+        let mut ids = std::collections::HashSet::new();
+        self.conversations.iter().all(|slot| {
+            slot.thread_id.len() <= 256
+                && !slot.thread_id.chars().any(char::is_control)
+                && slot.label.chars().count() <= 40
+                && !slot.label.chars().any(char::is_control)
+                && (slot.thread_id.is_empty() || ids.insert(&slot.thread_id))
+        })
+    }
+
     pub fn assign(&mut self, key: usize, action: Option<Shortcut>) -> bool {
         let Some(slot) = key
             .checked_sub(2)

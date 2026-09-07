@@ -64,22 +64,17 @@ The adapter's recorded schema baseline is Codex CLI 0.153.2. Other versions rece
 
 The Connector polls conversation/activity information approximately every five seconds, quotas every fifteen seconds and account statistics every sixty seconds. Source records are bounded; no missing field is fabricated. Account summary values are forwarded as supplied, without claiming a verified aggregation scope. Five-hour and weekly bars show **100% minus official usage**, not an estimated number of remaining tokens.
 
-Session-usage reads accept only app-server-provided paths for listed thread IDs. Canonical paths must stay under the selected `CODEX_HOME/sessions`, with matching rollout names and session metadata. Reads are regular-file, bounded and read-only; there is no general disk crawl or client-selected file path. Only the selected/latest conversation's bounded question and response text is forwarded; hidden reasoning is excluded.
+Session-usage reads accept only app-server-provided paths for listed thread IDs. Canonical paths must stay under the selected `CODEX_HOME/sessions`, with matching rollout names and session metadata. Reads are regular-file, bounded and read-only; there is no general disk crawl or client-selected file path. Bounded question/response text and recorded file edits are read for the latest, selected and up to five assigned deck conversations; hidden reasoning is excluded.
 
 A valid baseline permits a current-turn token delta. Otherwise the UI explicitly labels the latest model request. New turns clear previous readings. Completed readings retain their timestamp; stale or disconnected data is distinguished from current activity. Counts update at model-request boundaries, not for every generated token. Rollout records are an internal integration and can change with Codex versions.
 
-The five tabs are LIVE, shortcuts, projects, conversations and notifications. They share project/conversation/current-turn selection. Recent automatic selection stays within the selected project. A new actionable approval for that turn opens shortcuts once. The deck contains two fixed decision keys and eight customizable keys from a finite 14-action catalog. Arbitrary shell macros are not exposed.
+The five tabs are LIVE, shortcuts, projects, conversations and notifications. LIVE, projects, conversations and notifications share project/current-turn selection. The deck independently pins five stable conversation IDs, with response keys above changed-file keys. Notices pulse each pair without switching pages or opening a dialog automatically.
 
-The 0.1.20 preferences follow the same inward dependency rules: domain owns the language,
-finite shortcut catalog and fixed-key invariant; application resolves a shortcut into local
-navigation or a typed registered-project command; infrastructure reads bounded private
-preferences and writes them atomically with mode 0600. The UI composition root chooses
-`ui-preferences.toml` beside the active UI config. Rendering uses a per-window language;
-user content is not translated. Preference writes are small synchronous file operations on
-explicit user changes, separate from network and process workers. Corrupt or newer-schema
-files are preserved and a visible warning explains that the session cannot save them.
-Demo preferences are ephemeral. The action editor intercepts A/B and suppresses background
-approval routing; assignment never executes the selected action.
+Domain owns conversation slots, language, sound preference and recorded turn changes. Application authorizes editor navigation against the exact registered project, conversation, turn and recorded change. Infrastructure parses completed Codex `fileChange` items, bounds file counts/diffs, resolves canonical files inside the registered folder, and launches only fixed editor adapters using literal argument lists. A project-wide Git diff is never attributed to one Codex turn. Shell or external-tool edits may be absent from the file-change records.
+
+Response dialogs arm only an already rendered approval. Confirmed delivery closes the dialog; dismissal sends no decision. File dialogs have no approval controls. Editor navigation is serialized across dialogs, retaining the most recent selected file while waiting; closing discards the unsent selection. A confirmed empty change list disables the lower key for every input method.
+
+Private preferences remain bounded, atomic mode-0600 writes beside the selected config. Old files load with empty conversation slots; previous custom actions remain compatibility data but no longer form the deck. Corrupt or newer-schema files are preserved with a visible warning. Demo preferences are ephemeral. The picker and both dialogs suppress background input. A worker generates the local PCM notification sound and sends it to the desktop audio service without a downloaded asset or network request.
 
 ## Hook and input boundary
 

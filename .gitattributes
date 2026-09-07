@@ -79,6 +79,10 @@ ui-preferences.toml export-ignore
 /docs/screenshots/en-conversations.png -text -export-ignore
 /docs/screenshots/en-notifications.png -text -export-ignore
 /docs/screenshots/en-key-editor.png -text -export-ignore
+/docs/screenshots/response.png -text -export-ignore
+/docs/screenshots/files.png -text -export-ignore
+/docs/screenshots/en-response.png -text -export-ignore
+/docs/screenshots/en-files.png -text -export-ignore
 
 /docs/diagrams/device-roles-ko.svg text eol=lf -export-ignore
 /docs/diagrams/device-roles-en.svg text eol=lf -export-ignore

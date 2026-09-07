@@ -45,6 +45,7 @@ struct RealBackendInner {
     codex_connect_lock: Mutex<()>,
     owned_threads_path: PathBuf,
     watched_thread: RwLock<Option<String>>,
+    watched_deck: RwLock<Vec<String>>,
     thread_refresh_lock: Mutex<()>,
     hooks: RwLock<Option<crate::hooks::HookHub>>,
     notifications: std::sync::Mutex<VecDeque<NotificationDto>>,
@@ -80,6 +81,7 @@ impl RealBackend {
                 codex_connect_lock: Mutex::new(()),
                 owned_threads_path,
                 watched_thread: RwLock::new(None),
+                watched_deck: RwLock::new(Vec::new()),
                 thread_refresh_lock: Mutex::new(()),
                 hooks: RwLock::new(None),
                 notifications: std::sync::Mutex::new(VecDeque::new()),
@@ -565,6 +567,8 @@ impl RealBackend {
                             "read_only_monitor".to_owned(),
                             "session_log_usage".to_owned(),
                             "completion_notifications".to_owned(),
+                            "paired_conversations".to_owned(),
+                            "turn_file_changes".to_owned(),
                         ]));
                     })
                     .await;
@@ -642,6 +646,11 @@ impl RealBackend {
             && threads.iter().any(|thread| &thread.id == id)
         {
             ids.push(id.clone());
+        }
+        for id in self.inner.watched_deck.read().await.iter() {
+            if !ids.contains(id) && threads.iter().any(|thread| &thread.id == id) {
+                ids.push(id.clone());
+            }
         }
         for id in ids {
             if let Err(error) = client.read_thread(&id).await {
@@ -839,6 +848,59 @@ impl ConnectorBackend for RealBackend {
                     "Created Codex thread {}",
                     thread.id
                 )))
+            }
+            ValidatedCommand::CodexWatchThreads(ids) => {
+                let known = self
+                    .inner
+                    .state
+                    .read(|state| {
+                        ids.iter()
+                            .all(|id| state.codex.threads.iter().any(|thread| &thread.id == id))
+                    })
+                    .await;
+                if !known {
+                    return Err(BackendError::bad_request(
+                        "unknown_thread",
+                        "Select listed Codex conversations",
+                    ));
+                }
+                *self.inner.watched_deck.write().await = ids;
+                self.refresh_monitored_threads().await?;
+                Ok(BackendResult::accepted(
+                    "선택한 대화를 확인합니다 / Watching selected conversations",
+                ))
+            }
+            ValidatedCommand::OpenCodexChange {
+                thread_id,
+                turn_id,
+                path,
+            } => {
+                let (project, change) = self
+                    .inner
+                    .state
+                    .read(|state| {
+                        orangedeck_application::recorded_change(
+                            state,
+                            &self.inner.registry,
+                            &thread_id,
+                            &turn_id,
+                            &path,
+                        )
+                        .map(|(project, change)| (project.clone(), change.clone()))
+                    })
+                    .await
+                    .map_err(|message| BackendError::bad_request("file_not_allowed", message))?;
+                orangedeck_infra::open_changed_file(
+                    &project,
+                    &change.path,
+                    change.first_line,
+                    self.inner.config.editor,
+                )
+                .await
+                .map_err(|message| BackendError::bad_request("editor_unavailable", message))?;
+                Ok(BackendResult::accepted(
+                    "Mac 편집기에 파일 열기를 요청했습니다 / File sent to your Mac editor",
+                ))
             }
             ValidatedCommand::CodexSendPrompt { thread_id, prompt } => {
                 let client = self.connect_codex().await?;

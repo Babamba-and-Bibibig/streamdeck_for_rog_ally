@@ -291,6 +291,7 @@ def parser():
     result.add_argument("--host-name")
     result.add_argument("--port", type=int, default=45831)
     result.add_argument("--codex-binary")
+    result.add_argument("--editor", choices=["auto", "zed", "vs_code", "cursor", "vscodium"], help="Mac editor for changed files (first setup only)")
     result.add_argument("--pairing")
     result.add_argument("--config-dir")
     result.add_argument("--install-rust", action="store_true", help="Allow downloading the official Rust installer")
@@ -334,12 +335,16 @@ def main():
     if previous_config.exists() and options.pairing:
         raise SetupError("Already paired. Setup preserves existing credentials; use the documented explicit re-pair command.")
     if previous_config.exists():
-        print("Existing config and token will be preserved / 기존 설정·토큰 유지. Project/host/port options apply only to first setup.")
-    project = codex = host = project_name = pairing = None
+        print("Existing config and token will be preserved / 기존 설정·토큰 유지. Project/host/port/editor options apply only to first setup / 작업 폴더·기기·포트·편집기 선택은 첫 설치에만 적용됩니다.")
+    project = codex = host = project_name = pairing = editor = None
     if role == "connector" and not previous_config.exists():
         project = ask_path("Project folder / 프로젝트 폴더", options.project_path, options.non_interactive, directory=True).resolve(strict=True)
         host = ask("Host label / 기기 표시 이름", options.host_name or "CODEX HOST", options.non_interactive)
         project_name = ask("Project label / 프로젝트 표시 이름", options.project_name or project.name, options.non_interactive)
+        while editor not in {"auto", "zed", "vs_code", "cursor", "vscodium"}:
+            editor = ask("Mac editor / 수정 파일을 열 편집기 (auto: 자동, zed, vs_code, cursor, vscodium)", options.editor or "auto", options.non_interactive)
+            if editor not in {"auto", "zed", "vs_code", "cursor", "vscodium"}:
+                print("Choose one of the listed names / 위에 있는 이름 중 하나를 입력하세요.")
     if role == "connector" and not previous_config.exists():
         codex = executable("codex", options.codex_binary, [Path.home()/".local/bin/codex", "/opt/homebrew/bin/codex", "/usr/local/bin/codex"])
         if not codex:
@@ -393,7 +398,7 @@ def main():
     if not config.exists():
         if role == "connector":
             run([binary, "init", "--config", config, "--project-path", project, "--project-name", project_name,
-                 "--host-name", host, "--port", str(options.port), "--cargo-binary", cargo, "--codex-binary", codex], env=process_env)
+                 "--host-name", host, "--port", str(options.port), "--cargo-binary", cargo, "--codex-binary", codex, "--editor", editor], env=process_env)
         else:
             run([binary, "pair", "--config", config, "--bundle", pairing], env=process_env)
     start = directory / ("start-connector.command" if role == "connector" else "start-ui.sh")

@@ -102,7 +102,7 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 
 1. 두 기기에서 새 ZIP을 받고 **새 폴더**에 압축을 풉니다.
 2. **Mac:** 새 폴더의 **Setup OrangeDeck.command**를 실행합니다. **Ally:** 새 폴더에서 `sh install.sh --role ui`를 실행합니다.
-3. 켜져 있던 OrangeDeck을 닫고 다시 켭니다. 개인 설정·연결·언어·버튼 배치는 유지됩니다.
+3. 켜져 있던 OrangeDeck을 닫고 다시 켭니다. 개인 설정·연결·언어는 유지됩니다. 0.1.23 이하의 개별 단축키 배치는 새 5쌍 배치에서 사용하지 않으므로, 위쪽 + 버튼에서 대화를 한 번 연결하세요.
 
 **0.1.21 이하에서 업데이트한다면:** Mac의 프로그램·설정 파일 이름이 Connector로 바뀝니다. Setup이 기존 프로젝트와 인증값을 새 파일에 이어받고 이전 파일은 보관합니다. 연결 파일을 다시 옮길 필요는 없습니다. 업데이트한 통신 모듈 실행 → **Enable Codex Notifications.command** 실행 → Codex **`/hooks`**에서 다시 확인·신뢰하세요.
 
@@ -110,23 +110,28 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 
 <a id="host-shortcuts"></a>
 
-## Mac에서 다른 폴더나 웹페이지 열기
+## Mac 편집기·작업 폴더 설정
 
-Ally의 **에디터·터미널·폴더·웹페이지 열기 버튼은 Mac에서 실행됩니다.** 설치 때 선택한 폴더는 이미 등록되어 있습니다. 대화 목록에 보인다는 이유만으로 다른 폴더를 열 수 있는 것은 아닙니다.
+**아래 행의 파일 버튼은 Mac 편집기에서 해당 코드를 엽니다.** 처음 설치할 때 편집기를 고릅니다. Enter를 누르면 설치된 앱을 Zed → VS Code → Cursor → VSCodium 순서로 찾습니다.
 
-다른 폴더도 쓰려면 **Mac의 개인 설정 파일** `~/.config/orangedeck/connector.toml`에 아래 내용을 추가하세요. `id`는 다른 항목과 겹치지 않게, `path`는 실제 작업 폴더로 바꿉니다. 웹페이지가 필요 없으면 `browser_url` 줄을 빼세요.
+바꾸려면 Mac의 개인 설정 파일 **`~/.config/orangedeck/connector.toml`**을 열고, **첫 `[[projects]]`보다 위쪽**에 `editor`를 적거나 기존 값을 고치세요.
+
+```toml
+editor = "zed"
+```
+
+값은 `auto`, `zed`, `vs_code`, `cursor`, `vscodium` 중 하나입니다. 선택한 앱을 Mac의 `/Applications` 또는 `~/Applications`에 설치해 두세요. 저장한 뒤 Mac 통신 모듈을 껐다 켜면 적용됩니다. 기존 설치에서는 편집기가 자동으로 선택되며, 설치기를 다시 실행해도 개인 설정을 덮어쓰지 않습니다.
+
+파일 열기는 **등록한 작업 폴더 안에서만** 가능합니다. 다른 프로젝트도 쓰려면 같은 파일 맨 아래에 추가하세요. `id`는 겹치지 않게, `path`는 Codex 대화의 작업 폴더와 똑같이 적습니다.
 
 ```toml
 [[projects]]
 id = "another-project"
 name = "My Website"
 path = "/Users/YOU/Code/my-website"
-browser_url = "http://127.0.0.1:3000"
 ```
 
-웹 주소는 HTTP/HTTPS만 됩니다. 위 주소는 Mac에서 이미 켜 둔 개발용 웹 서버의 예시입니다. 저장 후 Mac의 통신 모듈을 껐다 켜고 Ally에서 그 폴더를 고르세요. 연결 파일을 다시 옮길 필요는 없습니다.
-
-에디터는 Mac의 `/Applications` 또는 `~/Applications`에 있는 **Zed → VS Code → VSCodium** 순서로 찾습니다. 터미널은 Mac의 **Terminal**을 엽니다. 해당 앱이 없으면 설치해야 합니다.
+저장 후 Mac 통신 모듈을 껐다 켭니다. 연결 파일은 다시 옮기지 않아도 됩니다. 대화 목록에 보인다는 이유만으로 등록하지 않은 폴더의 파일을 열 수 있는 것은 아닙니다.
 
 ## 설정 파일은 어디에 있나요?
 

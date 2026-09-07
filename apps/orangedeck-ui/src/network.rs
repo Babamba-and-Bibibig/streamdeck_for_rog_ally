@@ -147,6 +147,10 @@ async fn connection_loop(
                                         ClientCommand::CodexApprovalResponse { approval_id, .. } => Some(*approval_id),
                                         _ => None,
                                     };
+                                    let navigation_id = match &command {
+                                        ClientCommand::OpenCodexChange { navigation_id, .. } => Some(*navigation_id),
+                                        _ => None,
+                                    };
                                     let result = execute(
                                         &command_client,
                                         &command_url,
@@ -157,10 +161,10 @@ async fn connection_loop(
                                     emit(
                                         &command_events,
                                         &command_repaint,
-                                        approval_id.map_or_else(
+                                        navigation_id.map_or_else(|| approval_id.map_or_else(
                                             || NetworkEvent::CommandCompleted(result.clone()),
                                             |approval_id| NetworkEvent::ApprovalCompleted { approval_id, result: result.clone() },
-                                        ),
+                                        ), |navigation_id| NetworkEvent::FileOpenCompleted { navigation_id, result: result.clone() }),
                                     );
                                 });
                             }

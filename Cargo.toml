@@ -10,11 +10,16 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.23"
+version = "0.1.24"
 edition = "2024"
 rust-version = "1.95"
 license = "MIT"
 authors = ["OrangeDeck contributors"]
+
+# Keep repeated local builds from accumulating large incremental caches.
+# The test profile inherits this setting from dev.
+[profile.dev]
+incremental = false
 
 [workspace.dependencies]
 async-trait = "0.1.92"

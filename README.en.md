@@ -21,7 +21,7 @@
 
 **Steam Deck and SteamOS installation and operation have not been tested.** Other Linux distributions are outside this installation guide. Windows is not supported.
 
-Current version: **0.1.23**.
+Current version: **0.1.24**.
 
 ## Install
 
@@ -38,7 +38,7 @@ Before you start:
 
 In the extracted folder:
 
-1. Double-click **Setup OrangeDeck.command**. When asked for a project folder, choose **the folder you work on with Codex on this Mac**. Press Enter to use the suggested device and project names.
+1. Double-click **Setup OrangeDeck.command**. When asked for a project folder, choose **the folder you work on with Codex on this Mac**. Press Enter to use the suggested device and project names. Choose `zed`, `vs_code`, `cursor` or `vscodium` for the editor, or Enter for automatic detection.
 2. When setup finishes, double-click **Start OrangeDeck Connector.command**. **Leave its terminal open.**
 3. Double-click **Enable Codex Notifications.command**. Then enter **`/hooks`** in your usual Mac Codex session, review the OrangeDeck connection and trust it.
 
@@ -85,9 +85,9 @@ See tokens for the current work and your **remaining five-hour and weekly quota*
 <table>
 <tr>
 <td width="50%">
-<b>Shortcuts — approve and run common actions</b><br>
-<a href="docs/screenshots/en-shortcuts.png"><img src="docs/screenshots/en-shortcuts.png" alt="Approve and reject keys with custom shortcuts" width="640"></a><br>
-01 approves; 02 rejects. Choose your own actions for the other eight keys.
+<b>Shortcuts — responses and changed files</b><br>
+<a href="docs/screenshots/en-shortcuts.png"><img src="docs/screenshots/en-shortcuts.png" alt="Five pairs of response and changed-file keys" width="640"></a><br>
+Each upper key opens a response; the key directly below opens its changed files. Both keys light together.
 </td>
 <td width="50%">
 <b>Projects — choose a work folder</b><br>
@@ -109,22 +109,33 @@ For a long approval request, open Details and scroll through the inner area to r
 </tr>
 </table>
 
-## Make it yours
+## Connect five conversations
 
-- Choose **Shortcuts → an empty + key → an action** to save it. The action runs when you press that key afterward.
-- **Quick setup** fills empty keys. Use **Edit keys** to change or clear a key. Approve and reject stay fixed on 01/02.
-- Use **한국어 / EN** at the top right to change the language. Your language and keys are saved for the next launch.
+Open **Deck → an upper + key → choose the Codex conversation from your terminal**. Give each column a name. Use **Assign chats** to change or clear a connection. These connections stay fixed when you select another project elsewhere.
 
-| Available actions | What they do |
-| --- | --- |
-| LIVE, Projects, Conversations, Notifications | Open that page |
-| Refresh, Follow latest | Get new information or follow the most recent conversation |
-| Previous/next project or conversation | Change the work you are viewing |
-| Editor, terminal, folder, webpage | Open the selected project **on the Mac** |
+| | Terminal 1 | Terminal 2 | Terminal 3 | Terminal 4 | Terminal 5 |
+| --- | --- | --- | --- | --- | --- |
+| **Upper key** | Response 1 | Response 2 | Response 3 | Response 4 | Response 5 |
+| **Key below** | Changed files 1 | Changed files 2 | Changed files 3 | Changed files 4 | Changed files 5 |
 
-Editor actions need Zed, VS Code or VSCodium on the Mac. Open actions work with the folder registered during setup. [Add another folder or a webpage](docs/INSTALL.en.md#host-shortcuts).
+- **New response or approval:** both keys in that column pulse, with a notification sound. Use **Sound on/off** to mute it.
+- **Upper key:** opens the question and response. If approval is required, review the details and tap **Approve / Reject**. The dialog closes when delivery is confirmed.
+- **Lower key:** opens the changed code in your Mac editor and a file list with diffs on the Ally. Tap another file to move the Mac editor to that file.
+- **No files changed for that question:** the lower key says **No file changes** and does nothing when pressed.
+- **Close a dialog:** tap outside it or **Close**. Dismissing it never approves or rejects anything.
 
-![English key editor for choosing an action](docs/screenshots/en-key-editor.png)
+The list contains **file edits Codex recorded for this specific turn**. Changes made through terminal commands or external tools may not appear. Deleted files show their diff without opening an editor. Unavailable or loading data is distinguished from confirmed no changes.
+
+Install **Zed, VS Code, Cursor or VSCodium** on the Mac. Choose your editor during setup, or change your [editor and registered folders](docs/INSTALL.en.md#host-shortcuts) later. File opening is limited to registered Mac project folders.
+
+<table><tr>
+<td width="50%"><b>Upper key · response and approval</b><br><a href="docs/screenshots/en-response.png"><img src="docs/screenshots/en-response.png" alt="The selected turn’s response and approval dialog" width="640"></a></td>
+<td width="50%"><b>Lower key · changed files and diffs</b><br><a href="docs/screenshots/en-files.png"><img src="docs/screenshots/en-files.png" alt="Changed-file list and diff with Mac editor navigation" width="640"></a></td>
+</tr></table>
+
+![English conversation assignment dialog](docs/screenshots/en-key-editor.png)
+
+Use **한국어 / EN** at the top right to switch languages. Language, conversation assignments and sound settings are saved for the next launch.
 
 ## Start and stop
 

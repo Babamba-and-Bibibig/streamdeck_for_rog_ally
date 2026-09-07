@@ -501,6 +501,7 @@ mod tests {
             turn_id: Some("old".to_owned()),
             latest_user_prompt: Some("old question".to_owned()),
             latest_codex_reply: Some("old answer".to_owned()),
+            changes: None,
             last_turn_status: CodexThreadStatus::Completed,
             model: None,
             observed_at: chrono::Utc::now(),

@@ -44,10 +44,16 @@ impl UiPreferenceStore {
         if preferences.schema_version != 1 {
             return Err("Unsupported UI preferences version".to_owned());
         }
+        if !preferences.valid_conversations() {
+            return Err("Invalid conversation assignments".to_owned());
+        }
         Ok(preferences)
     }
 
     pub fn save(&self, preferences: &UiPreferences) -> Result<(), String> {
+        if !preferences.valid_conversations() {
+            return Err("Invalid conversation assignments".to_owned());
+        }
         if preferences.schema_version != 1 {
             return Err("Unsupported UI preferences version".to_owned());
         }
@@ -63,7 +69,35 @@ impl UiPreferenceStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use orangedeck_domain::{Shortcut, UiLanguage};
+    use orangedeck_domain::{ConversationSlot, Shortcut, UiLanguage};
+
+    #[test]
+    fn old_preferences_load_and_new_assignments_persist_without_duplicate_threads() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("ui-preferences.toml");
+        fs::write(&path, "schema_version = 1\nlanguage = 'english'\n").unwrap();
+        let store = UiPreferenceStore::new(path.clone());
+        let mut preferences = store.load().unwrap();
+        assert_eq!(preferences.language, UiLanguage::English);
+        assert!(preferences.notification_sound);
+        assert!(
+            preferences
+                .conversations
+                .iter()
+                .all(|slot| slot.thread_id.is_empty())
+        );
+        preferences.conversations[0] = ConversationSlot {
+            thread_id: "terminal-a".to_owned(),
+            label: "My API".to_owned(),
+        };
+        preferences.notification_sound = false;
+        store.save(&preferences).unwrap();
+        assert_eq!(store.load().unwrap(), preferences);
+        let saved = fs::read(&path).unwrap();
+        preferences.conversations[1] = preferences.conversations[0].clone();
+        assert!(store.save(&preferences).is_err());
+        assert_eq!(fs::read(path).unwrap(), saved);
+    }
 
     #[test]
     fn preferences_persist_without_touching_pairing_and_reject_unrecognized_actions() {

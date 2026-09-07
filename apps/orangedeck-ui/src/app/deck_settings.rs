@@ -1,14 +1,12 @@
-use super::{
-    Align, ControlAction, Language, OrangeDeckApp, Page, RichText, Stroke, UiPreferenceStore, egui,
-    i18n, shortcuts, theme,
-};
-use orangedeck_application::{ShortcutEffect, ShortcutUnavailable, resolve_shortcut};
-use orangedeck_domain::Shortcut;
+use super::{ControlAction, Language, OrangeDeckApp, UiPreferenceStore, egui, i18n, theme};
+use orangedeck_domain::ConversationSlot;
 
 pub(super) struct EditorState {
     key: usize,
     selected: usize,
-    scroll: bool,
+    label: String,
+    just_opened: bool,
+    threads: Vec<orangedeck_protocol::CodexThreadDto>,
 }
 
 impl OrangeDeckApp {
@@ -21,7 +19,6 @@ impl OrangeDeckApp {
                     self.preference_store = Some(store);
                 }
                 Err(_) => {
-                    // Keep the original file for recovery; this session stays usable.
                     self.preference_warning = Some("preferences_unreadable".to_owned());
                 }
             }
@@ -29,7 +26,7 @@ impl OrangeDeckApp {
         i18n::set_language(ctx, self.preferences.language);
     }
 
-    fn save_preferences(&mut self) {
+    pub(super) fn save_preferences(&mut self) {
         if let Some(store) = &self.preference_store {
             self.preference_warning = store
                 .save(&self.preferences)
@@ -45,143 +42,101 @@ impl OrangeDeckApp {
         self.save_preferences();
     }
 
-    pub(super) fn open_key_editor(&mut self, key: usize) {
-        if !(2..10).contains(&key) {
+    pub(super) fn open_key_editor(&mut self, column: usize) {
+        if column >= 5 {
             return;
         }
-        let selected = self
-            .preferences
-            .action(key)
-            .and_then(|action| Shortcut::ALL.iter().position(|entry| *entry == action))
+        self.close_deck_modal();
+        let slot = &self.preferences.conversations[column];
+        let threads = self.picker_threads();
+        let selected = threads
+            .iter()
+            .position(|thread| thread.id == slot.thread_id)
             .unwrap_or(0);
         self.editor = Some(EditorState {
-            key,
+            key: column,
             selected,
-            scroll: true,
+            just_opened: true,
+            threads,
+            label: if slot.label.is_empty() {
+                format!("Codex {}", column + 1)
+            } else {
+                slot.label.clone()
+            },
         });
         self.displayed_approval = None;
     }
 
-    pub(super) fn activate_custom_key(&mut self, key: usize) {
-        if !(2..10).contains(&key) {
-            return;
-        }
-        let Some(action) = self.preferences.action(key).filter(|_| !self.deck_editing) else {
-            self.open_key_editor(key);
+    fn picker_threads(&self) -> Vec<orangedeck_protocol::CodexThreadDto> {
+        let mut threads = self
+            .model
+            .snapshot
+            .as_ref()
+            .map_or_else(Vec::new, |snapshot| snapshot.codex.threads.clone());
+        threads.sort_by(|a, b| {
+            b.updated_at
+                .cmp(&a.updated_at)
+                .then_with(|| a.id.cmp(&b.id))
+        });
+        threads
+    }
+
+    fn assign_conversation(&mut self, thread_id: Option<&str>) {
+        let Some(editor) = self.editor.take() else {
             return;
         };
-        self.run_shortcut(action);
-    }
-
-    fn run_shortcut(&mut self, action: Shortcut) {
-        let lang = self.preferences.language;
-        match resolve_shortcut(
-            action,
-            self.model.snapshot.as_ref(),
-            self.selection.project.as_deref(),
-            self.model.connected,
-        ) {
-            Ok(ShortcutEffect::Remote(command)) => {
-                self.model.command_message = Some(
-                    lang.text("메인 PC에 요청을 보냈습니다.", "Request sent to your host.")
-                        .to_owned(),
-                );
-                self.send(command);
+        if let Some(id) = thread_id {
+            if !self.picker_threads().iter().any(|thread| thread.id == id) {
+                self.editor = Some(editor);
+                return;
             }
-            Ok(ShortcutEffect::Local(action)) => match action {
-                Shortcut::Live => self.select_page(Page::Dashboard),
-                Shortcut::Projects => self.select_page(Page::Projects),
-                Shortcut::Conversations => self.select_page(Page::Codex),
-                Shortcut::Notifications => self.open_notifications(),
-                Shortcut::PreviousProject => self.change_project(-1),
-                Shortcut::NextProject => self.change_project(1),
-                Shortcut::PreviousConversation => self.change_thread(-1),
-                Shortcut::NextConversation => self.change_thread(1),
-                Shortcut::FollowLatest => {
-                    self.selection.follow_latest = true;
-                    self.update_monitor_selection();
-                    self.displayed_approval = None;
-                }
-                _ => {}
-            },
-            Err(error) => {
-                self.model.command_message = Some(
-                    match error {
-                        ShortcutUnavailable::Disconnected => lang.text(
-                            "Mac 통신 모듈에 연결한 뒤 이 키를 사용하세요.",
-                            "Connect to your Connector to use this key.",
-                        ),
-                        ShortcutUnavailable::UnregisteredProject => lang.text(
-                            "Mac에서 여는 기능은 통신 모듈에 등록한 프로젝트에서 사용할 수 있습니다.",
-                            "Host shortcuts require a project registered with your Connector.",
-                        ),
-                        ShortcutUnavailable::MissingBrowser => lang.text(
-                            "이 프로젝트에는 열 웹 주소가 설정되어 있지 않습니다.",
-                            "This project has no configured website.",
-                        ),
-                    }
-                    .to_owned(),
-                );
+            if self
+                .preferences
+                .conversations
+                .iter()
+                .enumerate()
+                .any(|(index, slot)| index != editor.key && slot.thread_id == id)
+            {
+                self.editor = Some(editor);
+                return;
             }
+            let label = editor
+                .label
+                .trim()
+                .chars()
+                .filter(|c| !c.is_control())
+                .take(40)
+                .collect();
+            self.preferences.conversations[editor.key] = ConversationSlot {
+                thread_id: id.to_owned(),
+                label,
+            };
+        } else {
+            self.preferences.conversations[editor.key] = ConversationSlot::default();
         }
-    }
-
-    pub(super) fn use_recommended_keys(&mut self) {
-        let recommended = [
-            Shortcut::Refresh,
-            Shortcut::FollowLatest,
-            Shortcut::Conversations,
-            Shortcut::Notifications,
-            Shortcut::PreviousConversation,
-            Shortcut::NextConversation,
-            Shortcut::OpenEditor,
-            Shortcut::OpenTerminal,
-        ];
-        for (slot, action) in self.preferences.shortcuts.iter_mut().zip(recommended) {
-            if *slot == Shortcut::Unassigned {
-                *slot = action;
-            }
-        }
-        self.save_preferences();
-    }
-
-    fn set_edited_key(&mut self, action: Option<Shortcut>) {
-        if let Some(editor) = self.editor.take() {
-            self.preferences.assign(editor.key, action);
-            self.focus_index = editor.key;
-            self.save_preferences();
-        }
+        self.watched_deck = None;
         self.displayed_approval = None;
+        self.save_preferences();
     }
 
     pub(super) fn handle_editor_input(&mut self, action: ControlAction) {
         let Some(editor) = &mut self.editor else {
             return;
         };
+        let threads = editor.threads.clone();
         match action {
             ControlAction::Back => {
                 self.editor = None;
                 self.displayed_approval = None;
             }
             ControlAction::Activate => {
-                let selected = Shortcut::ALL[editor.selected];
-                self.set_edited_key(Some(selected));
+                if let Some(thread) = threads.get(editor.selected) {
+                    self.assign_conversation(Some(&thread.id));
+                }
             }
-            ControlAction::NavigateLeft
-            | ControlAction::NavigateUp
-            | ControlAction::NavigateRight
-            | ControlAction::NavigateDown => {
-                let delta = match action {
-                    ControlAction::NavigateLeft => -1,
-                    ControlAction::NavigateRight => 1,
-                    ControlAction::NavigateUp => -2,
-                    _ => 2,
-                };
-                editor.selected = editor
-                    .selected
-                    .saturating_add_signed(delta)
-                    .min(Shortcut::ALL.len() - 1);
-                editor.scroll = true;
+            ControlAction::NavigateUp => editor.selected = editor.selected.saturating_sub(1),
+            ControlAction::NavigateDown => {
+                editor.selected = (editor.selected + 1).min(threads.len().saturating_sub(1));
             }
             _ => {}
         }
@@ -191,78 +146,89 @@ impl OrangeDeckApp {
         let Some(editor) = &mut self.editor else {
             return;
         };
+        // Keep choices stable while a finger/controller selection is in progress.
+        let threads = editor.threads.clone();
         let lang = self.preferences.language;
+        let just_opened = editor.just_opened;
+        editor.just_opened = false;
         let mut chosen = None;
         let mut clear = false;
         let mut cancel = false;
-        let response = egui::Modal::new(egui::Id::new("key_editor")).show(ctx, |ui| {
-            ui.set_width((ctx.content_rect().width() - 64.0).clamp(300.0, 600.0));
+        let response = egui::Modal::new(egui::Id::new("conversation_picker")).show(ctx, |ui| {
+            ui.set_width((ctx.content_rect().width() - 64.0).clamp(300.0, 700.0));
             ui.heading(if lang == Language::Korean {
-                format!("{:02}번 키에 기능 연결", editor.key + 1)
+                format!("{}번 열에 Codex 대화 연결", editor.key + 1)
             } else {
-                format!("Assign key {:02}", editor.key + 1)
+                format!("Assign Codex conversation to column {}", editor.key + 1)
             });
             ui.label(lang.text(
-                "기능을 고르면 저장됩니다. 실행은 키를 누를 때만 합니다.",
-                "Choose to save an action. It runs only when you press its key.",
+                "터미널에서 쓰는 대화를 고르세요. 위아래 버튼이 함께 연결됩니다.",
+                "Choose the conversation from your terminal. Both keys share this conversation.",
             ));
-            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                ui.label(lang.text("버튼 이름", "Button label"));
+                ui.add(egui::TextEdit::singleline(&mut editor.label).char_limit(40));
+            });
+            ui.add_space(7.0);
             egui::ScrollArea::vertical()
-                .max_height((ctx.content_rect().height() - 220.0).clamp(140.0, 420.0))
+                .id_salt("conversation_choices")
+                .max_height((ctx.content_rect().height() - 220.0).clamp(120.0, 470.0))
                 .show(ui, |ui| {
-                    for (row, actions) in Shortcut::ALL.chunks(2).enumerate() {
-                        ui.columns(2, |columns| {
-                            for (column, action) in columns.iter_mut().zip(actions) {
-                                let index = Shortcut::ALL
-                                    .iter()
-                                    .position(|entry| entry == action)
-                                    .unwrap_or(row * 2);
-                                let (title, hint) = shortcuts::shortcut_label(*action, lang);
-                                let button = egui::Button::new(
-                                    RichText::new(format!("{title}\n{hint}")).size(13.0),
-                                )
-                                .fill(theme::PANEL_RAISED)
-                                .stroke(Stroke::new(
-                                    if editor.selected == index { 2.0 } else { 1.0 },
-                                    if editor.selected == index {
-                                        shortcuts::shortcut_color(*action)
-                                    } else {
-                                        theme::BORDER
-                                    },
-                                ));
-                                let response =
-                                    column.add_sized([column.available_width(), 62.0], button);
-                                if editor.selected == index && editor.scroll {
-                                    response.scroll_to_me(Some(Align::Center));
-                                }
-                                if response.clicked() {
-                                    chosen = Some(*action);
-                                }
-                            }
-                        });
+                    if threads.is_empty() {
+                        ui.label(lang.text(
+                            "Mac에서 Codex 대화를 시작한 뒤 새로고침하세요.",
+                            "Start a Codex conversation on your Mac, then refresh.",
+                        ));
+                    }
+                    for (index, thread) in threads.iter().enumerate() {
+                        let taken = self.preferences.conversations.iter().enumerate().any(
+                            |(column, slot)| column != editor.key && slot.thread_id == thread.id,
+                        );
+                        let suffix = if taken {
+                            lang.text(" · 다른 열에 연결됨", " · assigned to another column")
+                        } else {
+                            ""
+                        };
+                        let title: String = thread.title.chars().take(90).collect();
+                        let label = format!("{title}{suffix}\n{}", thread.cwd);
+                        let response = ui.add_enabled(
+                            !taken,
+                            egui::Button::new(egui::RichText::new(label).size(14.0))
+                                .wrap()
+                                .min_size(egui::Vec2::new(ui.available_width(), 64.0))
+                                .selected(index == editor.selected),
+                        );
+                        if response.clicked() {
+                            chosen = Some(thread.id.clone());
+                        }
+                        response.on_hover_text(format!("{}\n{}", thread.title, thread.id));
                     }
                 });
-            editor.scroll = false;
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                if ui.button(lang.text("키 비우기", "Clear key")).clicked() {
+                if ui
+                    .button(lang.text("연결 비우기", "Clear assignment"))
+                    .clicked()
+                {
                     clear = true;
                 }
-                if ui.button(lang.text("취소 · B", "Cancel · B")).clicked() {
+                if ui.button(lang.text("닫기 · B", "Close · B")).clicked() {
                     cancel = true;
                 }
                 ui.label(
-                    RichText::new(lang.text("방향키 선택 · A 저장", "D-pad selects · A saves"))
-                        .small()
-                        .color(theme::MUTED),
+                    egui::RichText::new(
+                        lang.text("방향키 선택 · A 연결", "D-pad selects · A assigns"),
+                    )
+                    .small()
+                    .color(theme::MUTED),
                 );
             });
         });
-        if let Some(action) = chosen {
-            self.set_edited_key(Some(action));
+        if let Some(id) = chosen {
+            self.assign_conversation(Some(&id));
         } else if clear {
-            self.set_edited_key(None);
-        } else if cancel || response.should_close() {
+            self.assign_conversation(None);
+        } else if cancel || (!just_opened && response.should_close()) {
             self.editor = None;
             self.displayed_approval = None;
         }

@@ -1,6 +1,6 @@
 # Roadmap
 
-Current scope: a native Codex companion with LIVE, shortcuts, projects, conversations and notifications. Shortcut keys 01/02 handle the displayed approval; keys 03–10 support 14 selectable actions. Korean/English UI and persistent local preferences are available in 0.1.20.
+Current scope: a native Codex companion with LIVE, five paired conversation columns, projects, conversations and notifications. Upper keys show responses and explicit approvals; lower keys show this turn’s recorded edits and open the configured Mac editor. Korean/English UI, saved assignments and sound preferences are available.
 
 Potential future work includes additional reviewed actions and broader platform support. These are not implemented features or release commitments. Existing Cargo/Git adapters are not additional UI tabs.
 

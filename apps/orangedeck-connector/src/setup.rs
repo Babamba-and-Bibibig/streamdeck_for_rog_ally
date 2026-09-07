@@ -20,6 +20,7 @@ pub struct InitOptions {
     pub port: u16,
     pub cargo_binary: PathBuf,
     pub codex_binary: PathBuf,
+    pub editor: orangedeck_infra::EditorKind,
     pub force: bool,
 }
 
@@ -75,6 +76,7 @@ pub async fn initialize(options: InitOptions) -> Result<InitResult, SetupError> 
         token_file: token_path.clone(),
         cargo_binary: options.cargo_binary,
         codex_binary: options.codex_binary,
+        editor: options.editor,
         log_level: "info".to_owned(),
         projects: vec![ProjectConfig {
             id: options.project_id,

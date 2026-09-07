@@ -100,6 +100,9 @@ enum Command {
         cargo_binary: PathBuf,
         #[arg(long, default_value = "codex")]
         codex_binary: PathBuf,
+        /// Mac editor used when a paired file button is pressed.
+        #[arg(long, default_value = "auto")]
+        editor: orangedeck_infra::EditorKind,
         #[arg(long)]
         force: bool,
     },
@@ -186,6 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             port,
             cargo_binary,
             codex_binary,
+            editor,
             force,
         } => {
             let result = setup::initialize(InitOptions {
@@ -198,6 +202,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 port,
                 cargo_binary,
                 codex_binary,
+                editor,
                 force,
             })
             .await?;

@@ -102,29 +102,36 @@ Approval keys are active only when Codex has an actual approval request. Answer 
 
 1. Download the new ZIP on both devices and extract it into a **new folder**.
 2. **Mac:** run **Setup OrangeDeck.command** from the new folder. **Ally:** run `sh install.sh --role ui` from the new folder.
-3. Close the old OrangeDeck processes and restart them. Personal settings, pairing, language and key assignments are preserved.
+3. Close the old OrangeDeck processes and restart them. Personal settings, pairing and language are preserved. The individual action keys from 0.1.23 and earlier are replaced by five conversation pairs; assign conversations with the upper + keys once.
 
 **When updating from 0.1.21 or earlier:** the Mac program and settings files now use the Connector name. Setup imports existing projects and credentials into the new filenames and keeps the old files. You do not need to transfer the connection file again. Start the updated Connector, run **Enable Codex Notifications.command**, then review/trust OrangeDeck in Codex **`/hooks`** again.
 
 For an older source-folder installation, run Setup on the Mac once during this update. Then use `Start OrangeDeck Connector.command` from the new folder. The Ally's existing launcher is `./scripts/run-ally.zsh`, run from the project folder.
 
-## Host shortcuts
+<a id="host-shortcuts"></a>
 
-**Editor, terminal, folder and webpage keys on the Ally open things on the Mac.** The project folder chosen during setup is registered already. A folder appearing in Codex history does not by itself allow open actions.
+## Mac editor and project folders
 
-To add a folder, append a block to **the Mac's private** `~/.config/orangedeck/connector.toml`. Choose an unused `id` and replace `path` with the real project folder. Omit `browser_url` if you do not need a webpage.
+**The lower row opens changed code in your Mac editor.** Choose the editor during first setup. Press Enter for automatic detection in this order: Zed → VS Code → Cursor → VSCodium.
+
+To change it, edit the Mac’s private **`~/.config/orangedeck/connector.toml`**. Add or update `editor` **above the first `[[projects]]` block**:
+
+```toml
+editor = "zed"
+```
+
+Choose `auto`, `zed`, `vs_code`, `cursor` or `vscodium`. Install that app in `/Applications` or `~/Applications` on the Mac, then restart Connector after saving. Existing installations default to automatic detection; rerunning setup preserves your private settings.
+
+Only changed files **inside registered project folders** can be opened. To add a project, append this block to the same file. Use an unused `id` and the exact working folder shown for the Codex conversation:
 
 ```toml
 [[projects]]
 id = "another-project"
 name = "My Website"
 path = "/Users/YOU/Code/my-website"
-browser_url = "http://127.0.0.1:3000"
 ```
 
-Web addresses must use HTTP/HTTPS. The example refers to a development server already running on the Mac. Save the file, restart Connector, then select the folder on the Ally. No new connection-file transfer is needed.
-
-Editor detection checks `/Applications` and `~/Applications` on the Mac in this order: **Zed, VS Code, VSCodium**. The terminal key opens macOS **Terminal**. Install a supported editor if none is found.
+Save and restart Connector. No new connection-file transfer is needed. Appearing in Codex history does not authorize opening files from an unregistered project.
 
 ## Where settings are stored
 

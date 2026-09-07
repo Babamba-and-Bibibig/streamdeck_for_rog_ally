@@ -9,8 +9,8 @@ mod model;
 mod monitor;
 mod network;
 mod notifications;
+mod paired;
 mod selection;
-mod shortcuts;
 #[cfg(test)]
 mod test_support;
 mod theme;

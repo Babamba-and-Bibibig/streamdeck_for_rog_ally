@@ -159,6 +159,7 @@ pub fn codex_thread_to_dto(thread: &domain::CodexThread) -> dto::CodexThreadDto 
                 turn_id: value.turn_id.clone(),
                 latest_user_prompt: value.latest_user_prompt.clone(),
                 latest_codex_reply: value.latest_codex_reply.clone(),
+                changes: value.changes.as_ref().map(turn_changes_to_dto),
                 last_turn_status: codex_status_to_dto(value.last_turn_status),
                 model: value.model.clone(),
                 observed_at: value.observed_at,
@@ -175,6 +176,29 @@ pub fn codex_thread_to_dto(thread: &domain::CodexThread) -> dto::CodexThreadDto 
                 user_input: value.user_input.clone(),
                 latest_user_prompt: value.latest_user_prompt.clone(),
             }),
+    }
+}
+
+pub fn turn_changes_to_dto(changes: &domain::TurnChanges) -> dto::TurnChangesDto {
+    dto::TurnChangesDto {
+        truncated: changes.truncated,
+        files: changes
+            .files
+            .iter()
+            .map(|file| dto::CodeChangeDto {
+                path: file.path.clone(),
+                previous_path: file.previous_path.clone(),
+                kind: match file.kind {
+                    domain::CodeChangeKind::Added => dto::CodeChangeKindDto::Added,
+                    domain::CodeChangeKind::Modified => dto::CodeChangeKindDto::Modified,
+                    domain::CodeChangeKind::Deleted => dto::CodeChangeKindDto::Deleted,
+                    domain::CodeChangeKind::Renamed => dto::CodeChangeKindDto::Renamed,
+                },
+                first_line: file.first_line,
+                diff: file.diff.clone(),
+                truncated: file.truncated,
+            })
+            .collect(),
     }
 }
 

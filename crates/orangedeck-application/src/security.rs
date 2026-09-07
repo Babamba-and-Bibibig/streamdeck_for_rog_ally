@@ -19,6 +19,12 @@ pub enum ValidatedCommand {
     OpenProject(ProjectId),
     CodexRefreshThreads,
     CodexReadThread(String),
+    CodexWatchThreads(Vec<String>),
+    OpenCodexChange {
+        thread_id: String,
+        turn_id: String,
+        path: String,
+    },
     CodexStartThread(ProjectId),
     CodexSendPrompt {
         thread_id: String,
@@ -95,6 +101,37 @@ pub fn validate_command(
         }
         ClientCommand::CodexStartThread { project_id } => {
             Ok(ValidatedCommand::CodexStartThread(project(project_id)?))
+        }
+        ClientCommand::CodexWatchThreads { thread_ids } => {
+            if thread_ids.len() > 5 {
+                return Err(CommandValidationError::InvalidIdentifier(
+                    "conversation slots",
+                ));
+            }
+            for id in thread_ids {
+                validate_identifier("thread id", id)?;
+            }
+            let mut ids = thread_ids.clone();
+            ids.sort();
+            ids.dedup();
+            Ok(ValidatedCommand::CodexWatchThreads(ids))
+        }
+        ClientCommand::OpenCodexChange {
+            thread_id,
+            turn_id,
+            path,
+            ..
+        } => {
+            validate_identifier("thread id", thread_id)?;
+            validate_identifier("turn id", turn_id)?;
+            if path.is_empty() || path.len() > 4096 || path.chars().any(char::is_control) {
+                return Err(CommandValidationError::InvalidIdentifier("changed file"));
+            }
+            Ok(ValidatedCommand::OpenCodexChange {
+                thread_id: thread_id.clone(),
+                turn_id: turn_id.clone(),
+                path: path.clone(),
+            })
         }
         ClientCommand::CodexSendPrompt { thread_id, prompt } => {
             validate_identifier("thread id", thread_id)?;
@@ -178,6 +215,53 @@ mod tests {
                 ProjectRegistryError::NotRegistered(_)
             ))
         ));
+    }
+
+    #[test]
+    fn deck_commands_bound_identifiers_and_watch_count() {
+        let registry = registry();
+        assert!(
+            validate_command(
+                &ClientCommand::CodexWatchThreads {
+                    thread_ids: vec!["a".to_owned(); 6]
+                },
+                &registry
+            )
+            .is_err()
+        );
+        assert!(
+            validate_command(
+                &ClientCommand::CodexWatchThreads {
+                    thread_ids: vec!["bad\nthread".to_owned()]
+                },
+                &registry
+            )
+            .is_err()
+        );
+        assert_eq!(
+            validate_command(
+                &ClientCommand::CodexWatchThreads {
+                    thread_ids: vec!["b".to_owned(), "a".to_owned(), "a".to_owned()]
+                },
+                &registry
+            )
+            .unwrap(),
+            ValidatedCommand::CodexWatchThreads(vec!["a".to_owned(), "b".to_owned()])
+        );
+        for path in [String::new(), "bad\nfile".to_owned(), "x".repeat(4097)] {
+            assert!(
+                validate_command(
+                    &ClientCommand::OpenCodexChange {
+                        navigation_id: Uuid::new_v4(),
+                        thread_id: "a".to_owned(),
+                        turn_id: "b".to_owned(),
+                        path
+                    },
+                    &registry
+                )
+                .is_err()
+            );
+        }
     }
 
     #[test]

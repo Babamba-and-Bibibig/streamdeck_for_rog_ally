@@ -4,6 +4,8 @@ port = 45831
 token_file = "~/.config/orangedeck/connector.token"
 cargo_binary = "/Users/YOU/.cargo/bin/cargo"
 codex_binary = "/Users/YOU/.local/bin/codex"
+# auto selects the first installed editor: Zed, VS Code, Cursor, VSCodium.
+editor = "auto" # auto / zed / vs_code / cursor / vscodium
 log_level = "info"
 
 [[projects]]

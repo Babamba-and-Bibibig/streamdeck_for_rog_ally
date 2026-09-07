@@ -111,7 +111,8 @@ pub fn parse_observation(value: &Value) -> Result<ThreadObservation, CodexError>
         latest_user_prompt: prompt
             .filter(|text| !text.trim().is_empty())
             .map(|text| truncate(&text, 4000)),
-        latest_codex_reply: reply.map(|text| truncate(text, 4000)),
+        latest_codex_reply: reply.map(|text| truncate(text, 32_000)),
+        changes: latest.and_then(super::changes::parse_changes),
         last_turn_status: parse_turn_status(latest.and_then(|turn| turn.get("status"))),
         model: value
             .get("model")
@@ -564,6 +565,25 @@ mod tests {
         assert_eq!(observation.latest_codex_reply, None);
         assert_eq!(observation.last_turn_status, CodexThreadStatus::Working);
         assert_eq!(observation.model.as_deref(), Some("test-model"));
+    }
+
+    #[test]
+    fn a_question_without_edits_does_not_inherit_the_previous_turns_files() {
+        let observation = parse_observation(&serde_json::json!({"turns":[
+            {"id":"previous","status":"completed","items":[
+                {"type":"userMessage","content":[{"type":"text","text":"Edit the file"}]},
+                {"type":"fileChange","status":"completed","changes":[{"path":"previous.rs","kind":{"type":"update"},"diff":"+previous"}]}
+            ]},
+            {"id":"current","status":"completed","items":[
+                {"type":"userMessage","content":[{"type":"text","text":"Explain it, without editing"}]},
+                {"type":"agentMessage","text":"This is an explanation only."}
+            ]}
+        ]})).unwrap();
+        assert_eq!(observation.turn_id.as_deref(), Some("current"));
+        assert_eq!(
+            observation.changes,
+            Some(orangedeck_domain::TurnChanges::default())
+        );
     }
 
     #[test]

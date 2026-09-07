@@ -136,7 +136,7 @@ authorized_keys
 *.jpeg
 .DS_Store
 
-# Only these five reviewed demo images may be public. The content checker pins
+# Only these reviewed demo images may be public. The content checker pins
 # their SHA256 hashes; replacing one still requires another visual privacy review.
 !/docs/screenshots/
 !/docs/screenshots/live.png
@@ -160,3 +160,9 @@ ui-preferences.toml
 !/docs/diagrams/
 !/docs/diagrams/device-roles-ko.svg
 !/docs/diagrams/device-roles-en.svg
+
+# Reviewed paired response/file dialogs (0.1.24).
+!/docs/screenshots/response.png
+!/docs/screenshots/files.png
+!/docs/screenshots/en-response.png
+!/docs/screenshots/en-files.png

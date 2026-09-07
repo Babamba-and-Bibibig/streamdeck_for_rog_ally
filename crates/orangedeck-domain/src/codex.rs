@@ -98,9 +98,37 @@ pub struct ThreadObservation {
     pub turn_id: Option<String>,
     pub latest_user_prompt: Option<String>,
     pub latest_codex_reply: Option<String>,
+    /// Only file changes recorded in this turn, never a project-wide Git diff.
+    #[serde(default)]
+    pub changes: Option<TurnChanges>,
     pub last_turn_status: CodexThreadStatus,
     pub model: Option<String>,
     pub observed_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TurnChanges {
+    pub files: Vec<CodeChange>,
+    pub truncated: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CodeChangeKind {
+    Added,
+    Modified,
+    Deleted,
+    Renamed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CodeChange {
+    pub path: String,
+    pub previous_path: Option<String>,
+    pub kind: CodeChangeKind,
+    pub first_line: u32,
+    pub diff: String,
+    pub truncated: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

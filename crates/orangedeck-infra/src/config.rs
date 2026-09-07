@@ -36,6 +36,7 @@ pub struct ConnectorConfig {
     pub token_file: PathBuf,
     pub cargo_binary: PathBuf,
     pub codex_binary: PathBuf,
+    pub editor: crate::EditorKind,
     pub log_level: String,
     pub projects: Vec<ProjectConfig>,
 }
@@ -50,6 +51,7 @@ impl Default for ConnectorConfig {
             token_file: default_config_dir().join("connector.token"),
             cargo_binary: PathBuf::from("cargo"),
             codex_binary: PathBuf::from("codex"),
+            editor: crate::EditorKind::default(),
             log_level: "info".to_owned(),
             projects: Vec::new(),
         }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.24 — Five paired Codex conversations
+
+- Replace the individual action keys with five stable conversation columns: response/approval above, this turn's changed files below. Both keys pulse for new notices; a saved sound toggle controls a local chime.
+- Show the question and reply in a dialog. Explicit approvals/rejections close it after delivery; outside tap and Close dismiss without deciding. Guard against changed requests, hidden controls, duplicate presses and stale replies.
+- Open recorded file changes at their changed line in the configured Mac editor, with an Ally file list and diffs. Serialize navigation so the latest selection follows the prior handoff. No-edit questions show a disabled **파일 수정 없음 / No file changes** key; loading and missing records are distinct.
+- Read only completed Codex file-edit records from that turn, with bounded Unicode-safe diffs. Require a registered project and matching thread/turn/file, reject outside paths and symlinks escaping the project, and pass literal editor arguments without a shell.
+- Add setup/editor choices for Zed, VS Code, Cursor and VSCodium. Preserve language and existing private settings; assign the new conversation slots once after updating both devices.
+- Disable incremental caches for development and tests to limit build artifact accumulation.
+
 ## 0.1.23 — Connector naming and clearer setup
 
 - The Mac component is now **OrangeDeck Connector** (한국어: **통신 모듈**). Product labels, executable/package names, launchers, example configs, build scripts and CI use the same name. Codex performs the AI work; OrangeDeck connects the devices and provides the remote controls.

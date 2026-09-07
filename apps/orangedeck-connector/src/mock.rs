@@ -49,6 +49,7 @@ impl MockBackend {
                 }
             }
         }
+        prepare_paired_demo(&mut snapshot, english);
         Self {
             inner: Arc::new(MockInner {
                 language: if english {
@@ -70,6 +71,7 @@ impl MockBackend {
         tokio::spawn(async move {
             let mut tick = tokio::time::interval(Duration::from_secs(5));
             tick.tick().await;
+            let mut announce_pair = true;
             loop {
                 tick.tick().await;
                 let Some(inner) = weak.upgrade() else { break };
@@ -107,6 +109,29 @@ impl MockBackend {
                 };
                 if let Some(thread) = updated {
                     backend.publish(ServerEvent::CodexThreadUpdated(thread));
+                }
+                if announce_pair {
+                    announce_pair = false;
+                    backend.publish(ServerEvent::Notification(NotificationDto {
+                        id: Some(Uuid::new_v4()),
+                        thread_id: Some("demo-build".to_owned()),
+                        turn_id: Some("turn-demo-active".to_owned()),
+                        created_at: Some(Utc::now()),
+                        level: NotificationLevelDto::Success,
+                        title: backend
+                            .inner
+                            .language
+                            .text("Codex 응답 완료", "Codex response ready")
+                            .to_owned(),
+                        body: backend
+                            .inner
+                            .language
+                            .text(
+                                "화면 수정이 끝났습니다 · 모의 데이터",
+                                "Interface changes are ready · simulated data",
+                            )
+                            .to_owned(),
+                    }));
                 }
             }
         });
@@ -423,9 +448,41 @@ impl ConnectorBackend for MockBackend {
             }
             ClientCommand::RefreshState
             | ClientCommand::CodexRefreshThreads
-            | ClientCommand::CodexReadThread { .. } => {
+            | ClientCommand::CodexReadThread { .. }
+            | ClientCommand::CodexWatchThreads { .. } => {
                 self.publish_snapshot().await;
                 Ok(BackendResult::accepted("Mock state refreshed"))
+            }
+            ClientCommand::OpenCodexChange {
+                thread_id,
+                turn_id,
+                path,
+                ..
+            } => {
+                let state = self.inner.state.read().await;
+                let found = state
+                    .codex
+                    .threads
+                    .iter()
+                    .find(|thread| &thread.id == thread_id)
+                    .and_then(|thread| thread.observation.as_ref())
+                    .filter(|observation| observation.turn_id.as_ref() == Some(turn_id))
+                    .and_then(|observation| observation.changes.as_ref())
+                    .is_some_and(|changes| {
+                        changes.files.iter().any(|file| {
+                            &file.path == path
+                                && file.kind != orangedeck_protocol::CodeChangeKindDto::Deleted
+                        })
+                    });
+                if !found {
+                    return Err(BackendError::bad_request(
+                        "file_not_allowed",
+                        "Not a recorded mock file change",
+                    ));
+                }
+                Ok(BackendResult::accepted(
+                    "Demo: file selected; no Mac editor was opened",
+                ))
             }
             ClientCommand::RunCargoCheck { project_id } => {
                 self.start_job(project_id.clone(), JobKindDto::CargoCheck, false)
@@ -755,6 +812,7 @@ fn demo_snapshot() -> SnapshotDto {
                         turn_id: Some("simulated-turn".to_owned()),
                         latest_user_prompt: Some("지금 작업 중인 Codex의 토큰 사용량과 프로젝트를 한눈에 볼 수 있게, LIVE 화면을 멋있게 바꿔줘.".to_owned()),
                         latest_codex_reply: Some("작업 현황과 사용량을 중심으로 화면을 구성하고 있습니다.".to_owned()),
+                        changes: Some(orangedeck_protocol::TurnChangesDto::default()),
                         last_turn_status: CodexThreadStatusDto::Working,
                         model: Some("gpt-5.5".to_owned()), observed_at: now,
                     }),
@@ -806,6 +864,8 @@ fn demo_snapshot() -> SnapshotDto {
                 "rate_limits".to_owned(),
                 "token_usage".to_owned(),
                 "read_only_monitor".to_owned(),
+                "paired_conversations".to_owned(),
+                "turn_file_changes".to_owned(),
                 "session_log_usage".to_owned(),
             ],
         },
@@ -854,6 +914,72 @@ fn demo_snapshot() -> SnapshotDto {
             "Cargo test completed in 8.7s".to_owned(),
             "Git state refreshed".to_owned(),
         ],
+    }
+}
+
+fn prepare_paired_demo(snapshot: &mut SnapshotDto, english: bool) {
+    use orangedeck_protocol::{
+        CodeChangeDto, CodeChangeKindDto, ThreadObservationDto, TurnChangesDto,
+    };
+    let lang = if english {
+        UiLanguage::English
+    } else {
+        UiLanguage::Korean
+    };
+    let mut notes = snapshot.codex.threads[3].clone();
+    "demo-notes".clone_into(&mut notes.id);
+    "/mock/orange-project".clone_into(&mut notes.cwd);
+    notes.project_id = Some(DEMO_PROJECT_ID.to_owned());
+    snapshot.codex.threads.push(notes);
+    for (index, thread) in snapshot.codex.threads.iter_mut().enumerate() {
+        lang.text(
+            [
+                "화면 다듬기",
+                "검사와 승인",
+                "진행 중인 작업",
+                "웹사이트 검토",
+                "설명과 아이디어",
+            ][index],
+            [
+                "Interface polish",
+                "Checks and approval",
+                "Work in progress",
+                "Website review",
+                "Notes and ideas",
+            ][index],
+        )
+        .clone_into(&mut thread.title);
+        let turn_id = thread
+            .active_turn_id
+            .clone()
+            .or_else(|| {
+                thread
+                    .observation
+                    .as_ref()
+                    .and_then(|observation| observation.turn_id.clone())
+            })
+            .unwrap_or_else(|| format!("demo-turn-{index}"));
+        if index == 0 {
+            thread.status = CodexThreadStatusDto::Completed;
+        }
+        let files = if index < 3 {
+            vec![
+            CodeChangeDto { path:"src/interface.rs".to_owned(), previous_path:None, kind:CodeChangeKindDto::Modified, first_line:24,
+                diff:"@@ -24,2 +24,3 @@\n-let columns = 2;\n+let columns = 5;\n+let paired_rows = 2;".to_owned(), truncated:false },
+            CodeChangeDto { path:"src/notifications.rs".to_owned(), previous_path:None, kind:CodeChangeKindDto::Added, first_line:1,
+                diff:"@@ -0,0 +1,3 @@\n+fn on_response(column: usize) {\n+    flash_pair(column);\n+}".to_owned(), truncated:false },
+        ]
+        } else {
+            Vec::new()
+        };
+        thread.observation = Some(ThreadObservationDto {
+            turn_id:Some(turn_id), latest_user_prompt:Some(lang.text(if index < 3 { "응답과 수정 파일을 나란히 확인할 수 있게 화면을 바꿔줘." } else { "코드는 바꾸지 말고 사용하기 쉬운 기능을 설명해줘." },
+                if index < 3 { "Let me review each response alongside its changed files." } else { "Explain useful features without changing any code." }).to_owned()),
+            latest_codex_reply:Some(lang.text(if index < 3 { "위아래 버튼을 같은 대화에 연결했습니다. 새 응답이 오면 두 버튼이 함께 빛납니다. 아래 버튼에서 수정 파일 두 개를 확인할 수 있습니다." } else { "응답은 위 버튼, 수정 파일은 바로 아래 버튼에서 확인하면 됩니다. 이번 질의에서는 설명만 했으며 파일을 수정하지 않았습니다." },
+                if index < 3 { "Both keys now follow the same conversation. They light together when a response arrives. The lower key opens the two changed files." } else { "Use the upper key for the response and the lower key for changed files. This question only needed an explanation, so no files were changed." }).to_owned()),
+            changes:Some(TurnChangesDto { files, truncated:false }), last_turn_status:if index == 2 { CodexThreadStatusDto::Working } else { thread.status },
+            model:Some("demo".to_owned()), observed_at:Utc::now(),
+        });
     }
 }
 

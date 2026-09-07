@@ -39,8 +39,7 @@ The UI also verifies Connector mode so a mock endpoint cannot appear as a real M
   one approval.
 - Demo-only: approval, failed test, and reconnect scenarios.
 
-There is no shell command, raw executable, raw argument list, filesystem path, or
-AppleScript field in the wire contract.
+There is no shell command, raw executable, raw argument list or AppleScript field. The changed-file command carries a path only to identify an already recorded and authorized edit, not for general file access.
 
 ## Server Events
 
@@ -101,3 +100,11 @@ Optional `CodexThreadDto.activity` carries a recorded turn ID, lifecycle state, 
 The project catalog pages through non-archived `thread/list` results, including app-server and other Codex sessions. Duplicate IDs are removed. Repeated cursors or an unfinished catalog at 10,000 records fail the refresh instead of publishing a partial catalog. Token/activity reads remain bounded to 100 recent logs plus a few explicitly watched older conversations; histories are never resumed. Logs export explicit `request_user_input`/`request_user_input_async` question text but no tool answers, arbitrary output or private reasoning.
 
 Project focus is a local UI selection keyed by the Mac's recorded absolute folder path. Discovered folders do not enter the Connector command allow-list. All four pages share that selection; the conversation page contains only that project's threads. No new remote action is introduced.
+
+## Paired conversations and changed files (0.1.24, protocol 1)
+
+`CodexWatchThreads` accepts up to five listed conversation IDs. `OpenCodexChange` carries a navigation UUID, conversation ID, turn ID and recorded file path. The Connector requires an exact current observation and registered project, rejects deleted/non-recorded targets, and resolves the canonical file inside that folder before calling a fixed editor adapter. No shell interpolation is used. Editor completions and approval completions are correlated independently.
+
+`ThreadObservationDto.changes` defaults to absent for older Connectors. When present it contains up to 64 recorded files: kind, current/previous path, first changed line and diff. Diffs are bounded to 16 KiB per file and 64 KiB total, including repeated edits, with truncation flags. Only completed `fileChange` items from that turn are included. Missing/partial history differs from a confirmed empty list. Replies are bounded to 32,000 Unicode characters; private reasoning is excluded.
+
+The capabilities are `paired_conversations` and `turn_file_changes`. Update both devices for the new file keys. Older snapshots remain readable; missing data disables file opening and does not imply no edits. Conversation assignments and editor configuration remain private local settings.

@@ -25,6 +25,10 @@ pub enum NetworkEvent {
         approval_id: Uuid,
         result: Result<CommandResponse, String>,
     },
+    FileOpenCompleted {
+        navigation_id: Uuid,
+        result: Result<CommandResponse, String>,
+    },
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -112,6 +116,7 @@ impl UiModel {
                 }
             }
             NetworkEvent::Server(envelope) => self.apply_server(envelope),
+            NetworkEvent::FileOpenCompleted { .. } => {}
             NetworkEvent::ApprovalCompleted {
                 approval_id,
                 result,

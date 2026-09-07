@@ -243,10 +243,11 @@ class NativeInstallerTests(unittest.TestCase):
                     install.main()
 
             connector_args = ["--role", "connector", "--config-dir", str(connector_dir), "--project-path", str(project),
-                          "--host-name", "TEST HOST", "--codex-binary", str(codex)]
+                          "--host-name", "TEST HOST", "--codex-binary", str(codex), "--editor", "vs_code"]
             with patch.dict(os.environ, {"CODEX_HOME": str(profile)}):
                 setup(connector_args)
             config_before = (connector_dir / "connector.toml").read_bytes()
+            self.assertIn(b'editor = "vs_code"', config_before)
             token_before = (connector_dir / "connector.token").read_bytes()
             self.assertGreaterEqual(len(token_before), 32)
             received = root / "received.toml"

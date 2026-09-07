@@ -1,12 +1,9 @@
 use crate::i18n::{self, Language};
 mod deck_settings;
+mod paired_deck;
 use orangedeck_domain::UiPreferences;
 use orangedeck_infra::UiPreferenceStore;
-use std::{
-    collections::BTreeSet,
-    process::Command,
-    time::{Duration, Instant},
-};
+use std::{process::Command, time::Duration};
 
 use eframe::egui::{self, Align, Color32, Layout, RichText, Stroke, Vec2};
 use orangedeck_infra::{AuthToken, UiConfig};
@@ -22,7 +19,7 @@ use crate::{
     network::NetworkHandle,
     notifications,
     selection::{self, Selection},
-    shortcuts, theme,
+    theme,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,8 +90,9 @@ pub struct OrangeDeckApp {
     demo_mode: bool,
     selected_approval: Option<uuid::Uuid>,
     displayed_approval: Option<uuid::Uuid>,
-    shortcut_seen: BTreeSet<uuid::Uuid>,
-    toast: Option<(crate::alerts::Alert, Instant)>,
+    deck_modal: Option<paired_deck::DeckModal>,
+    watched_deck: Option<Vec<String>>,
+    file_request: Option<(uuid::Uuid, String)>,
 }
 
 impl OrangeDeckApp {
@@ -112,7 +110,26 @@ impl OrangeDeckApp {
             context.egui_ctx.clone(),
         )?;
         Ok(Self {
-            preferences: UiPreferences::default(),
+            preferences: if demo_mode {
+                UiPreferences {
+                    conversations: std::array::from_fn(|index| {
+                        orangedeck_domain::ConversationSlot {
+                            thread_id: [
+                                "demo-build",
+                                "demo-review",
+                                "external-tui",
+                                "demo-website",
+                                "demo-notes",
+                            ][index]
+                                .to_owned(),
+                            label: format!("Codex {}", index + 1),
+                        }
+                    }),
+                    ..UiPreferences::default()
+                }
+            } else {
+                UiPreferences::default()
+            },
             preference_store: None,
             preference_warning: None,
             editor: None,
@@ -129,8 +146,9 @@ impl OrangeDeckApp {
             demo_mode,
             selected_approval: None,
             displayed_approval: None,
-            shortcut_seen: BTreeSet::new(),
-            toast: None,
+            deck_modal: None,
+            watched_deck: None,
+            file_request: None,
         })
     }
 
@@ -160,23 +178,13 @@ impl OrangeDeckApp {
             self.handle_editor_input(action);
             return;
         }
-        if self.toast_is_current() {
-            match action {
-                ControlAction::Activate | ControlAction::Detail => self.dismiss_notification(true),
-                ControlAction::Back => self.dismiss_notification(false),
-                _ => {}
-            }
+        if self.deck_modal.is_some() {
+            self.handle_modal_input(action);
             return;
         }
-        if self.page == Page::Shortcuts && self.deck_editing {
-            if action == ControlAction::Back {
-                self.deck_editing = false;
-                self.displayed_approval = None;
-                return;
-            }
-            if action == ControlAction::Activate && self.focus_index < 2 {
-                return;
-            }
+        if self.page == Page::Shortcuts && self.deck_editing && action == ControlAction::Back {
+            self.deck_editing = false;
+            return;
         }
         if let Some(approval_id) = self.current_approval_id() {
             let decision = match action {
@@ -269,7 +277,6 @@ impl OrangeDeckApp {
     }
 
     fn select_project(&mut self, path: &str) {
-        self.toast = None;
         if let Some(snapshot) = &self.model.snapshot {
             self.selection.select_project(
                 path,
@@ -310,7 +317,6 @@ impl OrangeDeckApp {
     }
 
     fn change_thread(&mut self, delta: isize) {
-        self.toast = None;
         if let Some(snapshot) = &self.model.snapshot {
             self.selection.change_thread(delta, snapshot);
             self.focus_index = self
@@ -369,8 +375,8 @@ impl OrangeDeckApp {
     }
 
     fn activate_focus(&mut self) {
-        if self.page == Page::Shortcuts && self.focus_index >= 2 {
-            self.activate_custom_key(self.focus_index);
+        if self.page == Page::Shortcuts {
+            self.activate_pair(self.focus_index);
             return;
         }
         let Some(snapshot) = &self.model.snapshot else {
@@ -407,7 +413,11 @@ impl OrangeDeckApp {
 
     fn process_network(&mut self) {
         for event in self.network.drain() {
+            let close_modal = self.process_deck_network(&event);
             self.model.apply_network(event);
+            if close_modal {
+                self.close_deck_modal();
+            }
         }
     }
 
@@ -684,57 +694,19 @@ impl OrangeDeckApp {
     }
 
     fn current_approval_id(&self) -> Option<uuid::Uuid> {
-        if !matches!(self.page, Page::Notifications | Page::Shortcuts)
-            || self.toast.is_some()
-            || self.editor.is_some()
-        {
+        if self.editor.is_some() {
             return None;
         }
-        let pending = self.pending_for_selection();
+        let pending = if self.deck_modal.is_some() {
+            self.pending_for_modal()
+        } else if self.page == Page::Notifications {
+            self.pending_for_selection()
+        } else {
+            return None;
+        };
         self.selected_approval
             .filter(|id| pending.iter().any(|approval| approval.id == *id))
             .or_else(|| pending.first().map(|approval| approval.id))
-    }
-
-    fn route_shortcut_approval(&mut self) {
-        if self.editor.is_some() {
-            return;
-        }
-        if !self.model.approval_ready() {
-            return;
-        }
-        if let Some(snapshot) = &self.model.snapshot {
-            self.shortcut_seen.retain(|id| {
-                snapshot
-                    .codex
-                    .pending_approvals
-                    .iter()
-                    .any(|request| request.id == *id)
-            });
-        }
-        let pending: Vec<_> = self
-            .pending_for_selection()
-            .iter()
-            .map(|request| request.id)
-            .collect();
-        let Some(new_request) = pending
-            .iter()
-            .find(|id| !self.shortcut_seen.contains(id))
-            .copied()
-        else {
-            return;
-        };
-        self.shortcut_seen.extend(pending.iter().copied());
-        self.toast = None;
-        // Do not replace an already visible request when more requests join its queue.
-        if self.page != Page::Shortcuts
-            || self
-                .selected_approval
-                .is_none_or(|id| !pending.contains(&id))
-        {
-            self.select_page(Page::Shortcuts);
-            self.selected_approval = Some(new_request);
-        }
     }
 
     fn cycle_approval(&mut self, previous: bool) {
@@ -774,31 +746,22 @@ impl OrangeDeckApp {
 
     fn submit_approval(&mut self, id: uuid::Uuid, decision: ApprovalDecisionDto) {
         if self.model.begin_approval(id) {
+            if let Some(modal) = &mut self.deck_modal {
+                modal.submitted = Some(id);
+            }
             self.model.alerts.mark_read(id);
             if let Err(error) = self.network.send(ClientCommand::CodexApprovalResponse {
                 approval_id: id,
                 decision,
             }) {
+                if let Some(modal) = &mut self.deck_modal {
+                    modal.submitted = None;
+                }
                 self.model.approvals_in_flight.remove(&id);
                 self.model.approval_error = Some((id, error.clone()));
                 self.model.command_message = Some(error);
             }
         }
-    }
-
-    fn open_alert_thread(&mut self, id: &str) {
-        if let Some(thread) = self
-            .model
-            .snapshot
-            .as_ref()
-            .and_then(|snapshot| snapshot.codex.threads.iter().find(|thread| thread.id == id))
-        {
-            self.selection.project = Some(selection::project_path(&thread.cwd));
-            self.selection.thread = Some(thread.id.clone());
-            self.selection.follow_latest = false;
-            self.observed_selection = None;
-        }
-        self.open_notifications();
     }
 
     fn render_approval(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
@@ -887,254 +850,6 @@ impl OrangeDeckApp {
         if let Some(message) = &self.model.command_message {
             ui.label(RichText::new(message).size(12.0).color(theme::YELLOW));
         }
-    }
-
-    fn render_shortcuts(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
-        let id = self.current_approval_id();
-        let approval = id.and_then(|id| {
-            snapshot
-                .codex
-                .pending_approvals
-                .iter()
-                .find(|request| request.id == id)
-        });
-        let pending = self.pending_for_selection();
-        let position = pending
-            .iter()
-            .position(|request| Some(request.id) == id)
-            .unwrap_or(0);
-        let action: shortcuts::DeckAction = shortcuts::render(
-            ui,
-            &shortcuts::DeckView {
-                slots: std::array::from_fn(|index| self.preferences.action(index + 2)),
-                mode: if self.deck_editing {
-                    shortcuts::DeckMode::Edit
-                } else {
-                    shortcuts::DeckMode::Run
-                },
-                approval,
-                position,
-                pending: pending.len(),
-                ready: self.model.approval_ready(),
-                armed: id.is_some() && self.displayed_approval == id,
-                sending: id.is_some_and(|id| self.model.approvals_in_flight.contains(&id)),
-                focused: self.focus_index,
-                pulse: Self::attention_pulse(ui.ctx()),
-                message: self
-                    .model
-                    .approval_error
-                    .as_ref()
-                    .filter(|(request, _)| Some(*request) == id)
-                    .map(|(_, message)| message.as_str()),
-            },
-        );
-        let previously_displayed = self.displayed_approval;
-        self.displayed_approval = id;
-        if let Some(id) = id {
-            self.selected_approval = Some(id);
-        }
-        if let Some(index) = action.edit {
-            self.open_key_editor(index);
-        } else if let Some(index) = action.activate {
-            self.activate_custom_key(index);
-        } else if action.toggle_edit {
-            self.deck_editing = !self.deck_editing;
-            self.displayed_approval = None;
-        } else if action.recommended {
-            self.use_recommended_keys();
-        } else if action.details {
-            self.open_notifications();
-        } else if action.cycle != 0 {
-            self.cycle_approval(action.cycle < 0);
-        } else if let Some(decision) = action.decision
-            && let Some(id) = id
-            && previously_displayed == Some(id)
-            && self.current_approval_id() == Some(id)
-        {
-            self.submit_approval(id, decision);
-        }
-    }
-
-    fn announce_notifications(&mut self, ctx: &egui::Context) {
-        if !self.toast_is_current() {
-            self.toast = None;
-        }
-        let notices: Vec<_> = self.model.alerts.take_announcements().collect();
-        let latest = notices.into_iter().rfind(|alert| {
-            self.model
-                .snapshot
-                .as_ref()
-                .and_then(|snapshot| self.selection.selected(snapshot))
-                .is_some_and(|thread| crate::alerts::is_current(alert, thread))
-        });
-        if let Some(alert) = latest {
-            if self.config.desktop_notifications {
-                desktop_notification(&alert.notification.title, &alert.notification.body);
-            }
-            if !ctx.input(|input| input.viewport().focused.unwrap_or(true)) {
-                ctx.send_viewport_cmd(egui::ViewportCommand::RequestUserAttention(
-                    egui::UserAttentionType::Critical,
-                ));
-            }
-            self.displayed_approval = None;
-            let approval = self
-                .pending_for_selection()
-                .iter()
-                .any(|request| request.id == alert.id);
-            // Approval requests use the square keys directly; a modal must not cover them.
-            self.toast = (!approval).then(|| (alert, Instant::now()));
-        }
-    }
-
-    fn toast_is_current(&self) -> bool {
-        self.toast.as_ref().is_some_and(|(alert, _)| {
-            self.model
-                .snapshot
-                .as_ref()
-                .and_then(|snapshot| self.selection.selected(snapshot))
-                .is_some_and(|thread| crate::alerts::is_current(alert, thread))
-                && self
-                    .model
-                    .alerts
-                    .entries
-                    .iter()
-                    .any(|entry| entry.id == alert.id && !entry.read)
-        })
-    }
-
-    fn dismiss_notification(&mut self, open: bool) {
-        let Some((alert, _)) = self.toast.take() else {
-            return;
-        };
-        if let Some(thread) = self
-            .model
-            .snapshot
-            .as_ref()
-            .and_then(|snapshot| self.selection.selected(snapshot))
-            && crate::alerts::is_current(&alert, thread)
-        {
-            self.model.alerts.mark_current_read(thread);
-            if open && let Some(id) = &alert.notification.thread_id {
-                self.open_alert_thread(id);
-            }
-        }
-        self.displayed_approval = None;
-    }
-
-    fn render_toast(&mut self, ctx: &egui::Context) {
-        let lang = self.preferences.language;
-        if !self.toast_is_current() {
-            self.toast = None;
-            return;
-        }
-        let Some((alert, _)) = self.toast.clone() else {
-            return;
-        };
-        let color = notifications::level_color(alert.notification.level);
-        let thread = self
-            .model
-            .snapshot
-            .as_ref()
-            .and_then(|snapshot| self.selection.selected(snapshot));
-        let project = thread.map(|thread| thread.cwd.clone()).unwrap_or_default();
-        let question = thread
-            .and_then(selection::latest_prompt)
-            .unwrap_or(lang.text("현재 질의", "Current question"))
-            .to_owned();
-        let width = (ctx.content_rect().width() - 88.0).clamp(240.0, 580.0);
-        egui::Modal::new(egui::Id::new("notification_toast"))
-            .backdrop_color(Color32::from_black_alpha(145))
-            .frame(
-                egui::Frame::new()
-                    .fill(theme::PANEL)
-                    .stroke(Stroke::new(4.0, color))
-                    .inner_margin(22.0)
-                    .corner_radius(14),
-            )
-            .show(ctx, |ui| {
-                ui.set_width(width);
-                ui.spacing_mut().item_spacing.y = 12.0;
-                egui::ScrollArea::vertical()
-                    .id_salt("alert_preview")
-                    .max_height((ctx.content_rect().height() - 180.0).max(120.0))
-                    .show(ui, |ui| {
-                        let width = ui.available_width();
-                        ui.label(
-                            RichText::new(
-                                lang.text("CODEX · 현재 질의 알림", "CODEX · CURRENT TURN"),
-                            )
-                            .size(14.0)
-                            .strong()
-                            .color(color),
-                        );
-                        let mut title = egui::text::LayoutJob::simple(
-                            alert.notification.title.clone(),
-                            egui::FontId::proportional(34.0),
-                            color,
-                            width,
-                        );
-                        title.wrap.max_rows = 2;
-                        ui.label(title);
-                        ui.add(
-                            egui::Label::new(RichText::new(project).size(13.0).color(theme::MUTED))
-                                .truncate(),
-                        );
-                        let mut prompt = egui::text::LayoutJob::simple(
-                            question,
-                            egui::FontId::proportional(22.0),
-                            theme::TEXT,
-                            width,
-                        );
-                        prompt.wrap.max_rows = 2;
-                        ui.label(prompt);
-                        let mut body = egui::text::LayoutJob::simple(
-                            alert.notification.body.clone(),
-                            egui::FontId::proportional(18.0),
-                            theme::TEXT,
-                            width,
-                        );
-                        body.wrap.max_rows = 2;
-                        ui.label(body);
-                    });
-                ui.label(
-                    RichText::new(lang.text(
-                        "확인할 때까지 이 알림을 표시합니다",
-                        "This alert stays until you acknowledge it",
-                    ))
-                    .size(13.0)
-                    .color(theme::MUTED),
-                );
-                ui.horizontal(|ui| {
-                    let size = [(width - 12.0) / 2.0, 54.0];
-                    if ui
-                        .add_sized(
-                            size,
-                            egui::Button::new(
-                                RichText::new(lang.text("내용 보기 · A", "View details · A"))
-                                    .size(19.0)
-                                    .strong()
-                                    .color(Color32::BLACK),
-                            )
-                            .fill(color),
-                        )
-                        .clicked()
-                    {
-                        self.dismiss_notification(true);
-                    }
-                    if ui
-                        .add_sized(
-                            size,
-                            egui::Button::new(
-                                RichText::new(lang.text("확인했어요 · B", "Mark as read · B"))
-                                    .size(19.0),
-                            ),
-                        )
-                        .clicked()
-                    {
-                        self.dismiss_notification(false);
-                    }
-                });
-            });
     }
 
     fn render_project_picker(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
@@ -1399,15 +1114,18 @@ impl eframe::App for OrangeDeckApp {
         i18n::set_language(root.ctx(), self.preferences.language);
         self.process_network();
         self.update_monitor_selection();
+        self.update_deck_watches();
         let ctx = root.ctx().clone();
         if self.editor.is_none() {
             self.announce_notifications(&ctx);
         }
-        self.route_shortcut_approval();
         let focused = ctx.input(|input| input.viewport().focused.unwrap_or(true));
         let approval_pending = self.current_approval_id().is_some() && self.editor.is_none();
         for action in self.controller.poll(&ctx, focused, approval_pending) {
             self.handle_action(action);
+        }
+        if self.deck_modal.is_some() || self.editor.is_some() {
+            root.disable();
         }
         self.render_header(root);
         self.render_nav(root);
@@ -1431,8 +1149,12 @@ impl eframe::App for OrangeDeckApp {
                     });
                     return;
                 };
-                self.render_project_picker(ui, &snapshot);
-                if !matches!(self.page, Page::Notifications | Page::Shortcuts) {
+                if self.page != Page::Shortcuts {
+                    self.render_project_picker(ui, &snapshot);
+                }
+                if self.deck_modal.is_none()
+                    && !matches!(self.page, Page::Notifications | Page::Shortcuts)
+                {
                     self.displayed_approval = None;
                 }
                 match self.page {
@@ -1455,7 +1177,7 @@ impl eframe::App for OrangeDeckApp {
                     }
                 }
             });
-        self.render_toast(&ctx);
+        self.render_deck_modal(&ctx);
         self.render_attention(&ctx);
         self.render_key_editor(&ctx);
         ctx.request_repaint_after(Duration::from_millis(100));
@@ -1614,771 +1336,4 @@ fn activity_time(lang: Language, timestamp: i64) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn test_app(
-        snapshot: &SnapshotDto,
-    ) -> (
-        OrangeDeckApp,
-        tokio::sync::mpsc::UnboundedReceiver<ClientCommand>,
-    ) {
-        let mut model = UiModel::default();
-        model.apply_network(crate::model::NetworkEvent::Connected { latency_ms: 1 });
-        model.apply_network(crate::model::NetworkEvent::Server(
-            orangedeck_protocol::ServerEnvelope::new(orangedeck_protocol::ServerEvent::Snapshot(
-                snapshot.clone(),
-            )),
-        ));
-        let (network, commands) = NetworkHandle::for_test();
-        let app = OrangeDeckApp {
-            preferences: UiPreferences::default(),
-            preference_store: None,
-            preference_warning: None,
-            editor: None,
-            deck_editing: false,
-            config: UiConfig::demo(),
-            network,
-            model,
-            controller: ControllerInput::for_test(),
-            page: Page::Dashboard,
-            focus_index: 0,
-            scroll_focus: false,
-            selection: Selection::default(),
-            observed_selection: None,
-            demo_mode: true,
-            selected_approval: None,
-            displayed_approval: None,
-            shortcut_seen: BTreeSet::new(),
-            toast: None,
-        };
-        (app, commands)
-    }
-
-    fn announce_test_alert(app: &mut OrangeDeckApp, thread_id: &str) {
-        let id = uuid::Uuid::new_v4();
-        app.model.alerts.record(
-            orangedeck_protocol::NotificationDto {
-                id: Some(id),
-                turn_id: Some("new".to_owned()),
-                thread_id: Some(thread_id.to_owned()),
-                created_at: Some(chrono::Utc::now()),
-                level: orangedeck_protocol::NotificationLevelDto::Success,
-                title: "응답 완료".to_owned(),
-                body: "요청한 작업을 완료했습니다".to_owned(),
-            },
-            id,
-            chrono::Utc::now(),
-            true,
-            false,
-        );
-        app.config.desktop_notifications = false;
-        app.announce_notifications(&egui::Context::default());
-    }
-
-    fn shortcut_request(thread: &str, turn: &str) -> ApprovalDto {
-        ApprovalDto {
-            id: uuid::Uuid::new_v4(),
-            thread_id: Some(thread.to_owned()),
-            turn_id: Some(turn.to_owned()),
-            kind: orangedeck_protocol::ApprovalKindDto::CommandExecution,
-            title: "명령 실행 승인".to_owned(),
-            summary: "cargo check --offline".to_owned(),
-            details: vec![
-                "cwd: /Users/mac/project-a".to_owned(),
-                "Synthetic request; nothing is executed".to_owned(),
-            ],
-            requested_at: chrono::Utc::now(),
-        }
-    }
-
-    fn shortcuts_frame(
-        app: &mut OrangeDeckApp,
-        ctx: &egui::Context,
-        events: Vec<egui::Event>,
-    ) -> [egui::Pos2; 2] {
-        let snapshot = app.model.snapshot.as_ref().unwrap().clone();
-        let output = ctx.run_ui(
-            egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(676.0, 380.0),
-                )),
-                events,
-                time: Some(0.5),
-                ..Default::default()
-            },
-            |ui| {
-                egui::CentralPanel::default()
-                    .frame(egui::Frame::NONE)
-                    .show(ui, |ui| app.render_shortcuts(ui, &snapshot));
-            },
-        );
-        let positions = ["승인", "거절"].map(|label| {
-            output
-                .shapes
-                .iter()
-                .find_map(|shape| match &shape.shape {
-                    egui::Shape::Text(text) if text.galley.job.text == label => {
-                        let rect = text.galley.rect.translate(text.pos.to_vec2());
-                        assert!(shape.clip_rect.contains_rect(rect));
-                        Some(rect.center())
-                    }
-                    _ => None,
-                })
-                .unwrap()
-        });
-        output.drop_without_applying_deltas();
-        positions
-    }
-
-    fn pointer_events(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
-        vec![
-            egui::Event::PointerMoved(pos),
-            egui::Event::PointerButton {
-                pos,
-                button: egui::PointerButton::Primary,
-                pressed,
-                modifiers: egui::Modifiers::NONE,
-            },
-        ]
-    }
-
-    #[test]
-    fn shortcuts_route_current_approvals_once_without_a_covering_modal_and_keep_queue_stable() {
-        let mut snapshot = crate::test_support::snapshot();
-        let request = shortcut_request("a", "new");
-        snapshot.codex.pending_approvals =
-            vec![shortcut_request("b", "other"), shortcut_request("a", "old")];
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.config.desktop_notifications = false;
-        app.select_project("/Users/mac/project-a");
-        app.route_shortcut_approval();
-        assert_eq!(app.page, Page::Dashboard);
-        let ctx = egui::Context::default();
-        theme::apply(&ctx);
-        app.model.apply_network(crate::model::NetworkEvent::Server(
-            orangedeck_protocol::ServerEnvelope::new(
-                orangedeck_protocol::ServerEvent::CodexApprovalRequested(request.clone()),
-            ),
-        ));
-        app.announce_notifications(&ctx);
-        app.route_shortcut_approval();
-        assert_eq!(app.page, Page::Shortcuts);
-        assert!(app.toast.is_none());
-        assert_eq!(app.current_approval_id(), Some(request.id));
-        app.handle_action(ControlAction::Activate);
-        assert!(
-            commands.try_recv().is_err(),
-            "routing must not consume a pre-existing A press"
-        );
-        shortcuts_frame(&mut app, &ctx, vec![]);
-        let next = shortcut_request("a", "new");
-        app.model
-            .snapshot
-            .as_mut()
-            .unwrap()
-            .codex
-            .pending_approvals
-            .push(next.clone());
-        app.route_shortcut_approval();
-        assert_eq!(app.current_approval_id(), Some(request.id));
-        app.select_page(Page::Dashboard);
-        app.route_shortcut_approval();
-        assert_eq!(
-            app.page,
-            Page::Dashboard,
-            "same queue must not force the page repeatedly"
-        );
-        app.select_page(Page::Shortcuts);
-        app.cycle_approval(false);
-        assert_eq!(app.current_approval_id(), Some(next.id));
-        app.handle_action(ControlAction::Back);
-        assert!(
-            commands.try_recv().is_err(),
-            "newly cycled request must be rendered first"
-        );
-        shortcuts_frame(&mut app, &ctx, vec![]);
-        app.handle_action(ControlAction::Back);
-        assert!(
-            matches!(commands.try_recv().unwrap(), ClientCommand::CodexApprovalResponse { approval_id, decision: ApprovalDecisionDto::Reject } if approval_id == next.id)
-        );
-        app.handle_action(ControlAction::Back);
-        assert!(commands.try_recv().is_err());
-    }
-
-    #[test]
-    fn shortcut_clicks_send_one_decision_and_cannot_cross_request_replacement_or_disconnect() {
-        for (key, decision) in [
-            (0, ApprovalDecisionDto::Approve),
-            (1, ApprovalDecisionDto::Reject),
-        ] {
-            let mut snapshot = crate::test_support::snapshot();
-            let first = shortcut_request("a", "new");
-            snapshot.codex.pending_approvals.push(first.clone());
-            let (mut app, mut commands) = test_app(&snapshot);
-            app.select_project("/Users/mac/project-a");
-            app.route_shortcut_approval();
-            let ctx = egui::Context::default();
-            theme::apply(&ctx);
-            shortcuts_frame(&mut app, &ctx, vec![]);
-            let keys = shortcuts_frame(&mut app, &ctx, vec![]);
-            shortcuts_frame(&mut app, &ctx, pointer_events(keys[key], true));
-            let replacement = shortcut_request("a", "new");
-            app.model.snapshot.as_mut().unwrap().codex.pending_approvals =
-                vec![replacement.clone()];
-            app.route_shortcut_approval();
-            shortcuts_frame(&mut app, &ctx, pointer_events(keys[key], false));
-            assert!(
-                commands.try_recv().is_err(),
-                "held pointer must not decide a replacement request"
-            );
-            shortcuts_frame(&mut app, &ctx, vec![]);
-            shortcuts_frame(&mut app, &ctx, pointer_events(keys[key], true));
-            shortcuts_frame(&mut app, &ctx, pointer_events(keys[key], false));
-            assert!(
-                matches!(commands.try_recv().unwrap(), ClientCommand::CodexApprovalResponse { approval_id, decision: actual } if approval_id == replacement.id && actual == decision)
-            );
-            for pressed in [true, false] {
-                shortcuts_frame(&mut app, &ctx, pointer_events(keys[key], pressed));
-            }
-            assert!(commands.try_recv().is_err(), "sending must lock both keys");
-
-            app.model
-                .apply_network(crate::model::NetworkEvent::Disconnected {
-                    message: "test disconnect".to_owned(),
-                    retry_ms: 1,
-                });
-            for pressed in [true, false] {
-                shortcuts_frame(&mut app, &ctx, pointer_events(keys[1 - key], pressed));
-            }
-            app.handle_action(ControlAction::Back);
-            assert!(commands.try_recv().is_err());
-            app.model
-                .apply_network(crate::model::NetworkEvent::Connected { latency_ms: 1 });
-            app.handle_action(ControlAction::Back);
-            assert!(
-                commands.try_recv().is_err(),
-                "reconnect needs a new snapshot"
-            );
-        }
-    }
-
-    #[test]
-    fn shortcut_keyboard_and_unassigned_keys_never_decide_an_approval() {
-        let mut snapshot = crate::test_support::snapshot();
-        snapshot
-            .codex
-            .pending_approvals
-            .push(shortcut_request("a", "new"));
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        app.route_shortcut_approval();
-        let ctx = egui::Context::default();
-        theme::apply(&ctx);
-        shortcuts_frame(&mut app, &ctx, vec![]);
-        for key in [egui::Key::Enter, egui::Key::Escape, egui::Key::Space] {
-            shortcuts_frame(
-                &mut app,
-                &ctx,
-                vec![egui::Event::Key {
-                    key,
-                    physical_key: None,
-                    pressed: true,
-                    repeat: false,
-                    modifiers: egui::Modifiers::NONE,
-                }],
-            );
-            for action in app.controller.poll(&ctx, true, true) {
-                app.handle_action(action);
-            }
-        }
-        assert!(commands.try_recv().is_err());
-        app.handle_action(ControlAction::NavigateDown);
-        assert_eq!(app.focus_index, 5);
-        app.handle_action(ControlAction::Activate);
-        assert!(commands.try_recv().is_err());
-        assert!(app.editor.is_some(), "an empty key opens its editor");
-        app.handle_action(ControlAction::Back);
-        assert!(app.editor.is_none());
-        assert!(
-            commands.try_recv().is_err(),
-            "closing the editor must not reject an approval"
-        );
-        shortcuts_frame(&mut app, &ctx, vec![]);
-        app.handle_action(ControlAction::NavigateUp);
-        app.handle_action(ControlAction::NavigateRight);
-        assert_eq!(app.focus_index, 1);
-        app.handle_action(ControlAction::Activate);
-        assert!(matches!(
-            commands.try_recv().unwrap(),
-            ClientCommand::CodexApprovalResponse {
-                decision: ApprovalDecisionDto::Reject,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn key_editor_never_decides_or_executes_the_action_being_assigned() {
-        let mut snapshot = crate::test_support::snapshot();
-        let request = shortcut_request("a", "new");
-        snapshot.codex.pending_approvals.push(request.clone());
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        app.route_shortcut_approval();
-        let ctx = egui::Context::default();
-        theme::apply(&ctx);
-        shortcuts_frame(&mut app, &ctx, vec![]);
-        app.open_key_editor(2);
-        assert!(app.current_approval_id().is_none());
-        app.route_shortcut_approval();
-        app.handle_action(ControlAction::NavigateDown);
-        app.handle_action(ControlAction::NavigateDown);
-        app.handle_action(ControlAction::Activate);
-        assert!(app.editor.is_none());
-        assert_eq!(
-            app.preferences.action(2),
-            Some(orangedeck_domain::Shortcut::Refresh)
-        );
-        assert!(commands.try_recv().is_err());
-        assert!(app.displayed_approval.is_none());
-        app.activate_custom_key(2);
-        assert_eq!(
-            commands.try_recv().unwrap(),
-            ClientCommand::CodexRefreshThreads
-        );
-        assert!(commands.try_recv().is_err());
-        app.open_key_editor(2);
-        app.handle_action(ControlAction::Back);
-        assert!(app.editor.is_none());
-        assert!(commands.try_recv().is_err());
-        assert_eq!(app.current_approval_id(), Some(request.id));
-    }
-
-    #[test]
-    fn host_keys_use_registered_ids_and_refuse_external_or_unconfigured_targets() {
-        use orangedeck_domain::Shortcut;
-        let mut snapshot = crate::test_support::snapshot();
-        snapshot.projects.push(orangedeck_protocol::ProjectDto {
-            id: "registered".to_owned(),
-            name: "Registered".to_owned(),
-            path: "/Users/mac/project-a".to_owned(),
-            has_browser_url: false,
-        });
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        for (action, expected) in [
-            (
-                Shortcut::OpenEditor,
-                ClientCommand::OpenEditor {
-                    project_id: "registered".to_owned(),
-                },
-            ),
-            (
-                Shortcut::OpenTerminal,
-                ClientCommand::OpenTerminal {
-                    project_id: "registered".to_owned(),
-                },
-            ),
-            (
-                Shortcut::OpenProject,
-                ClientCommand::OpenProject {
-                    project_id: "registered".to_owned(),
-                },
-            ),
-        ] {
-            app.preferences.assign(2, Some(action));
-            app.activate_custom_key(2);
-            assert_eq!(commands.try_recv().unwrap(), expected);
-        }
-        app.preferences.assign(2, Some(Shortcut::OpenBrowser));
-        app.activate_custom_key(2);
-        assert!(commands.try_recv().is_err());
-        app.model.snapshot.as_mut().unwrap().projects[0].has_browser_url = true;
-        app.activate_custom_key(2);
-        assert_eq!(
-            commands.try_recv().unwrap(),
-            ClientCommand::OpenBrowser {
-                project_id: "registered".to_owned()
-            }
-        );
-        app.select_project("/Users/mac/project-b");
-        app.activate_custom_key(2);
-        assert!(commands.try_recv().is_err());
-    }
-
-    #[test]
-    fn language_buttons_switch_all_five_tabs_and_editor_without_translating_user_data() {
-        let snapshot = crate::test_support::snapshot();
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        let ctx = egui::Context::default();
-        theme::apply(&ctx);
-        let frame = |app: &mut OrangeDeckApp, events| {
-            ctx.run_ui(
-                egui::RawInput {
-                    screen_rect: Some(egui::Rect::from_min_size(
-                        egui::Pos2::ZERO,
-                        egui::vec2(820.0, 480.0),
-                    )),
-                    events,
-                    ..Default::default()
-                },
-                |ui| app.render_header(ui),
-            )
-        };
-        let output = frame(&mut app, vec![]);
-        for shape in &output.shapes {
-            if let egui::Shape::Rect(rect) = &shape.shape
-                && rect.fill == theme::ORANGE
-            {
-                assert!(
-                    shape.clip_rect.contains_rect(rect.rect),
-                    "Language button clipped by the header"
-                );
-            }
-        }
-        let en = output
-            .shapes
-            .iter()
-            .find_map(|shape| match &shape.shape {
-                egui::Shape::Text(text) if text.galley.job.text == "EN" => {
-                    Some(text.galley.rect.translate(text.pos.to_vec2()).center())
-                }
-                _ => None,
-            })
-            .unwrap();
-        output.drop_without_applying_deltas();
-        frame(&mut app, pointer_events(en, true)).drop_without_applying_deltas();
-        frame(&mut app, pointer_events(en, false)).drop_without_applying_deltas();
-        assert_eq!(app.preferences.language, Language::English);
-        assert_eq!(i18n::language(&ctx), Language::English);
-        app.use_recommended_keys();
-        for page in Page::ALL {
-            app.page = page;
-            let labels = crate::test_support::render_text(1038.0, 584.0, |ui| {
-                i18n::set_language(ui.ctx(), Language::English);
-                app.render_header(ui);
-                app.render_nav(ui);
-                egui::CentralPanel::default().show(ui, |ui| {
-                    app.render_project_picker(ui, &snapshot);
-                    match page {
-                        Page::Dashboard => app.render_dashboard(ui, &snapshot),
-                        Page::Shortcuts => app.render_shortcuts(ui, &snapshot),
-                        Page::Projects => app.render_projects(ui, &snapshot),
-                        Page::Codex => app.render_codex(ui, &snapshot),
-                        Page::Notifications => app.render_notifications(ui, &snapshot),
-                    }
-                });
-            });
-            for label in labels
-                .iter()
-                .filter(|label| label.rect.intersects(label.clip))
-            {
-                assert!(
-                    label.text == "한국어"
-                        || !label.text.chars().any(|ch| ('가'..='힣').contains(&ch)),
-                    "Untranslated {page:?}: {}",
-                    label.text
-                );
-            }
-        }
-        app.open_key_editor(2);
-        let labels = crate::test_support::render_text(820.0, 480.0, |ui| {
-            i18n::set_language(ui.ctx(), Language::English);
-            app.render_key_editor(ui.ctx());
-        });
-        assert!(
-            labels
-                .iter()
-                .any(|label| label.text.starts_with("Assign key"))
-        );
-        assert!(
-            labels
-                .iter()
-                .all(|label| !label.text.chars().any(|ch| ('가'..='힣').contains(&ch)))
-        );
-        assert!(commands.try_recv().is_err());
-        assert_eq!(
-            app.model.snapshot.as_ref().unwrap().codex.threads[0].observation,
-            snapshot.codex.threads[0].observation
-        );
-    }
-
-    #[test]
-    fn five_tabs_and_all_ten_key_labels_fit_a_small_complete_window() {
-        let mut snapshot = crate::test_support::snapshot();
-        snapshot
-            .codex
-            .pending_approvals
-            .push(shortcut_request("a", "new"));
-        let (mut app, _) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        app.route_shortcut_approval();
-        for (width, height) in [(820.0, 480.0), (1038.0, 584.0)] {
-            let labels = crate::test_support::render_text(width, height, |ui| {
-                app.render_header(ui);
-                app.render_nav(ui);
-                egui::CentralPanel::default()
-                    .frame(egui::Frame::new().inner_margin(12.0))
-                    .show(ui, |ui| {
-                        app.render_project_picker(ui, &snapshot);
-                        app.render_shortcuts(ui, &snapshot);
-                    });
-            });
-            for label in labels.iter().filter(|label| {
-                label.text == "승인"
-                    || label.text == "거절"
-                    || label.text == "미지정"
-                    || label.text == "알림"
-            }) {
-                assert!(
-                    label.clip.contains_rect(label.rect),
-                    "clipped {}: {:?}",
-                    label.text,
-                    label.rect
-                );
-            }
-            assert_eq!(
-                labels.iter().filter(|label| label.text == "미지정").count(),
-                8
-            );
-            assert!(labels.iter().any(|label| label.text == "단축키"));
-            assert!(labels.iter().any(|label| label.text == "알림"));
-        }
-    }
-
-    #[test]
-    fn live_recent_auto_click_returns_from_a_pinned_thread_and_follows_only_its_project() {
-        for (width, height) in [(676.0, 442.0), (894.0, 380.0)] {
-            let mut snapshot = crate::test_support::snapshot();
-            let mut older = snapshot.codex.threads[0].clone();
-            older.id = "older".to_owned();
-            older.updated_at -= 10;
-            older.live_usage = None;
-            snapshot.codex.threads.push(older);
-            snapshot.codex.threads[1].updated_at += 100;
-            let (mut app, mut commands) = test_app(&snapshot);
-            app.select_project("/Users/mac/project-a");
-            app.change_thread(1);
-            assert_eq!(app.selection.thread.as_deref(), Some("older"));
-            assert!(!app.selection.follow_latest);
-
-            let ctx = egui::Context::default();
-            theme::apply(&ctx);
-            let mut time = 0.0;
-            let mut frame =
-                |app: &mut OrangeDeckApp, snapshot: &SnapshotDto, events: Vec<egui::Event>| {
-                    time += 0.1;
-                    app.model.snapshot = Some(snapshot.clone());
-                    app.update_monitor_selection();
-                    ctx.run_ui(
-                        egui::RawInput {
-                            screen_rect: Some(egui::Rect::from_min_size(
-                                egui::Pos2::ZERO,
-                                egui::vec2(width, height),
-                            )),
-                            time: Some(time),
-                            events,
-                            ..Default::default()
-                        },
-                        |ui| {
-                            egui::CentralPanel::default()
-                                .frame(egui::Frame::NONE)
-                                .show(ui, |ui| app.render_dashboard(ui, snapshot));
-                        },
-                    )
-                };
-            frame(&mut app, &snapshot, vec![]).drop_without_applying_deltas();
-            let output = frame(&mut app, &snapshot, vec![]);
-            let button = output
-                .shapes
-                .iter()
-                .find_map(|shape| match &shape.shape {
-                    egui::Shape::Text(text) if text.galley.job.text == "최근 자동" => {
-                        Some(text.galley.rect.translate(text.pos.to_vec2()).center())
-                    }
-                    _ => None,
-                })
-                .expect("LIVE recent-auto button is rendered");
-            output.drop_without_applying_deltas();
-            for pressed in [true, false] {
-                frame(
-                    &mut app,
-                    &snapshot,
-                    vec![
-                        egui::Event::PointerMoved(button),
-                        egui::Event::PointerButton {
-                            pos: button,
-                            button: egui::PointerButton::Primary,
-                            pressed,
-                            modifiers: egui::Modifiers::NONE,
-                        },
-                    ],
-                )
-                .drop_without_applying_deltas();
-            }
-            assert!(
-                app.selection.follow_latest,
-                "LIVE click must enable following"
-            );
-            let output = frame(&mut app, &snapshot, vec![]);
-            let (shape, text) = output
-                .shapes
-                .iter()
-                .find_map(|shape| match &shape.shape {
-                    egui::Shape::Text(text) if text.galley.job.text == "자동 ON" => {
-                        Some((shape, text))
-                    }
-                    _ => None,
-                })
-                .expect("enabled auto mode must be visible after the click");
-            assert!(
-                shape
-                    .clip_rect
-                    .contains_rect(text.galley.rect.translate(text.pos.to_vec2()))
-            );
-            output.drop_without_applying_deltas();
-            assert_eq!(app.selection.thread.as_deref(), Some("a"));
-            snapshot.codex.threads[2].updated_at += 200;
-            frame(&mut app, &snapshot, vec![]).drop_without_applying_deltas();
-            assert_eq!(app.selection.thread.as_deref(), Some("older"));
-            snapshot.codex.threads[1].updated_at += 1000;
-            frame(&mut app, &snapshot, vec![]).drop_without_applying_deltas();
-            assert_eq!(app.selection.thread.as_deref(), Some("older"));
-            assert_eq!(
-                app.selection.project.as_deref(),
-                Some("/Users/mac/project-a")
-            );
-            while let Ok(command) = commands.try_recv() {
-                assert!(matches!(command, ClientCommand::CodexReadThread { .. }));
-            }
-        }
-    }
-
-    #[test]
-    fn current_completion_stays_large_until_acknowledged_and_other_projects_do_not_interrupt() {
-        let snapshot = crate::test_support::snapshot();
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        announce_test_alert(&mut app, "b");
-        assert!(app.toast.is_none());
-        announce_test_alert(&mut app, "a");
-        app.toast.as_mut().unwrap().1 = Instant::now().checked_sub(Duration::from_mins(2)).unwrap();
-        assert!(app.current_unread());
-        for (width, height) in [(676.0, 480.0), (1038.0, 550.0)] {
-            let labels =
-                crate::test_support::render_text(width, height, |ui| app.render_toast(ui.ctx()));
-            for expected in [
-                "응답 완료",
-                "CURRENT QUESTION",
-                "내용 보기 · A",
-                "확인했어요 · B",
-            ] {
-                let label = labels
-                    .iter()
-                    .find(|label| label.text == expected)
-                    .unwrap_or_else(|| panic!("Missing {expected}"));
-                assert!(
-                    label.clip.contains_rect(label.rect),
-                    "clipped {expected}: {:?}",
-                    label.rect
-                );
-                if expected == "응답 완료" {
-                    assert!(label.font_size >= 30.0);
-                }
-            }
-        }
-        assert!(app.toast.is_some());
-        app.toast.as_mut().unwrap().0.notification.title =
-            "매우 긴 응답 완료 알림 제목입니다 ".repeat(20);
-        app.toast.as_mut().unwrap().0.notification.body = "긴 응답 내용을 표시합니다 ".repeat(100);
-        let labels =
-            crate::test_support::render_text(676.0, 480.0, |ui| app.render_toast(ui.ctx()));
-        for expected in ["내용 보기 · A", "확인했어요 · B"] {
-            let label = labels.iter().find(|label| label.text == expected).unwrap();
-            assert!(label.clip.contains_rect(label.rect));
-        }
-        app.handle_action(ControlAction::Back);
-        assert!(app.toast.is_none());
-        assert!(!app.current_unread());
-        assert!(app.attention_color().is_none());
-        assert!(commands.try_recv().is_err());
-        // Other project's read state was not changed by acknowledging this turn.
-        assert_eq!(app.model.alerts.unread(), 1);
-        announce_test_alert(&mut app, "a");
-        app.model.snapshot.as_mut().unwrap().codex.threads[0].active_turn_id =
-            Some("next".to_owned());
-        app.announce_notifications(&egui::Context::default());
-        assert!(app.toast.is_none());
-    }
-
-    #[test]
-    fn project_changes_filter_all_pages_and_only_a_rendered_current_request_can_be_approved() {
-        let mut snapshot = crate::test_support::snapshot();
-        let first = uuid::Uuid::new_v4();
-        let second = uuid::Uuid::new_v4();
-        for (id, thread_id, turn_id) in [(first, "a", "new"), (second, "b", "other-turn")] {
-            snapshot
-                .codex
-                .pending_approvals
-                .push(orangedeck_protocol::ApprovalDto {
-                    id,
-                    thread_id: Some(thread_id.to_owned()),
-                    turn_id: Some(turn_id.to_owned()),
-                    kind: orangedeck_protocol::ApprovalKindDto::CommandExecution,
-                    title: "Approval".to_owned(),
-                    summary: format!("Approve {thread_id}"),
-                    details: vec!["Synthetic test request".to_owned()],
-                    requested_at: chrono::Utc::now(),
-                });
-        }
-        snapshot.codex.threads[1].active_turn_id = Some("other-turn".to_owned());
-        let (mut app, mut commands) = test_app(&snapshot);
-        app.select_project("/Users/mac/project-a");
-        let live =
-            crate::test_support::render(930.0, 600.0, |ui| app.render_dashboard(ui, &snapshot));
-        app.select_page(Page::Codex);
-        let conversations =
-            crate::test_support::render(930.0, 600.0, |ui| app.render_codex(ui, &snapshot));
-        assert!(live.contains("CURRENT QUESTION"));
-        assert!(conversations.contains("CURRENT QUESTION"));
-        assert!(conversations.contains("현재 LIVE"));
-        assert!(!conversations.contains("OTHER PROJECT QUESTION"));
-        assert!(app.current_approval_id().is_none());
-        app.open_notifications();
-        assert_eq!(app.current_approval_id(), Some(first));
-        app.displayed_approval = Some(first);
-        announce_test_alert(&mut app, "a");
-        assert!(app.current_approval_id().is_none());
-        app.handle_action(ControlAction::Activate);
-        assert!(app.toast.is_none());
-        assert!(commands.try_recv().is_err());
-        assert!(app.displayed_approval.is_none());
-
-        app.handle_action(ControlAction::Activate);
-        assert!(commands.try_recv().is_err());
-        crate::test_support::render(930.0, 600.0, |ui| app.render_approval(ui, &snapshot));
-        app.select_project("/Users/mac/project-b");
-        assert_eq!(app.current_approval_id(), Some(second));
-        app.handle_action(ControlAction::Activate);
-        assert!(commands.try_recv().is_err());
-        assert_eq!(app.selection.threads(&snapshot).len(), 1);
-        assert_eq!(app.selection.selected(&snapshot).unwrap().id, "b");
-        crate::test_support::render(930.0, 600.0, |ui| app.render_approval(ui, &snapshot));
-        app.handle_action(ControlAction::Activate);
-        assert!(
-            matches!(commands.try_recv().unwrap(), ClientCommand::CodexApprovalResponse { approval_id, decision: ApprovalDecisionDto::Approve } if approval_id == second)
-        );
-        app.handle_action(ControlAction::Activate);
-        assert!(commands.try_recv().is_err());
-    }
-    #[test]
-    fn shortcuts_are_second_and_notifications_are_fifth() {
-        assert_eq!(
-            Page::ALL.map(Page::label),
-            ["LIVE", "단축키", "프로젝트들", "대화", "알림"]
-        );
-    }
-}
+mod tests;
