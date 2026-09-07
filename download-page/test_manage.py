@@ -55,7 +55,7 @@ class DownloadPageTests(unittest.TestCase):
         return opener.open(request, timeout=3)
 
     def test_packaging_excludes_private_files_and_preserves_modes(self):
-        for relative in ["target/private", ".codex/credentials.json", ".agents/private", ".cargo-home/private", "sample.token", "test-pairing.toml", "setup_bridge.py", ".env", "debug.log", "config/local/agent.toml", "download-page/config.local.toml", "starter.md", "docs/HANDOFF_015.md", "personal-notes.txt"]:
+        for relative in ["target/private", ".codex/credentials.json", ".agents/private", ".cargo-home/private", "sample.token", "test-pairing.toml", "setup_bridge.py", ".env", "debug.log", "config/local/connector.toml", "download-page/config.local.toml", "starter.md", "docs/HANDOFF_015.md", "personal-notes.txt"]:
             path = self.root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("exclude me")

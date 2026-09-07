@@ -27,7 +27,7 @@ Approval banners have priority over normal A/B behavior. The banner names the ac
 shows available command/path/reason details, and states that approval applies to one
 action only. There is no hold-to-auto-approve behavior.
 For long requests, open Request details and scroll through the inner details area before
-deciding. Agent 0.1.21 preserves the complete supplied command, permissions and file-change
+deciding. Connector 0.1.21 preserves the complete supplied command, permissions and file-change
 data there; the deck banner remains a short preview.
 Keyboard Enter/Escape and keyboard activation of a focused banner button do not
 submit approval decisions. Use a deliberate touch/click or a fresh controller A/B press.

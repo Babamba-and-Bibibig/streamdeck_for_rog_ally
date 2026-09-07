@@ -23,7 +23,7 @@ The image exceptions are the twelve reviewed Korean/English demo screenshots and
 
 ## Development checks and demo
 
-The user guide targets macOS Agent and a CachyOS Handheld ROG Ally remote. Implementation paths for other systems do not establish successful installation on those systems. Steam Deck/SteamOS remain untested.
+The user guide targets macOS Connector and a CachyOS Handheld ROG Ally remote. Implementation paths for other systems do not establish successful installation on those systems. Steam Deck/SteamOS remain untested.
 
 ```sh
 cargo test --workspace --locked
@@ -76,7 +76,7 @@ Do not upload the whole working folder or the whole historical `dist/` directory
 
 ## If something was already exposed
 
-1. Revoke/rotate an exposed secret at its issuer. For an OrangeDeck token, stop the Agent, regenerate credentials with reviewed project settings and re-pair trusted clients. Merely deleting a GitHub file does not invalidate a credential.
+1. Revoke/rotate an exposed secret at its issuer. For an OrangeDeck token, stop the Connector, regenerate credentials with reviewed project settings and re-pair trusted clients. Merely deleting a GitHub file does not invalidate a credential.
 2. Review the exact affected paths/commits/assets before changing remote history. A corrective commit removes a file only from the current tree. History rewriting, force pushes, removing release assets or changing repository visibility need a deliberate owner decision.
 3. Coordinate cleanup of other clones, forks, cached views and published artifacts. Git history cannot prove that nobody copied an exposed value.
 

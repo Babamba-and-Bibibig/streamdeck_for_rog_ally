@@ -14,13 +14,13 @@ code{background:#20252b;padding:3px 7px}li{margin:14px 0}small{color:#b5bdc6}
 <ol>
 <li>Mac의 Safari에서 위 버튼을 누릅니다. Finder의 <strong>다운로드</strong>에서 <code>${archive}</code>을 더블클릭합니다.</li>
 <li>압축을 푼 <code>OrangeDeck-v${version}/streamdeck</code> 폴더를 엽니다.</li>
-<li>진행 중인 OrangeDeck 작업이 끝나면 기존 Agent 터미널에서만 <code>Ctrl+C</code>를 누릅니다.</li>
-<li>새 폴더의 <strong>Setup OrangeDeck.command</strong>를 실행합니다. 본인 프로젝트를 설정하거나 기존 설정을 유지하여 빌드·설치합니다. 그다음 안내된 <strong>start-agent.command</strong>로 Agent를 실행하고 터미널을 열어 둡니다.</li>
+<li>진행 중인 OrangeDeck 작업이 끝나면 기존 통신 모듈 터미널에서만 <code>Ctrl+C</code>를 누릅니다.</li>
+<li>새 폴더의 <strong>Setup OrangeDeck.command</strong>를 실행합니다. 본인 프로젝트를 설정하거나 기존 설정을 유지하여 빌드·설치합니다. 그다음 안내된 <strong>start-connector.command</strong>로 통신 모듈을 실행하고 터미널을 열어 둡니다.</li>
 <li>같은 폴더의 <strong>Enable Codex Notifications.command</strong>를 실행합니다. 평소 쓰는 Codex의 완료·승인 알림을 연결하는 별도 단계입니다.</li>
 <li>Mac Codex에서 <code>/hooks</code>를 입력하고 <strong>OrangeDeck 항목을 검토·신뢰</strong>합니다. 새 항목이 안 보이면 현재 작업이 끝난 뒤 같은 대화를 다시 열어 확인합니다.</li>
 </ol>
 <p>command 파일이 열리지 않으면 Mac Terminal에 <code>zsh </code>를 입력하고, 파일을 터미널로 끌어 넣은 뒤 Return을 누르세요.</p>
-<p>처음 사용하는 Linux 화면 기기는 소스 폴더에서 <code>sh install.sh --role ui</code>를 실행하고, Agent가 만든 비밀 페어링 파일을 선택하세요. 기존 설정이 있는 기기는 페어링을 유지합니다.</p>
+<p>ROG Ally의 CachyOS Handheld 데스크톱 모드에서는 소스 폴더에서 <code>sh install.sh --role ui</code>를 실행하고, Mac에서 가져온 연결 파일을 선택하세요. 기존 설정이 있는 기기는 페어링을 유지합니다.</p>
 <p><a href="/SHA256SUMS">현재 파일의 SHA256 확인</a></p>
 <small>이 주소를 북마크해 두세요. 다음 업데이트도 같은 다운로드 페이지를 사용합니다.</small>
 </html>

@@ -25,8 +25,8 @@ REVIEWED_SCREENSHOTS = {
 # Static, hand-drawn SVGs: reviewed for layout, private data and active content.
 # Preserve earlier hashes when a reviewed diagram is replaced.
 REVIEWED_DIAGRAMS = {
-    'docs/diagrams/device-roles-ko.svg': {'45745816058257029e30b6c181f8b18a5dd18aa5a9f799735222157fd8947810'},
-    'docs/diagrams/device-roles-en.svg': {'04342216d152ba87f507334bd3dca4c7d6f045f44c1ca345f5211b6b851350d5'},
+    'docs/diagrams/device-roles-ko.svg': {'45745816058257029e30b6c181f8b18a5dd18aa5a9f799735222157fd8947810', '90b0dd486128b14d0c56b7b765601e96a090cb56cbab101292e41a42bef30d2d'},
+    'docs/diagrams/device-roles-en.svg': {'04342216d152ba87f507334bd3dca4c7d6f045f44c1ca345f5211b6b851350d5', '9e1472e7dcfcc7633e72cac47783d482ef9143ebb68dba5fd48eeda40c9ccaa6'},
 }
 
 
@@ -47,13 +47,13 @@ PRIVATE_PARTS = {
     "__pycache__", ".venv", ".pytest_cache", ".idea", ".vscode", ".ssh", "codex-schema",
 }
 PRIVATE_NAMES = {"AGENTS.md", "starter.md", "setup_bridge.py", "config.local.toml", "auth.json", "credentials.json",
-                 "agent.toml", "ui.toml", "ui-preferences.toml", "hooks.json", "owned-codex-threads.json", "install-agent.json", "install-ui.json",
-                 "start-agent.command", "enable-notifications.command", "check-agent.command", "start-ui.sh", "check-ui.sh",
+                 "agent.toml", "connector.toml", "ui.toml", "ui-preferences.toml", "hooks.json", "owned-codex-threads.json", "install-agent.json", "install-connector.json", "install-ui.json",
+                 "start-agent.command", "start-connector.command", "enable-notifications.command", "check-agent.command", "check-connector.command", "start-ui.sh", "check-ui.sh",
                  "known_hosts", "authorized_keys"}
 ROOT_FILES = {
     "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "README.md", "README.ko.md", "README.en.md",
     "LICENSE", "SECURITY.md", ".gitignore", ".gitattributes",
-    "install.sh", "Setup OrangeDeck.command", "Start OrangeDeck Agent.command",
+    "install.sh", "Setup OrangeDeck.command", "Start OrangeDeck Agent.command", "Start OrangeDeck Connector.command",
     "Enable Codex Notifications.command", "OrangeDeck.desktop",
 }
 PUBLIC_DOCS = {

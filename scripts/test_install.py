@@ -29,7 +29,7 @@ class InstallerTests(unittest.TestCase):
             self.assertIn("fonts-noto-cjk", run.call_args.args[0])
             run.reset_mock()
             consent.reset_mock()
-            install.install_dependencies("agent", options)
+            install.install_dependencies("connector", options)
             consent.assert_not_called()
             run.assert_not_called()
 
@@ -96,7 +96,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(config.read_text(), "existing settings")
 
     def test_incomplete_setup_preserves_credentials_before_any_installation(self):
-        for role, filename in [("agent", "agent.token"), ("agent", "orangedeck-pairing.toml"), ("ui", "ui.token")]:
+        for role, filename in [("connector", "connector.token"), ("connector", "orangedeck-pairing.toml"), ("ui", "ui.token")]:
             with tempfile.TemporaryDirectory() as tmp:
                 credential = Path(tmp) / filename
                 credential.write_bytes(b"existing credential")
@@ -131,12 +131,12 @@ class InstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             profile = root / "Codex's private profile"
-            old = root / "start-agent.command"
+            old = root / "start-connector.command"
             old.write_bytes(install.launcher(Path("/unused"), [], {"CODEX_HOME": str(profile)}))
             with old.open("a") as output:
                 output.write("touch SHOULD_NOT_EXIST\n")
             self.assertEqual(install.saved_codex_home(root), str(profile))
-            metadata = root / "install-agent.json"
+            metadata = root / "install-connector.json"
             metadata.write_text(json.dumps({"codex_home": str(root / "new profile")}))
             self.assertEqual(install.saved_codex_home(root), str(root / "new profile"))
             for invalid in [[], {"codex_home": 12}, {"codex_home": "bad\npath"}]:
@@ -149,6 +149,23 @@ class InstallerTests(unittest.TestCase):
                 install.saved_codex_home(root)
             self.assertFalse((root / "SHOULD_NOT_EXIST").exists())
 
+    def test_legacy_settings_and_profile_are_selected_without_running_old_code(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            old = root / "agent.toml"
+            old.write_text("# existing setup")
+            self.assertEqual(install.existing_connector_config(root), old)
+            current = root / "connector.toml"
+            current.write_text("# new setup")
+            self.assertEqual(install.existing_connector_config(root), current)
+            (root / "install-agent.json").write_text(json.dumps({"codex_home": str(root / "saved profile")}))
+            self.assertEqual(install.saved_codex_home(root), str(root / "saved profile"))
+            self.assertEqual(install.parser().parse_args(["--role", "agent"]).role, "connector")
+            current.unlink()
+            current.symlink_to(old)
+            with self.assertRaises(install.SetupError):
+                install.existing_connector_config(root)
+
     def test_environment_probe_timeout_does_not_echo_captured_secrets(self):
         error = subprocess.TimeoutExpired(["codex"], 1, output="private-account-value")
         with patch.object(install.subprocess, "run", side_effect=error), self.assertRaises(install.SetupError) as result:
@@ -156,7 +173,7 @@ class InstallerTests(unittest.TestCase):
         self.assertNotIn("private-account-value", str(result.exception))
 
 
-@unittest.skipUnless(os.environ.get("ORANGEDECK_TEST_BIN_DIR"), "opt in with a directory containing freshly built Agent and UI")
+@unittest.skipUnless(os.environ.get("ORANGEDECK_TEST_BIN_DIR"), "opt in with a directory containing freshly built Connector and UI")
 class NativeInstallerTests(unittest.TestCase):
     def test_native_setup_refuses_orphaned_tokens(self):
         binary_dir = Path(os.environ["ORANGEDECK_TEST_BIN_DIR"]).resolve()
@@ -171,7 +188,7 @@ class NativeInstallerTests(unittest.TestCase):
             token = "test-only-" * 8
             bundle.write_text(f'protocol_version = 1\nagent_url = "http://100.64.0.2:45831"\nhost_label = "TEST"\ntoken = "{token}"\n')
             bundle.chmod(0o600)
-            for role, config, operation in [("agent", "agent.toml", ["init", "--project-path", str(root)]),
+            for role, config, operation in [("connector", "connector.toml", ["init", "--project-path", str(root)]),
                                              ("ui", "config.toml", ["pair", "--bundle", str(bundle)])]:
                 directory = root / role
                 directory.mkdir()
@@ -185,7 +202,7 @@ class NativeInstallerTests(unittest.TestCase):
 
     def test_fresh_install_pairs_native_binaries_and_update_preserves_credentials(self):
         binary_dir = Path(os.environ["ORANGEDECK_TEST_BIN_DIR"]).resolve()
-        self.assertTrue((binary_dir / "orangedeck-agent").is_file())
+        self.assertTrue((binary_dir / "orangedeck-connector").is_file())
         self.assertTrue((binary_dir / "orangedeck-ui").is_file())
         original_run = install.run
         with tempfile.TemporaryDirectory(prefix="orangedeck-native-setup-") as tmp:
@@ -199,7 +216,7 @@ class NativeInstallerTests(unittest.TestCase):
             codex.write_text("#!/bin/sh\nexit 0\n")
             codex.chmod(0o700)
             fake_cargo = root / "cargo"
-            agent_dir = root / "Agent's private settings"
+            connector_dir = root / "Connector's private settings"
             ui_dir = root / "Display's private settings"
             profile = root / "Codex's test profile"
             profile.mkdir()
@@ -225,15 +242,15 @@ class NativeInstallerTests(unittest.TestCase):
                         contextlib.redirect_stdout(io.StringIO()):
                     install.main()
 
-            agent_args = ["--role", "agent", "--config-dir", str(agent_dir), "--project-path", str(project),
+            connector_args = ["--role", "connector", "--config-dir", str(connector_dir), "--project-path", str(project),
                           "--host-name", "TEST HOST", "--codex-binary", str(codex)]
             with patch.dict(os.environ, {"CODEX_HOME": str(profile)}):
-                setup(agent_args)
-            config_before = (agent_dir / "agent.toml").read_bytes()
-            token_before = (agent_dir / "agent.token").read_bytes()
+                setup(connector_args)
+            config_before = (connector_dir / "connector.toml").read_bytes()
+            token_before = (connector_dir / "connector.token").read_bytes()
             self.assertGreaterEqual(len(token_before), 32)
             received = root / "received.toml"
-            received.write_bytes((agent_dir / "orangedeck-pairing.toml").read_bytes())
+            received.write_bytes((connector_dir / "orangedeck-pairing.toml").read_bytes())
             received.chmod(0o644)
             setup(["--role", "ui", "--config-dir", str(ui_dir), "--pairing", str(received)])
             self.assertEqual((ui_dir / "ui.token").read_bytes(), token_before)
@@ -243,31 +260,61 @@ class NativeInstallerTests(unittest.TestCase):
             # preserve both selections from the original installation/configuration.
             clean_env = {key: value for key, value in os.environ.items() if key != "CODEX_HOME"}
             with patch.dict(os.environ, clean_env, clear=True):
-                setup(["--role", "agent", "--config-dir", str(agent_dir)])
-            self.assertEqual((agent_dir / "agent.toml").read_bytes(), config_before)
-            self.assertEqual((agent_dir / "agent.token").read_bytes(), token_before)
+                setup(["--role", "connector", "--config-dir", str(connector_dir)])
+            self.assertEqual((connector_dir / "connector.toml").read_bytes(), config_before)
+            self.assertEqual((connector_dir / "connector.token").read_bytes(), token_before)
             self.assertEqual(observed_profiles, [str(profile), str(profile)])
-            for folder, launcher in [(agent_dir, "start-agent.command"), (ui_dir, "start-ui.sh"),
-                                     (agent_dir, "check-agent.command"), (ui_dir, "check-ui.sh")]:
+            for folder, launcher in [(connector_dir, "start-connector.command"), (ui_dir, "start-ui.sh"),
+                                     (connector_dir, "check-connector.command"), (ui_dir, "check-ui.sh")]:
                 self.assertEqual(stat.S_IMODE((folder / launcher).stat().st_mode), 0o700)
                 subprocess.run(["sh", "-n", folder / launcher], check=True)
-            self.assertIn(str(codex).replace("'", "'\"'\"'"), (agent_dir / "enable-notifications.command").read_text())
+            self.assertIn(str(codex).replace("'", "'\"'\"'"), (connector_dir / "enable-notifications.command").read_text())
             # Execute only the generated hook installer with an isolated saved profile.
-            subprocess.run([agent_dir / "enable-notifications.command"], check=True, capture_output=True)
+            subprocess.run([connector_dir / "enable-notifications.command"], check=True, capture_output=True)
             hooks = json.loads((profile / "hooks.json").read_text())
             self.assertTrue(hooks["test_preserved"])
             command = hooks["hooks"]["PermissionRequest"][0]["hooks"][0]["command"]
             fields = install.shlex.split(command)
-            self.assertEqual(Path(fields[fields.index("--socket") + 1]), agent_dir.resolve() / "hooks/codex.sock")
+            self.assertEqual(Path(fields[fields.index("--socket") + 1]), connector_dir.resolve() / "hooks/codex.sock")
             self.assertTrue(list(profile.glob("hooks.json.orangedeck-backup-*")))
+            # Model a pre-0.1.23 installation with the same working connection.
+            # Updating must import it without rotating credentials or executing old launchers.
+            old_config = connector_dir / "agent.toml"
+            old_config.write_text((connector_dir / "connector.toml").read_text().replace("connector.token", "agent.token"))
+            (connector_dir / "connector.toml").unlink()
+            for new, old in [("connector.token", "agent.token"), ("install-connector.json", "install-agent.json"),
+                             ("start-connector.command", "start-agent.command"), ("check-connector.command", "check-agent.command"),
+                             ("bin/orangedeck-connector", "bin/orangedeck-agent")]:
+                (connector_dir / new).rename(connector_dir / old)
+            legacy_files = ["agent.toml", "agent.token", "install-agent.json", "start-agent.command", "check-agent.command",
+                            "bin/orangedeck-agent", "orangedeck-pairing.toml"]
+            preserved = {name: (connector_dir / name).read_bytes() for name in legacy_files}
+            hooks_before = (profile / "hooks.json").read_bytes()
+            owned = connector_dir / "owned-codex-threads.json"
+            owned.write_text('{"preserve": true}')
+            with patch.dict(os.environ, clean_env, clear=True):
+                setup(["--role", "connector", "--config-dir", str(connector_dir)])
+            self.assertEqual({name: (connector_dir / name).read_bytes() for name in legacy_files}, preserved)
+            self.assertEqual((connector_dir / "connector.token").read_bytes(), token_before)
+            self.assertEqual((profile / "hooks.json").read_bytes(), hooks_before)
+            self.assertEqual(owned.read_text(), '{"preserve": true}')
+            self.assertEqual(json.loads((connector_dir / "install-connector.json").read_text())["codex_home"], str(profile))
+            self.assertIn("bin/orangedeck-connector", (connector_dir / "start-connector.command").read_text())
+            # Existing UI settings still using the old URL key remain paired.
+            ui_config = ui_dir / "config.toml"
+            ui_config.write_text(ui_config.read_text().replace("connector_url", "agent_url"))
+            ui_before = ui_config.read_bytes()
+            setup(["--role", "ui", "--config-dir", str(ui_dir)])
+            self.assertEqual(ui_config.read_bytes(), ui_before)
+            self.assertEqual((ui_dir / "ui.token").read_bytes(), token_before)
             # Validate the candidate before replacing an installed executable.
-            installed = agent_dir / "bin/orangedeck-agent"
+            installed = connector_dir / "bin/orangedeck-connector"
             install.secure_write(installed, b"previous-binary-sentinel", 0o700)
-            (agent_dir / "agent.toml").write_text("invalid = [")
+            (connector_dir / "connector.toml").write_text("invalid = [")
             with self.assertRaises(install.SetupError):
-                setup(["--role", "agent", "--config-dir", str(agent_dir)])
+                setup(["--role", "connector", "--config-dir", str(connector_dir)])
             self.assertEqual(installed.read_bytes(), b"previous-binary-sentinel")
-            self.assertEqual((agent_dir / "agent.token").read_bytes(), token_before)
+            self.assertEqual((connector_dir / "connector.token").read_bytes(), token_before)
 
 
 if __name__ == "__main__":

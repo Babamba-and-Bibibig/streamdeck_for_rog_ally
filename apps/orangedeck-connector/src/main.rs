@@ -15,8 +15,8 @@ use std::{
 
 use clap::{Parser, Subcommand};
 use orangedeck_infra::{
-    AgentConfig, AuthToken, BindMode, DEFAULT_PORT, DEMO_TOKEN, default_agent_config_path,
-    is_tailscale_ip, resolve_bind_address,
+    AuthToken, BindMode, ConnectorConfig, DEFAULT_PORT, DEMO_TOKEN, default_connector_config_path,
+    import_legacy_connector_config, is_tailscale_ip, resolve_bind_address,
 };
 use tracing_subscriber::EnvFilter;
 
@@ -26,9 +26,9 @@ use setup::InitOptions;
 
 #[derive(Parser)]
 #[command(
-    name = "orangedeck-agent",
+    name = "orangedeck-connector",
     version,
-    about = "Secure OrangeDeck host agent"
+    about = "Secure OrangeDeck host connector"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -37,6 +37,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Import an older installation into Connector filenames without changing its token.
+    MigrateConfig {
+        #[arg(long)]
+        from: PathBuf,
+        #[arg(long)]
+        config: PathBuf,
+    },
     /// Codex invokes this hook; only an explicit GUI decision can approve a request.
     CodexHook {
         #[arg(long, default_value_os_t = hooks::default_socket())]
@@ -51,21 +58,21 @@ enum Command {
         /// Codex CLI whose version determines supported hook events.
         #[arg(long, default_value = "codex")]
         codex_binary: PathBuf,
-        /// Use the same Agent config as serve, including customized install folders.
-        #[arg(long, default_value_os_t = default_agent_config_path())]
+        /// Use the same Connector config as serve, including customized install folders.
+        #[arg(long, default_value_os_t = default_connector_config_path())]
         config: PathBuf,
     },
-    /// Run the real allow-listed host agent on its Tailscale address.
+    /// Run the real allow-listed host connector on its Tailscale address.
     Serve {
-        #[arg(long, default_value_os_t = default_agent_config_path())]
+        #[arg(long, default_value_os_t = default_connector_config_path())]
         config: PathBuf,
     },
     /// Validate local settings and credentials without contacting Codex or Tailscale.
     CheckConfig {
-        #[arg(long, default_value_os_t = default_agent_config_path())]
+        #[arg(long, default_value_os_t = default_connector_config_path())]
         config: PathBuf,
     },
-    /// Run a loopback-only simulated agent for UI development on the Ally.
+    /// Run a loopback-only simulated connector for UI development on the Ally.
     Demo {
         #[arg(long, default_value_t = DEFAULT_PORT)]
         port: u16,
@@ -73,7 +80,7 @@ enum Command {
         #[arg(long, value_parser = ["ko", "en"], default_value = "ko")]
         language: String,
     },
-    /// Create a private token, agent config, and transferable pairing bundle.
+    /// Create a private token, connector config, and transferable pairing bundle.
     Init {
         #[arg(long, default_value_os_t = setup::default_init_config_path())]
         config: PathBuf,
@@ -98,7 +105,7 @@ enum Command {
     },
     /// Regenerate the 0600 pairing bundle after a Tailscale address change.
     Pairing {
-        #[arg(long, default_value_os_t = default_agent_config_path())]
+        #[arg(long, default_value_os_t = default_connector_config_path())]
         config: PathBuf,
         #[arg(long)]
         output: PathBuf,
@@ -119,6 +126,10 @@ enum Command {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
+        Command::MigrateConfig { from, config } => {
+            import_legacy_connector_config(&from, &config)?;
+            println!("Connector settings imported; credentials and original files preserved.");
+        }
         Command::CodexHook { socket } => hooks::run_hook(&socket),
         Command::CodexHooks {
             install,
@@ -127,7 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config,
         } => hook_setup::run(install, hooks_file.as_deref(), &codex_binary, &config).await?,
         Command::CheckConfig { config } => {
-            let config = AgentConfig::load(&config)?;
+            let config = ConnectorConfig::load(&config)?;
             drop(config.project_registry()?);
             drop(AuthToken::load(&config.token_file)?);
             println!(
@@ -136,16 +147,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
         Command::Serve { config } => {
-            let paths = paths::AgentPaths::for_config(&config)?;
-            let config = AgentConfig::load(&config)?;
+            let paths = paths::ConnectorPaths::for_config(&config)?;
+            let config = ConnectorConfig::load(&config)?;
             if config.bind_mode != BindMode::Tailscale {
-                return Err("real Agent requires bind_mode = \"tailscale\"".into());
+                return Err("real Connector requires bind_mode = \"tailscale\"".into());
             }
             init_tracing(&config.log_level);
             let address = resolve_bind_address(&config).await?;
             if !is_tailscale_ip(address.ip()) {
                 return Err(format!(
-                    "refusing real agent bind to non-Tailscale address {}; use the demo command for loopback",
+                    "refusing real connector bind to non-Tailscale address {}; use the demo command for loopback",
                     address.ip()
                 )
                 .into());
@@ -190,7 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 force,
             })
             .await?;
-            println!("Agent config: {}", result.config_path.display());
+            println!("Connector config: {}", result.config_path.display());
             println!("Tailscale bind: {}:{port}", result.bind_ip);
             println!("Pairing bundle: {}", result.pairing_path.display());
             println!("The pairing bundle contains a secret; transfer it only over Tailscale.");
@@ -228,7 +239,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn real_agent_accepts_only_tailscale_v4() {
+    fn real_connector_accepts_only_tailscale_v4() {
         assert!(is_tailscale_ip("100.64.0.2".parse().unwrap()));
         assert!(!is_tailscale_ip("100.1.2.3".parse().unwrap()));
         assert!(!is_tailscale_ip("192.168.0.15".parse().unwrap()));

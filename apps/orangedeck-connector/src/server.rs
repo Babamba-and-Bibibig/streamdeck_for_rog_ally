@@ -75,7 +75,7 @@ impl BackendError {
 }
 
 #[async_trait]
-pub trait AgentBackend: Send + Sync {
+pub trait ConnectorBackend: Send + Sync {
     async fn snapshot(&self) -> SnapshotDto;
     async fn execute(
         &self,
@@ -89,10 +89,10 @@ pub trait AgentBackend: Send + Sync {
 #[derive(Clone)]
 struct ServerState {
     token: AuthToken,
-    backend: Arc<dyn AgentBackend>,
+    backend: Arc<dyn ConnectorBackend>,
 }
 
-pub fn router(token: AuthToken, backend: Arc<dyn AgentBackend>) -> Router {
+pub fn router(token: AuthToken, backend: Arc<dyn ConnectorBackend>) -> Router {
     let state = ServerState { token, backend };
     Router::new()
         .route("/api/v1/health", get(health))
@@ -116,10 +116,10 @@ async fn authenticate(State(state): State<ServerState>, request: Request, next: 
 pub async fn serve(
     address: SocketAddr,
     token: AuthToken,
-    backend: Arc<dyn AgentBackend>,
+    backend: Arc<dyn ConnectorBackend>,
 ) -> Result<(), std::io::Error> {
     let listener = TcpListener::bind(address).await?;
-    info!(%address, mode = backend.mode(), "OrangeDeck Agent listening");
+    info!(%address, mode = backend.mode(), "OrangeDeck Connector listening");
     let result = axum::serve(listener, router(token, backend.clone()))
         .with_graceful_shutdown(shutdown_signal())
         .await;
@@ -155,7 +155,7 @@ async fn ready() -> Json<serde_json::Value> {
 
 async fn health(State(state): State<ServerState>) -> Response {
     Json(HealthResponse {
-        name: "OrangeDeck Agent".to_owned(),
+        name: "OrangeDeck Connector".to_owned(),
         version: env!("CARGO_PKG_VERSION").to_owned(),
         protocol_version: PROTOCOL_VERSION,
         ready: true,
@@ -214,7 +214,7 @@ async fn events(State(state): State<ServerState>, upgrade: WebSocketUpgrade) -> 
         .into_response()
 }
 
-async fn websocket_loop(socket: WebSocket, backend: Arc<dyn AgentBackend>) {
+async fn websocket_loop(socket: WebSocket, backend: Arc<dyn ConnectorBackend>) {
     let (mut sender, mut receiver) = socket.split();
     let initial = ServerEnvelope::new(ServerEvent::Snapshot(backend.snapshot().await));
     if send_event(&mut sender, &initial).await.is_err() {

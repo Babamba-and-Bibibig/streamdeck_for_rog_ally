@@ -4,11 +4,11 @@
 
 **Mac에서 돌아가는 Codex를 ROG Ally로 확인하고 조작하세요.**
 
-Mac은 실제 작업을 하고, Ally는 리모컨 역할을 합니다. Codex를 Ally에 설치할 필요는 없습니다.
+**OrangeDeck은 Mac과 Ally를 연결하는 통신·리모컨 앱입니다.** AI 작업은 Mac의 Codex가 합니다. Ally에는 Codex를 설치할 필요가 없습니다.
 
-![Mac의 macOS에서 Codex와 Agent를 실행하고, ROG Ally의 CachyOS Handheld에서 리모컨을 실행합니다. Tailscale로 연결합니다. Steam Deck과 SteamOS는 아직 확인하지 않았습니다.](docs/diagrams/device-roles-ko.svg)
+![Mac의 macOS에서 Codex와 통신 모듈을 실행하고, ROG Ally의 CachyOS Handheld에서 리모컨을 실행합니다. Tailscale로 연결합니다. Steam Deck과 SteamOS는 아직 확인하지 않았습니다.](docs/diagrams/device-roles-ko.svg)
 
-[설치하기](#설치하기) · [앱 화면 보기](#앱-화면-보기) · [간단 사용법](docs/QUICKSTART_KO.md)
+[⬇ ZIP 다운로드](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [설치하기](#설치하기) · [앱 화면 보기](#앱-화면-보기) · [간단 사용법](docs/QUICKSTART_KO.md)
 
 ## 설치할 기기
 
@@ -16,12 +16,12 @@ Mac은 실제 작업을 하고, Ally는 리모컨 역할을 합니다. Codex를 
 
 | 기기 | 운영체제 | 설치할 것 |
 | --- | --- | --- |
-| **작업용 Mac** — Mac Studio를 기준으로 개발 | **macOS** | Codex CLI + **OrangeDeck Agent**. Codex 작업 상태를 Ally에 보내는 프로그램입니다. |
+| **작업용 Mac** — Mac Studio를 기준으로 개발 | **macOS** | Codex CLI + **통신 모듈(Connector)**. Codex 상태를 보내고 Ally의 버튼 입력을 받습니다. |
 | **리모컨용 ROG Ally** | **CachyOS Handheld · 데스크톱 모드** | **OrangeDeck 리모컨(UI)**. 작업 상태를 보고 버튼을 누르는 앱입니다. |
 
 **Steam Deck·SteamOS는 설치와 동작을 아직 확인하지 않았습니다.** 다른 Linux 배포판도 이 설명서의 설치 대상에 포함하지 않습니다. Windows는 지원하지 않습니다.
 
-현재 앱은 **0.1.21 초기 버전**입니다. CachyOS를 쓰는 Ally에서 화면 실행은 확인했습니다. 새 Mac에 최신 버전을 설치한 뒤 두 기기 사이에서 새 알림·토큰·승인이 제대로 전달되는지는 아직 확인하지 못했습니다.
+현재 버전: **0.1.23**.
 
 ## 설치하기
 
@@ -32,14 +32,14 @@ Mac은 실제 작업을 하고, Ally는 리모컨 역할을 합니다. Codex를 
 - **두 기기:** [Tailscale](https://tailscale.com/download)을 설치하고 **같은 계정**으로 로그인합니다. 두 기기를 연결해 주는 프로그램입니다.
 - **Mac:** [Codex CLI](https://learn.chatgpt.com/docs/cli)를 설치하고 로그인해 둡니다. 터미널에서 쓰는 Codex가 필요합니다.
 - **두 기기:** Python 3.9 이상이 필요합니다. [확인·설치 방법](docs/INSTALL.md#준비물)을 참고하세요.
-- **두 기기:** 이 저장소 위쪽 **Code → Download ZIP**을 누르고 압축을 풉니다. Git이나 SSH 키는 필요하지 않습니다.
+- **두 기기:** 위의 **ZIP 다운로드**를 누르고 압축을 풉니다. Git이나 SSH 키는 필요하지 않습니다.
 
-### 1. Mac에 Agent 설치
+### 1. Mac에 통신 모듈 설치
 
 압축을 푼 폴더에서 아래 순서대로 진행하세요.
 
 1. **Setup OrangeDeck.command**를 두 번 누릅니다. 작업 폴더를 물으면 **Mac에서 Codex로 작업할 폴더**를 넣습니다. 기기 이름과 프로젝트 이름은 Enter로 기본값을 써도 됩니다.
-2. 설치가 끝나면 **Start OrangeDeck Agent.command**를 두 번 누릅니다. **열린 터미널은 켜 두세요.**
+2. 설치가 끝나면 **Start OrangeDeck Connector.command**를 두 번 누릅니다. **열린 터미널은 켜 두세요.**
 3. **Enable Codex Notifications.command**를 두 번 누릅니다. 그다음 평소 쓰는 Mac Codex에서 **`/hooks`**를 입력하고 OrangeDeck 연결을 확인한 뒤 신뢰합니다.
 
 필요한 도구를 설치할지 물으면 내용을 읽고 `y`를 입력하세요. 첫 설치는 몇 분 이상 걸릴 수 있습니다. Mac 개발 도구 설치 창이 뜨면 설치를 마친 뒤 Setup 파일을 다시 여세요. [파일이 안 열릴 때](docs/INSTALL.md#mac-설치-파일이-안-열릴-때).
@@ -128,7 +128,7 @@ Mac의 에디터는 Zed·VS Code·VSCodium 중 하나가 필요합니다. 설치
 
 ## 다시 켜기·끄기
 
-**Mac에서 Agent를 먼저 켜고, Ally에서 리모컨을 켭니다.** 끌 때는 Ally 앱 창을 닫고, Mac의 Agent 터미널에서 **Ctrl+C**를 누릅니다. 다시 켤 때마다 설치하거나 연결 파일을 옮길 필요는 없습니다.
+**Mac에서 통신 모듈을 먼저 켜고, Ally에서 리모컨을 켭니다.** 끌 때는 Ally 앱 창을 닫고, Mac의 통신 모듈 터미널에서 **Ctrl+C**를 누릅니다. 다시 켤 때마다 설치하거나 연결 파일을 옮길 필요는 없습니다.
 
 [실행 명령·버튼 조작](docs/QUICKSTART_KO.md) · [연결이 안 될 때](docs/INSTALL.md#연결이나-알림이-안-될-때) · [업데이트](docs/INSTALL.md#업데이트)
 

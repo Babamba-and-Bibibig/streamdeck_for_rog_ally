@@ -158,7 +158,7 @@ pub fn codex_thread_to_dto(thread: &domain::CodexThread) -> dto::CodexThreadDto 
             .map(|value| dto::ThreadObservationDto {
                 turn_id: value.turn_id.clone(),
                 latest_user_prompt: value.latest_user_prompt.clone(),
-                latest_agent_message: value.latest_agent_message.clone(),
+                latest_codex_reply: value.latest_codex_reply.clone(),
                 last_turn_status: codex_status_to_dto(value.last_turn_status),
                 model: value.model.clone(),
                 observed_at: value.observed_at,

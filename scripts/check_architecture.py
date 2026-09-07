@@ -10,7 +10,7 @@ LAYERS = {
     "orangedeck-protocol": ("crates/orangedeck-protocol", set()),
     "orangedeck-application": ("crates/orangedeck-application", {"orangedeck-domain", "orangedeck-protocol"}),
     "orangedeck-infra": ("crates/orangedeck-infra", {"orangedeck-domain", "orangedeck-protocol"}),
-    "orangedeck-agent": ("apps/orangedeck-agent", {"orangedeck-domain", "orangedeck-protocol", "orangedeck-application", "orangedeck-infra"}),
+    "orangedeck-connector": ("apps/orangedeck-connector", {"orangedeck-domain", "orangedeck-protocol", "orangedeck-application", "orangedeck-infra"}),
     "orangedeck-ui": ("apps/orangedeck-ui", {"orangedeck-domain", "orangedeck-protocol", "orangedeck-application", "orangedeck-infra"}),
 }
 DATA_LIBRARIES = {"chrono", "serde", "serde_json", "thiserror", "uuid"}

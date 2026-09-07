@@ -31,7 +31,7 @@ impl NetworkHandle {
         (Self { commands, events }, receiver)
     }
     pub fn start(
-        agent_url: String,
+        connector_url: String,
         token: AuthToken,
         expected_mode: &'static str,
         repaint: egui::Context,
@@ -47,7 +47,7 @@ impl NetworkHandle {
                     .build();
                 match runtime {
                     Ok(runtime) => runtime.block_on(connection_loop(
-                        agent_url,
+                        connector_url,
                         token,
                         expected_mode,
                         command_rx,
@@ -78,7 +78,7 @@ impl NetworkHandle {
 }
 
 async fn connection_loop(
-    agent_url: String,
+    connector_url: String,
     token: AuthToken,
     expected_mode: &'static str,
     mut commands: tokio_mpsc::UnboundedReceiver<ClientCommand>,
@@ -105,7 +105,7 @@ async fn connection_loop(
             return;
         }
         emit(&events, &repaint, NetworkEvent::Connecting);
-        match connect(&client, &agent_url, &token, expected_mode).await {
+        match connect(&client, &connector_url, &token, expected_mode).await {
             Ok((mut socket, latency_ms)) => {
                 if !reject_pending_commands(&mut commands, &events, &repaint) {
                     return;
@@ -121,24 +121,24 @@ async fn connection_loop(
                                     Err(error) => emit(
                                         &events,
                                         &repaint,
-                                        NetworkEvent::CommandCompleted(Err(format!("Invalid Agent event: {error}"))),
+                                        NetworkEvent::CommandCompleted(Err(format!("Invalid Connector event: {error}"))),
                                     ),
                                 }
                             }
                             Ok(Some(Ok(tokio_tungstenite::tungstenite::Message::Close(_)))) => {
-                                break "Agent event stream closed".to_owned();
+                                break "Connector event stream closed".to_owned();
                             }
                             Ok(Some(Err(error))) => {
-                                break format!("Agent event stream failed: {error}");
+                                break format!("Connector event stream failed: {error}");
                             }
-                            Ok(None) => break "Agent event stream ended".to_owned(),
-                            Err(_) => break "Agent heartbeat timed out".to_owned(),
+                            Ok(None) => break "Connector event stream ended".to_owned(),
+                            Err(_) => break "Connector heartbeat timed out".to_owned(),
                             Ok(Some(Ok(_))) => {}
                         },
                         command = commands.recv() => match command {
                             Some(command) => {
                                 let command_client = client.clone();
-                                let command_url = agent_url.clone();
+                                let command_url = connector_url.clone();
                                 let command_token = token.clone();
                                 let command_events = events.clone();
                                 let command_repaint = repaint.clone();
@@ -222,7 +222,7 @@ fn emit_command_rejected(events: &mpsc::Sender<NetworkEvent>, repaint: &egui::Co
         events,
         repaint,
         NetworkEvent::CommandCompleted(Err(
-            "Agent is disconnected; command was not sent".to_owned()
+            "Connector is disconnected; command was not sent".to_owned()
         )),
     );
 }
@@ -239,7 +239,7 @@ pub(crate) fn http_client() -> Result<reqwest::Client, reqwest::Error> {
 
 pub(crate) async fn connect(
     client: &reqwest::Client,
-    agent_url: &str,
+    connector_url: &str,
     token: &AuthToken,
     expected_mode: &str,
 ) -> Result<
@@ -253,36 +253,39 @@ pub(crate) async fn connect(
 > {
     let started = Instant::now();
     let health = client
-        .get(format!("{agent_url}/api/v1/health"))
+        .get(format!("{connector_url}/api/v1/health"))
         .timeout(Duration::from_secs(5))
         .bearer_auth(token.expose())
         .send()
         .await
-        .map_err(|error| format!("Agent health check failed: {error}"))?;
+        .map_err(|error| format!("Connector health check failed: {error}"))?;
     if health.status() == StatusCode::UNAUTHORIZED {
-        return Err("Agent rejected the pairing token".to_owned());
+        return Err("Connector rejected the pairing token".to_owned());
     }
     if !health.status().is_success() {
-        return Err(format!("Agent health check returned {}", health.status()));
+        return Err(format!(
+            "Connector health check returned {}",
+            health.status()
+        ));
     }
     let health = health
         .json::<HealthResponse>()
         .await
-        .map_err(|error| format!("Invalid Agent health response: {error}"))?;
+        .map_err(|error| format!("Invalid Connector health response: {error}"))?;
     if health.protocol_version != PROTOCOL_VERSION {
         return Err(format!(
-            "Protocol mismatch: UI {PROTOCOL_VERSION}, Agent {}",
+            "Protocol mismatch: UI {PROTOCOL_VERSION}, Connector {}",
             health.protocol_version
         ));
     }
-    validate_agent_mode(&health, expected_mode)?;
+    validate_connector_mode(&health, expected_mode)?;
     let elapsed = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
-    let websocket_url = if let Some(rest) = agent_url.strip_prefix("https://") {
+    let websocket_url = if let Some(rest) = connector_url.strip_prefix("https://") {
         format!("wss://{rest}/api/v1/events")
-    } else if let Some(rest) = agent_url.strip_prefix("http://") {
+    } else if let Some(rest) = connector_url.strip_prefix("http://") {
         format!("ws://{rest}/api/v1/events")
     } else {
-        return Err("Agent URL must start with http:// or https://".to_owned());
+        return Err("Connector URL must start with http:// or https://".to_owned());
     };
     let mut request = websocket_url
         .into_client_request()
@@ -295,18 +298,18 @@ pub(crate) async fn connect(
     );
     let (socket, _) = tokio::time::timeout(Duration::from_secs(5), connect_async(request))
         .await
-        .map_err(|_| "Agent event connection timed out".to_owned())?
-        .map_err(|error| format!("Agent event connection failed: {error}"))?;
+        .map_err(|_| "Connector event connection timed out".to_owned())?
+        .map_err(|error| format!("Connector event connection failed: {error}"))?;
     Ok((socket, elapsed))
 }
 
-fn validate_agent_mode(health: &HealthResponse, expected_mode: &str) -> Result<(), String> {
+fn validate_connector_mode(health: &HealthResponse, expected_mode: &str) -> Result<(), String> {
     if !health.ready {
-        return Err("Agent is not ready".to_owned());
+        return Err("Connector is not ready".to_owned());
     }
     if health.mode != expected_mode {
         return Err(format!(
-            "Agent mode mismatch: UI requires {expected_mode}, endpoint reports {}",
+            "Connector mode mismatch: UI requires {expected_mode}, endpoint reports {}",
             health.mode
         ));
     }
@@ -315,13 +318,13 @@ fn validate_agent_mode(health: &HealthResponse, expected_mode: &str) -> Result<(
 
 pub(crate) async fn execute(
     client: &reqwest::Client,
-    agent_url: &str,
+    connector_url: &str,
     token: &AuthToken,
     command: ClientCommand,
 ) -> Result<CommandResponse, String> {
     let request = ClientRequest::new(command);
     let response = client
-        .post(format!("{agent_url}/api/v1/command"))
+        .post(format!("{connector_url}/api/v1/command"))
         .bearer_auth(token.expose())
         .json(&request)
         .send()
@@ -337,7 +340,7 @@ pub(crate) async fn execute(
             || !response.accepted
         {
             return Err(
-                "Agent did not acknowledge this command with the expected protocol".to_owned(),
+                "Connector did not acknowledge this command with the expected protocol".to_owned(),
             );
         }
         Ok(response)
@@ -345,7 +348,7 @@ pub(crate) async fn execute(
         let status = response.status();
         let error = response.json::<ApiError>().await.ok();
         Err(error.map_or_else(
-            || format!("Agent rejected command with {status}"),
+            || format!("Connector rejected command with {status}"),
             |error| format!("{}: {}", error.code, error.message),
         ))
     }
@@ -362,7 +365,7 @@ mod tests {
 
     fn health(mode: &str) -> HealthResponse {
         HealthResponse {
-            name: "OrangeDeck Agent".to_owned(),
+            name: "OrangeDeck Connector".to_owned(),
             version: "0.1.0".to_owned(),
             protocol_version: PROTOCOL_VERSION,
             ready: true,
@@ -372,10 +375,10 @@ mod tests {
 
     #[test]
     fn real_and_mock_endpoints_cannot_be_confused() {
-        assert!(validate_agent_mode(&health("real"), "real").is_ok());
-        assert!(validate_agent_mode(&health("mock"), "mock").is_ok());
-        assert!(validate_agent_mode(&health("mock"), "real").is_err());
-        assert!(validate_agent_mode(&health("real"), "mock").is_err());
+        assert!(validate_connector_mode(&health("real"), "real").is_ok());
+        assert!(validate_connector_mode(&health("mock"), "mock").is_ok());
+        assert!(validate_connector_mode(&health("mock"), "real").is_err());
+        assert!(validate_connector_mode(&health("real"), "mock").is_err());
     }
 
     #[test]

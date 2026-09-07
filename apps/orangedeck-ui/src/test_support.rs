@@ -8,7 +8,7 @@ pub fn snapshot() -> SnapshotDto {
         "projects":[],"selected_project_id":null,"jobs":[],"git":[],"system":{},"activity":[],
         "codex":{"connection":{"state":"connected","version":null,"compatible":true,"message":null},
         "threads":[{"id":"a","cwd":"/Users/mac/project-a","title":"Current conversation","preview":"Old preview","status":"working","ownership":"external_read_only","updated_at":now.timestamp(),"active_turn_id":"new",
-            "observation":{"turn_id":"new","latest_user_prompt":"CURRENT QUESTION","latest_agent_message":"CURRENT ANSWER","last_turn_status":"working","observed_at":now},
+            "observation":{"turn_id":"new","latest_user_prompt":"CURRENT QUESTION","latest_codex_reply":"CURRENT ANSWER","last_turn_status":"working","observed_at":now},
             "live_usage":{"turn_id":"new","turn_tokens":{"input_tokens":180_000,"output_tokens":12_360,"total_tokens":192_360,"cached_input_tokens":0,"reasoning_output_tokens":0},"last_request":{"input_tokens":180_000,"output_tokens":12_360,"total_tokens":192_360,"cached_input_tokens":0,"reasoning_output_tokens":0},"recent_requests":[1234,192_360],"status":"working","observed_at":now,"updated_at":now}},
             {"id":"b","cwd":"/Users/mac/project-b","title":"Other conversation","preview":"OTHER PROJECT QUESTION","status":"not_loaded","ownership":"external_read_only","updated_at":now.timestamp()-10}],
         "pending_approvals":[],"limits":{"primary":{"used_percent":31,"remaining_percent":69,"window_duration_minutes":300,"resets_at":now.timestamp()+3600},"secondary":{"used_percent":42,"remaining_percent":58,"window_duration_minutes":10_080,"resets_at":now.timestamp()+86_400},"updated_at":now},

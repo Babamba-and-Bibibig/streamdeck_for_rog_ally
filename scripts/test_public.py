@@ -16,10 +16,10 @@ class PublicSourceTests(unittest.TestCase):
             root = Path(tmp)
             subprocess.run(["git", "init", "-q", tmp], check=True)
             shutil.copy(workspace / ".gitignore", root / ".gitignore")
-            public = ["README.md", "Cargo.lock", "apps/orangedeck-agent/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
-                      "config/agent.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
+            public = ["README.md", "Cargo.lock", "apps/orangedeck-connector/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
+                      "config/connector.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
                       "docs/SCREENSHOTS.md", "docs/INSTALL.en.md", *REVIEWED_SCREENSHOTS, *REVIEWED_DIAGRAMS]
-            private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "agent.toml", "ui-preferences.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
+            private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "connector.toml", "ui-preferences.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
                        "config/local/github-ssh/id_ed25519", "download-page/config.local.toml", "scripts/start-ui.sh",
                        "apps/example/local/private.rs", "crates/example/.codex/private.rs", "scripts/credentials.json",
                        "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt",
@@ -36,11 +36,11 @@ class PublicSourceTests(unittest.TestCase):
                 self.assertFalse(public_path(relative), relative)
 
     def test_private_paths_are_never_public_even_under_a_source_directory(self):
-        for path in ["starter.md", "config/local/agent.toml", "download-page/config.local.toml",
+        for path in ["starter.md", "config/local/connector.toml", "download-page/config.local.toml",
                      "crates/x/.env", "scripts/credentials.json", "docs/HANDOFF_015.md",
                      "docs/PROGRESS.md", "notes.txt", "dist/old.zip", "apps/x/pairing.toml"]:
             self.assertFalse(public_path(path), path)
-        for path in ["README.ko.md", "apps/x/src/main.rs", "config/agent.example.toml"]:
+        for path in ["README.ko.md", "apps/x/src/main.rs", "config/connector.example.toml"]:
             self.assertTrue(public_path(path), path)
 
     def test_patterns_report_type_and_line_without_disclosing_the_secret(self):

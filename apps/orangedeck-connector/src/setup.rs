@@ -4,8 +4,8 @@ use std::{
 };
 
 use orangedeck_infra::{
-    AgentConfig, AuthToken, BindMode, PairingBundle, ProjectConfig, check_setup_destinations,
-    default_agent_config_path, is_tailscale_ip, tailscale_ip, write_secure, write_toml_secure,
+    AuthToken, BindMode, ConnectorConfig, PairingBundle, ProjectConfig, check_setup_destinations,
+    default_connector_config_path, is_tailscale_ip, tailscale_ip, write_secure, write_toml_secure,
 };
 use orangedeck_protocol::PROTOCOL_VERSION;
 use thiserror::Error;
@@ -45,8 +45,18 @@ pub async fn initialize(options: InitOptions) -> Result<InitResult, SetupError> 
         .config_path
         .parent()
         .ok_or_else(|| SetupError::NoParent(options.config_path.clone()))?;
-    let token_path = config_dir.join("agent.token");
+    let token_path = config_dir.join("connector.token");
     let pairing_path = config_dir.join("orangedeck-pairing.toml");
+    if !options.force
+        && ["agent.toml", "agent.token"]
+            .iter()
+            .any(|name| std::fs::symlink_metadata(config_dir.join(name)).is_ok())
+    {
+        return Err(orangedeck_infra::ConfigError::Invalid(
+            "an older setup exists; run Setup to import it without changing credentials".to_owned(),
+        )
+        .into());
+    }
     check_setup_destinations(
         &[&options.config_path, &token_path, &pairing_path],
         options.force,
@@ -57,7 +67,7 @@ pub async fn initialize(options: InitOptions) -> Result<InitResult, SetupError> 
     }
 
     let token = AuthToken::generate();
-    let config = AgentConfig {
+    let config = ConnectorConfig {
         host_name: options.host_name.clone(),
         bind_mode: BindMode::Tailscale,
         bind_address: None,
@@ -79,7 +89,7 @@ pub async fn initialize(options: InitOptions) -> Result<InitResult, SetupError> 
     write_toml_secure(&options.config_path, &config)?;
     let bundle = PairingBundle {
         protocol_version: PROTOCOL_VERSION,
-        agent_url: format!("http://{bind_ip}:{}", options.port),
+        connector_url: format!("http://{bind_ip}:{}", options.port),
         host_label: options.host_name,
         token: token.expose().to_owned(),
     };
@@ -92,7 +102,7 @@ pub async fn initialize(options: InitOptions) -> Result<InitResult, SetupError> 
 }
 
 pub async fn write_pairing(config_path: &Path, output: &Path) -> Result<IpAddr, SetupError> {
-    let config = AgentConfig::load(config_path)?;
+    let config = ConnectorConfig::load(config_path)?;
     if config.bind_mode != BindMode::Tailscale {
         return Err(SetupError::NotTailscaleMode);
     }
@@ -103,7 +113,7 @@ pub async fn write_pairing(config_path: &Path, output: &Path) -> Result<IpAddr, 
     }
     let bundle = PairingBundle {
         protocol_version: PROTOCOL_VERSION,
-        agent_url: format!("http://{bind_ip}:{}", config.port),
+        connector_url: format!("http://{bind_ip}:{}", config.port),
         host_label: config.host_name,
         token: token.expose().to_owned(),
     };
@@ -112,7 +122,7 @@ pub async fn write_pairing(config_path: &Path, output: &Path) -> Result<IpAddr, 
 }
 
 pub fn default_init_config_path() -> PathBuf {
-    default_agent_config_path()
+    default_connector_config_path()
 }
 
 #[derive(Debug, Error)]

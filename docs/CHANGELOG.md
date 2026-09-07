@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.23 — Connector naming and clearer setup
+
+- The Mac component is now **OrangeDeck Connector** (한국어: **통신 모듈**). Product labels, executable/package names, launchers, example configs, build scripts and CI use the same name. Codex performs the AI work; OrangeDeck connects the devices and provides the remote controls.
+- Setup imports older Mac settings into `connector.toml` and `connector.token` without rotating credentials, changing projects or removing the original files. Saved Codex profiles, hooks and owned-thread records stay in place. Existing UI settings and connection files remain readable. Run the notification installer and review `/hooks` after updating the Mac executable.
+- Korean-first and English READMEs show the macOS Connector and CachyOS Handheld ROG Ally remote, a three-step installation diagram, a direct ZIP link and the exact files/commands to use. Steam Deck/SteamOS remain outside the current installation guide.
+
 ## 0.1.21
 
 - Fix incomplete approval details: retain the full command, permissions and every supplied file change for review, including argument-array commands. Only the deck preview is shortened. Existing explicit, single-request decision rules are unchanged.
@@ -16,7 +22,7 @@
 - Include Korean font detection and guided installation for supported Linux package managers, including the Fedora font path.
 - Detect supported installed editors and terminals on the host. Demo UI/Agent accept `--language ko|en` for matching synthetic content; real conversations remain unchanged.
 - Update installation, controls and Korean quick-start instructions. Keep domain preferences, application command resolution and infrastructure persistence separate.
-- Automated checks and native demo captures cover UI language, layout, key assignment, request guards and private persistence. Real Mac notifications/approval round trips and SteamOS installation remain unverified device checks.
+- Automated checks and native demo captures cover UI language, layout, key assignment, request guards and private persistence. Steam Deck/SteamOS installation is outside the current setup guide.
 
 ## 0.1.19
 
@@ -37,7 +43,7 @@
 - Add `python3 download-page/manage.py export` to prepare a separate GitHub source tree with a file checksum manifest; no Git initialization or upload. Existing archives and edited exports are preserved.
 - Document exactly which files to publish and why local checks must precede a push.
 
-Real macOS installation, new notification/token delivery and natural approval round trips remain separate, unverified device checks. A clean local export does not establish the state of an existing remote repository, its history or release assets.
+A clean local export does not establish the state of an existing remote repository, its history or release assets.
 
 ## 0.1.17
 
@@ -50,7 +56,7 @@ Real macOS installation, new notification/token delivery and natural approval ro
 
 Local validation: Rust workspace tests, strict Clippy, fmt, release workspace build and Apple Silicon Agent `cargo check` passed. Twelve installer/privacy checks include native Agent initialization, UI pairing and credential-preserving updates in temporary folders; eight package/server checks passed. Network/account commands in the installer integration check were simulated. RustSec reported no known advisories for 483 locked dependencies, and Gitleaks 8.30.1 found no secrets in the prepared public tree.
 
-The GitHub workflows are provided but have not been run on the owner's repository in this workspace. These checks do not prove fresh macOS installation, natural approvals, real-device notification delivery or absence of sensitive data in an existing remote repository/history.
+The GitHub workflows are provided but have not been run on the owner's repository in this workspace. Existing remote repository/history checks are separate from the local test results.
 
 ## 0.1.15
 

@@ -115,7 +115,7 @@ pub fn is_current(alert: &Alert, thread: &CodexThreadDto) -> bool {
         crate::selection::turn_id(thread),
     ) {
         (Some(a), Some(b)) => a == b,
-        // Older Agents do not provide turn IDs. Only include notices after a known turn start.
+        // Older Connectors do not provide turn IDs. Only include notices after a known turn start.
         (None, _) => thread
             .activity
             .as_ref()

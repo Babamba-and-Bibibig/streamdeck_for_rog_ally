@@ -6,7 +6,7 @@ Most users should download source from GitHub and run `sh install.sh`. This Pyth
 
 Copy `config.toml` to **`config.local.toml`**, enter the serving device's Tailscale IPv4 as `bind`, choose the port, and list only your allowed client device addresses in `allow` (including the serving device). The local file is excluded from Git and public source packages. The checked-in template deliberately has no device address and cannot start a server until configured.
 
-On your Mac, use **Safari → the address printed by `status` → Mac 업데이트 다운로드**. Then start the Agent, run `Enable Codex Notifications.command`, and review/trust OrangeDeck in Codex `/hooks`.
+On your Mac, use **Safari → the address printed by `status` → Mac 업데이트 다운로드**. Then start the Connector, run `Enable Codex Notifications.command`, and review/trust OrangeDeck in Codex `/hooks`.
 
 ## Commands
 

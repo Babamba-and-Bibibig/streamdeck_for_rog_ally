@@ -28,7 +28,7 @@ pub enum BindMode {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
-pub struct AgentConfig {
+pub struct ConnectorConfig {
     pub host_name: String,
     pub bind_mode: BindMode,
     pub bind_address: Option<IpAddr>,
@@ -40,14 +40,14 @@ pub struct AgentConfig {
     pub projects: Vec<ProjectConfig>,
 }
 
-impl Default for AgentConfig {
+impl Default for ConnectorConfig {
     fn default() -> Self {
         Self {
             host_name: "MACBOOK".to_owned(),
             bind_mode: BindMode::Tailscale,
             bind_address: None,
             port: DEFAULT_PORT,
-            token_file: default_config_dir().join("agent.token"),
+            token_file: default_config_dir().join("connector.token"),
             cargo_binary: PathBuf::from("cargo"),
             codex_binary: PathBuf::from("codex"),
             log_level: "info".to_owned(),
@@ -56,12 +56,26 @@ impl Default for AgentConfig {
     }
 }
 
-impl AgentConfig {
+impl ConnectorConfig {
     pub fn load(path: &Path) -> Result<Self, ConfigError> {
         let text = fs::read_to_string(path).map_err(|source| ConfigError::Read {
             path: path.to_path_buf(),
             source,
         })?;
+        // A pre-0.1.23 file without an explicit token path still uses its old token.
+        let text = if path.file_name().is_some_and(|name| name == "agent.toml") {
+            let mut document: toml::Value = toml::from_str(&text)?;
+            if document.get("token_file").is_none() {
+                document["token_file"] = toml::Value::String(
+                    path.with_file_name("agent.token")
+                        .to_string_lossy()
+                        .into_owned(),
+                );
+            }
+            toml::to_string(&document)?
+        } else {
+            text
+        };
         let mut config: Self = toml::from_str(&text)?;
         config.token_file = expand_home(&config.token_file)?;
         config.cargo_binary = expand_home(&config.cargo_binary)?;
@@ -84,7 +98,7 @@ impl AgentConfig {
         }
         if self.projects.is_empty() {
             return Err(ConfigError::Invalid(
-                "register at least one project in agent.toml".to_owned(),
+                "register at least one project in connector.toml".to_owned(),
             ));
         }
         Ok(())
@@ -156,7 +170,8 @@ impl ProjectConfig {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UiConfig {
-    pub agent_url: String,
+    #[serde(alias = "agent_url")]
+    pub connector_url: String,
     pub token_file: PathBuf,
     pub host_label: String,
     pub log_level: String,
@@ -166,7 +181,8 @@ pub struct UiConfig {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PairingBundle {
     pub protocol_version: u16,
-    pub agent_url: String,
+    #[serde(alias = "agent_url")]
+    pub connector_url: String,
     pub host_label: String,
     pub token: String,
 }
@@ -176,7 +192,7 @@ impl fmt::Debug for PairingBundle {
         formatter
             .debug_struct("PairingBundle")
             .field("protocol_version", &self.protocol_version)
-            .field("agent_url", &self.agent_url)
+            .field("connector_url", &self.connector_url)
             .field("host_label", &self.host_label)
             .field("token", &"[REDACTED]")
             .finish()
@@ -192,11 +208,11 @@ impl PairingBundle {
                 orangedeck_protocol::PROTOCOL_VERSION
             )));
         }
-        validate_tailscale_agent_url(&self.agent_url)?;
+        validate_tailscale_connector_url(&self.connector_url)?;
         AuthToken::parse(self.token.clone())?;
         if self.token == DEMO_TOKEN {
             return Err(ConfigError::Invalid(
-                "the public demo token cannot pair a real Agent".to_owned(),
+                "the public demo token cannot pair a real Connector".to_owned(),
             ));
         }
         Ok(())
@@ -217,7 +233,7 @@ impl PairingBundle {
 impl Default for UiConfig {
     fn default() -> Self {
         Self {
-            agent_url: format!("http://127.0.0.1:{DEFAULT_PORT}"),
+            connector_url: format!("http://127.0.0.1:{DEFAULT_PORT}"),
             token_file: default_config_dir().join("ui.token"),
             host_label: "MACBOOK".to_owned(),
             log_level: "info".to_owned(),
@@ -243,7 +259,7 @@ impl UiConfig {
         })?;
         let mut config: Self = toml::from_str(&text)?;
         config.token_file = expand_home(&config.token_file)?;
-        validate_tailscale_agent_url(&config.agent_url)?;
+        validate_tailscale_connector_url(&config.connector_url)?;
         Ok(config)
     }
 }
@@ -255,40 +271,40 @@ pub fn is_tailscale_ip(address: IpAddr) -> bool {
     })
 }
 
-pub fn validate_tailscale_agent_url(value: &str) -> Result<(), ConfigError> {
+pub fn validate_tailscale_connector_url(value: &str) -> Result<(), ConfigError> {
     let url = Url::parse(value)
-        .map_err(|error| ConfigError::Invalid(format!("invalid Agent URL: {error}")))?;
+        .map_err(|error| ConfigError::Invalid(format!("invalid Connector URL: {error}")))?;
     if !matches!(url.scheme(), "http" | "https") {
         return Err(ConfigError::Invalid(
-            "Agent URL scheme must be http or https".to_owned(),
+            "Connector URL scheme must be http or https".to_owned(),
         ));
     }
     if !url.username().is_empty() || url.password().is_some() {
         return Err(ConfigError::Invalid(
-            "Agent URL must not contain credentials".to_owned(),
+            "Connector URL must not contain credentials".to_owned(),
         ));
     }
     let address = match url.host() {
         Some(Host::Ipv4(address)) => IpAddr::V4(address),
         _ => {
             return Err(ConfigError::Invalid(
-                "Agent URL must use a direct Tailscale IPv4 address".to_owned(),
+                "Connector URL must use a direct Tailscale IPv4 address".to_owned(),
             ));
         }
     };
     if !is_tailscale_ip(address) {
         return Err(ConfigError::Invalid(format!(
-            "Agent URL address {address} is outside Tailscale's 100.64.0.0/10 range"
+            "Connector URL address {address} is outside Tailscale's 100.64.0.0/10 range"
         )));
     }
     if url.port().is_none() {
         return Err(ConfigError::Invalid(
-            "Agent URL must include an explicit port".to_owned(),
+            "Connector URL must include an explicit port".to_owned(),
         ));
     }
     if url.path() != "/" || url.query().is_some() || url.fragment().is_some() {
         return Err(ConfigError::Invalid(
-            "Agent URL must not include a path, query, or fragment".to_owned(),
+            "Connector URL must not include a path, query, or fragment".to_owned(),
         ));
     }
     Ok(())
@@ -326,7 +342,7 @@ impl AuthToken {
         let token = Self::parse(value.trim())?;
         if token.expose() == DEMO_TOKEN {
             return Err(ConfigError::Invalid(
-                "the public demo token cannot authenticate a real Agent".to_owned(),
+                "the public demo token cannot authenticate a real Connector".to_owned(),
             ));
         }
         Ok(token)
@@ -356,8 +372,8 @@ pub fn default_config_dir() -> PathBuf {
     )
 }
 
-pub fn default_agent_config_path() -> PathBuf {
-    default_config_dir().join("agent.toml")
+pub fn default_connector_config_path() -> PathBuf {
+    default_config_dir().join("connector.toml")
 }
 
 pub fn default_ui_config_path() -> PathBuf {
@@ -534,6 +550,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn previous_pairing_and_ui_url_names_load_without_changing_the_endpoint() {
+        let endpoint = "http://100.64.0.1:45831";
+        let old = format!("agent_url = '{endpoint}'\n");
+        let ui: UiConfig = toml::from_str(&old).unwrap();
+        assert_eq!(ui.connector_url, endpoint);
+        let bundle: PairingBundle = toml::from_str(&format!(
+            "{old}protocol_version = 1\nhost_label = 'TEST'\ntoken = '{}'\n",
+            "compatibility-test-only-".repeat(3)
+        ))
+        .unwrap();
+        bundle.validate().unwrap();
+        assert_eq!(bundle.connector_url, endpoint);
+        assert!(toml::to_string(&bundle).unwrap().contains("connector_url"));
+        assert!(!toml::to_string(&bundle).unwrap().contains("agent_url"));
+        assert!(
+            toml::from_str::<UiConfig>(&format!("{old}connector_url = '{endpoint}'\n")).is_err()
+        );
+    }
+
+    #[test]
     fn token_debug_is_redacted_and_matching_is_exact() {
         let token = AuthToken::parse("x".repeat(32)).unwrap();
         assert_eq!(format!("{token:?}"), "AuthToken([REDACTED])");
@@ -545,7 +581,7 @@ mod tests {
     fn pairing_bundle_debug_never_exposes_token() {
         let bundle = PairingBundle {
             protocol_version: orangedeck_protocol::PROTOCOL_VERSION,
-            agent_url: "http://100.64.0.1:45831".to_owned(),
+            connector_url: "http://100.64.0.1:45831".to_owned(),
             host_label: "MACBOOK".to_owned(),
             token: "test-only-".repeat(8),
         };
@@ -569,12 +605,12 @@ mod tests {
     #[test]
     fn public_demo_token_is_rejected_by_real_pairing_and_token_files() {
         let directory = tempdir().unwrap();
-        let path = directory.path().join("agent.token");
+        let path = directory.path().join("connector.token");
         write_secure(&path, DEMO_TOKEN).unwrap();
         assert!(AuthToken::load(&path).is_err());
         let bundle = PairingBundle {
             protocol_version: orangedeck_protocol::PROTOCOL_VERSION,
-            agent_url: "http://100.64.0.1:45831".to_owned(),
+            connector_url: "http://100.64.0.1:45831".to_owned(),
             host_label: "DEMO".to_owned(),
             token: DEMO_TOKEN.to_owned(),
         };
@@ -600,8 +636,8 @@ mod tests {
     #[test]
     fn setup_preserves_orphaned_credentials_and_rejects_colliding_paths() {
         let directory = tempdir().unwrap();
-        let config = directory.path().join("agent.toml");
-        let token = directory.path().join("agent.token");
+        let config = directory.path().join("connector.toml");
+        let token = directory.path().join("connector.token");
         write_secure(&token, "existing credential").unwrap();
         assert!(check_setup_destinations(&[&config, &token], false).is_err());
         assert!(check_setup_destinations(&[&config, &token], true).is_ok());
@@ -613,23 +649,23 @@ mod tests {
     #[cfg(unix)]
     fn force_setup_still_refuses_symlinks_and_directories() {
         let directory = tempdir().unwrap();
-        let path = directory.path().join("agent.toml");
+        let path = directory.path().join("connector.toml");
         std::os::unix::fs::symlink(directory.path().join("missing"), &path).unwrap();
         assert!(check_setup_destinations(&[&path], true).is_err());
         assert!(check_setup_destinations(&[directory.path()], true).is_err());
     }
 
     #[test]
-    fn agent_urls_accept_only_exact_tailscale_cgnat_endpoints() {
-        assert!(validate_tailscale_agent_url("http://100.64.0.1:45831").is_ok());
-        assert!(validate_tailscale_agent_url("https://100.127.255.254:45831").is_ok());
-        assert!(validate_tailscale_agent_url("http://100.63.255.255:45831").is_err());
-        assert!(validate_tailscale_agent_url("http://100.128.0.1:45831").is_err());
-        assert!(validate_tailscale_agent_url("http://100.1.2.3:45831").is_err());
-        assert!(validate_tailscale_agent_url("http://192.168.0.20:45831").is_err());
-        assert!(validate_tailscale_agent_url("http://100.64.0.1:45831/api").is_err());
-        assert!(validate_tailscale_agent_url("http://user@100.64.0.1:45831").is_err());
-        assert!(validate_tailscale_agent_url("http://100.64.0.1").is_err());
+    fn connector_urls_accept_only_exact_tailscale_cgnat_endpoints() {
+        assert!(validate_tailscale_connector_url("http://100.64.0.1:45831").is_ok());
+        assert!(validate_tailscale_connector_url("https://100.127.255.254:45831").is_ok());
+        assert!(validate_tailscale_connector_url("http://100.63.255.255:45831").is_err());
+        assert!(validate_tailscale_connector_url("http://100.128.0.1:45831").is_err());
+        assert!(validate_tailscale_connector_url("http://100.1.2.3:45831").is_err());
+        assert!(validate_tailscale_connector_url("http://192.168.0.20:45831").is_err());
+        assert!(validate_tailscale_connector_url("http://100.64.0.1:45831/api").is_err());
+        assert!(validate_tailscale_connector_url("http://user@100.64.0.1:45831").is_err());
+        assert!(validate_tailscale_connector_url("http://100.64.0.1").is_err());
     }
 
     #[test]
@@ -649,12 +685,12 @@ mod tests {
 
     #[test]
     fn checked_in_example_configs_remain_valid_toml() {
-        let agent: AgentConfig =
-            toml::from_str(include_str!("../../../config/agent.example.toml")).unwrap();
+        let connector: ConnectorConfig =
+            toml::from_str(include_str!("../../../config/connector.example.toml")).unwrap();
         let ui: UiConfig = toml::from_str(include_str!("../../../config/ui.example.toml")).unwrap();
 
-        assert_eq!(agent.bind_mode, BindMode::Tailscale);
-        assert_eq!(agent.projects.len(), 1);
-        assert!(validate_tailscale_agent_url(&ui.agent_url).is_ok());
+        assert_eq!(connector.bind_mode, BindMode::Tailscale);
+        assert_eq!(connector.projects.len(), 1);
+        assert!(validate_tailscale_connector_url(&ui.connector_url).is_ok());
     }
 }

@@ -1,5 +1,5 @@
 //! Codex's opt-in, human-operated PermissionRequest/Stop hooks.
-//! A private local socket belongs to the existing Agent; no remote shell or new daemon.
+//! A private local socket belongs to the existing Connector; no remote shell or new daemon.
 use std::{
     collections::HashMap,
     io,
@@ -276,7 +276,7 @@ fn approval(input: &HookPayload) -> io::Result<ApprovalRequest> {
     })
 }
 
-/// Returns no decision on absent Agent, timeout, malformed input, or a closed socket.
+/// Returns no decision on absent Connector, timeout, malformed input, or a closed socket.
 /// The normal Codex approval prompt remains the fallback in all those cases.
 pub fn run_hook(socket: &Path) {
     use std::io::{BufRead, Read, Write};

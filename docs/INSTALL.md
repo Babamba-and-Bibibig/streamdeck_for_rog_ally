@@ -4,7 +4,7 @@
 
 처음 설치한다면 [README의 세 단계](../README.md#설치하기)를 따라 하세요. 이 문서는 설치가 막히거나 설정을 바꾸고 싶을 때 보시면 됩니다.
 
-설치 대상은 **macOS를 쓰는 Mac(작업용 Agent) + ROG Ally의 CachyOS Handheld(리모컨)**입니다. Mac 쪽은 Mac Studio를 기준으로 개발했습니다. Steam Deck·SteamOS와 다른 Linux 배포판의 설치는 확인하지 않았습니다. Windows는 지원하지 않습니다.
+설치 대상은 **macOS를 쓰는 Mac(작업용 통신 모듈) + ROG Ally의 CachyOS Handheld(리모컨)**입니다. Mac 쪽은 Mac Studio를 기준으로 개발했습니다. Steam Deck·SteamOS와 다른 Linux 배포판의 설치는 확인하지 않았습니다. Windows는 지원하지 않습니다.
 
 ## 준비물
 
@@ -44,10 +44,10 @@ Rust와 나머지 개발 도구는 OrangeDeck 설치기가 설치 여부를 묻�
 4. 아래 명령을 실행합니다.
 
 ```sh
-sh install.sh --role agent
+sh install.sh --role connector
 ```
 
-설치가 끝나면 [README의 Mac 설치 2번](../README.md#1-mac에-agent-설치)부터 이어가세요. macOS의 보안 기능을 통째로 끌 필요는 없습니다.
+설치가 끝나면 [README의 Mac 설치 2번](../README.md#1-mac에-통신-모듈-설치)부터 이어가세요. macOS의 보안 기능을 통째로 끌 필요는 없습니다.
 
 ## 설치 중 무엇을 입력하나요?
 
@@ -66,7 +66,7 @@ IP 주소나 인증값을 직접 만들 필요는 없습니다. Mac 설치기가
 Mac에서 먼저 실행하고 이 터미널을 켜 두세요.
 
 ```sh
-sh "$HOME/.config/orangedeck/start-agent.command"
+sh "$HOME/.config/orangedeck/start-connector.command"
 ```
 
 Ally에서는 아래 명령을 실행합니다.
@@ -75,28 +75,28 @@ Ally에서는 아래 명령을 실행합니다.
 sh "$HOME/.config/orangedeck/start-ui.sh"
 ```
 
-끄려면 Ally 앱 창을 닫고 Mac의 Agent 터미널에서 **Ctrl+C**를 누릅니다. 설치 폴더를 직접 바꿨다면 설치가 끝날 때 나온 경로를 사용하세요. [자세한 사용법](QUICKSTART_KO.md).
+끄려면 Ally 앱 창을 닫고 Mac의 통신 모듈 터미널에서 **Ctrl+C**를 누릅니다. 설치 폴더를 직접 바꿨다면 설치가 끝날 때 나온 경로를 사용하세요. [자세한 사용법](QUICKSTART_KO.md).
 
 ## 연결이나 알림이 안 될 때
 
 1. 두 기기에서 **Tailscale이 켜져 있는지**, 같은 계정인지 확인하세요.
-2. Mac에서 **Agent 터미널이 켜져 있는지** 확인하세요.
-3. 알림이 없다면 **Enable Codex Notifications.command → 평소 Mac Codex의 `/hooks` → OrangeDeck 확인·신뢰** 순서로 확인하세요. Agent를 먼저 켜야 합니다. 알림 연결도 평소 Codex와 같은 사용자 계정에서 설정하세요.
+2. Mac에서 **통신 모듈 터미널이 켜져 있는지** 확인하세요.
+3. 알림이 없다면 **Enable Codex Notifications.command → 평소 Mac Codex의 `/hooks` → OrangeDeck 확인·신뢰** 순서로 확인하세요. 통신 모듈을 먼저 켜야 합니다. 알림 연결도 평소 Codex와 같은 사용자 계정에서 설정하세요.
 4. Ally에서 아래 연결 검사를 실행하세요.
 
 ```sh
 sh "$HOME/.config/orangedeck/check-ui.sh"
 ```
 
-Mac의 Agent가 안 켜지면 아래 명령으로 확인합니다.
+Mac의 통신 모듈이 안 켜지면 아래 명령으로 확인합니다.
 
 ```sh
-sh "$HOME/.config/orangedeck/check-agent.command"
+sh "$HOME/.config/orangedeck/check-connector.command"
 ```
 
-‘주소 사용 중’ 오류는 이미 켜진 Agent가 있을 때 나옵니다. **그 Agent의 터미널에서 Ctrl+C**를 누르고 다시 켜세요. 회사나 직접 관리하는 Tailscale에서 연결을 막았다면 두 기기 사이의 TCP 45831 허용 여부를 확인해야 합니다.
+‘주소 사용 중’ 오류는 이미 켜진 통신 모듈이 있을 때 나옵니다. **그 통신 모듈의 터미널에서 Ctrl+C**를 누르고 다시 켜세요. 회사나 직접 관리하는 Tailscale에서 연결을 막았다면 두 기기 사이의 TCP 45831 허용 여부를 확인해야 합니다.
 
-승인 버튼은 Codex가 실제 승인을 요청할 때만 켜집니다. 일반 질문에는 Mac에서 답하세요. 연결 표시가 떠도 알림 설치까지 끝났다는 뜻은 아닙니다. Mac에서 새 작업을 해 보고, Ally의 새 토큰·완료 알림과 실제 승인 처리를 확인하세요. 새 Mac에서 최신 버전으로 이 과정을 마치는 검사는 아직 완료하지 못했습니다.
+승인 버튼은 Codex가 실제 승인을 요청할 때만 켜집니다. 일반 질문에는 Mac에서 답하세요. 연결 표시가 떠도 알림 설치까지 끝났다는 뜻은 아닙니다. Mac에서 새 작업을 해 보고, Ally의 새 토큰·완료 알림과 실제 승인 처리를 확인하세요.
 
 ## 업데이트
 
@@ -104,9 +104,9 @@ sh "$HOME/.config/orangedeck/check-agent.command"
 2. **Mac:** 새 폴더의 **Setup OrangeDeck.command**를 실행합니다. **Ally:** 새 폴더에서 `sh install.sh --role ui`를 실행합니다.
 3. 켜져 있던 OrangeDeck을 닫고 다시 켭니다. 개인 설정·연결·언어·버튼 배치는 유지됩니다.
 
-**Mac Agent가 0.1.18 이하라면:** 업데이트한 Agent 실행 → **Enable Codex Notifications.command** 실행 → Codex **`/hooks`**에서 다시 확인·신뢰가 필요합니다. 0.1.19부터 알림 연결 파일의 위치가 바뀌었습니다.
+**0.1.21 이하에서 업데이트한다면:** Mac의 프로그램·설정 파일 이름이 Connector로 바뀝니다. Setup이 기존 프로젝트와 인증값을 새 파일에 이어받고 이전 파일은 보관합니다. 연결 파일을 다시 옮길 필요는 없습니다. 업데이트한 통신 모듈 실행 → **Enable Codex Notifications.command** 실행 → Codex **`/hooks`**에서 다시 확인·신뢰하세요.
 
-처음에 예전 소스 폴더 방식으로 설치했다면 Mac의 `Start OrangeDeck Agent.command`와 Ally의 `./scripts/run-ally.zsh`를 계속 쓸 수 있습니다. Ally 명령은 기존 프로젝트 폴더에서 실행하세요. 실행 파일의 경로가 바뀌면 `/hooks`도 다시 확인하세요.
+예전 소스 폴더 방식으로 설치했다면 이번 업데이트에서 Mac의 Setup도 한 번 실행하세요. 이후 새 폴더의 `Start OrangeDeck Connector.command`로 켭니다. Ally의 기존 실행 방법은 프로젝트 폴더에서 `./scripts/run-ally.zsh`입니다.
 
 <a id="host-shortcuts"></a>
 
@@ -114,7 +114,7 @@ sh "$HOME/.config/orangedeck/check-agent.command"
 
 Ally의 **에디터·터미널·폴더·웹페이지 열기 버튼은 Mac에서 실행됩니다.** 설치 때 선택한 폴더는 이미 등록되어 있습니다. 대화 목록에 보인다는 이유만으로 다른 폴더를 열 수 있는 것은 아닙니다.
 
-다른 폴더도 쓰려면 **Mac의 개인 설정 파일** `~/.config/orangedeck/agent.toml`에 아래 내용을 추가하세요. `id`는 다른 항목과 겹치지 않게, `path`는 실제 작업 폴더로 바꿉니다. 웹페이지가 필요 없으면 `browser_url` 줄을 빼세요.
+다른 폴더도 쓰려면 **Mac의 개인 설정 파일** `~/.config/orangedeck/connector.toml`에 아래 내용을 추가하세요. `id`는 다른 항목과 겹치지 않게, `path`는 실제 작업 폴더로 바꿉니다. 웹페이지가 필요 없으면 `browser_url` 줄을 빼세요.
 
 ```toml
 [[projects]]
@@ -124,7 +124,7 @@ path = "/Users/YOU/Code/my-website"
 browser_url = "http://127.0.0.1:3000"
 ```
 
-웹 주소는 HTTP/HTTPS만 됩니다. 위 주소는 Mac에서 이미 켜 둔 개발용 웹 서버의 예시입니다. 저장 후 Mac의 Agent를 껐다 켜고 Ally에서 그 폴더를 고르세요. 연결 파일을 다시 옮길 필요는 없습니다.
+웹 주소는 HTTP/HTTPS만 됩니다. 위 주소는 Mac에서 이미 켜 둔 개발용 웹 서버의 예시입니다. 저장 후 Mac의 통신 모듈을 껐다 켜고 Ally에서 그 폴더를 고르세요. 연결 파일을 다시 옮길 필요는 없습니다.
 
 에디터는 Mac의 `/Applications` 또는 `~/Applications`에 있는 **Zed → VS Code → VSCodium** 순서로 찾습니다. 터미널은 Mac의 **Terminal**을 엽니다. 해당 앱이 없으면 설치해야 합니다.
 
@@ -134,20 +134,20 @@ browser_url = "http://127.0.0.1:3000"
 
 | 파일 | 용도 |
 | --- | --- |
-| Mac의 `agent.toml` | 작업 폴더·Codex 실행 파일 설정 |
+| Mac의 `connector.toml` | 작업 폴더·Codex 실행 파일 설정 |
 | Ally의 `config.toml` | 연결할 Mac 설정 |
 | `orangedeck-pairing.toml` | Mac에서 Ally로 옮기는 비밀 연결 파일 |
-| `agent.token` / `ui.token` | 연결에 쓰는 비밀 인증값 |
+| `connector.token` / `ui.token` | 연결에 쓰는 비밀 인증값 |
 | Ally의 `ui-preferences.toml` | 자동 저장되는 언어·버튼 배치 |
-| `start-agent.command` / `start-ui.sh` | 다시 켤 때 쓰는 실행 파일 |
+| `start-connector.command` / `start-ui.sh` | 다시 켤 때 쓰는 실행 파일 |
 | `enable-notifications.command` | Mac의 알림 연결 설정 |
-| `check-agent.command` / `check-ui.sh` | 문제가 생겼을 때 확인하는 실행 파일 |
+| `check-connector.command` / `check-ui.sh` | 문제가 생겼을 때 확인하는 실행 파일 |
 
 GitHub에서 받은 예제 파일에 개인정보를 적지 마세요. 알림 설정은 기존 Codex 설정을 보존하고 `hooks.json`을 백업한 뒤 OrangeDeck 항목을 추가합니다.
 
 ## 필요한 경우에만 바꾸는 설치 옵션
 
-보통은 옵션을 바꿀 필요가 없습니다. **`agent`는 Mac, `ui`는 Ally**를 뜻합니다.
+보통은 옵션을 바꿀 필요가 없습니다. **`connector`는 Mac, `ui`는 Ally**를 뜻합니다.
 
 | 옵션 | 뜻 |
 | --- | --- |
@@ -166,10 +166,10 @@ GitHub에서 받은 예제 파일에 개인정보를 적지 마세요. 알림 �
 
 설정 파일 없이 인증 파일만 남아 있으면 설치기가 멈춥니다. 오류를 없애려고 인증 파일을 지우거나 `--force`를 붙이지 마세요. 기존 설정을 복원하거나 새 설정 폴더를 선택해야 합니다.
 
-Mac 주소가 바뀌었다면 Mac의 `orangedeck-agent pairing --config /path/to/agent.toml --output /path/to/private-pairing.toml`로 연결 파일을 다시 만들고, Ally에서 `orangedeck-ui pair --config /path/to/config.toml --bundle /path/to/private-pairing.toml --force`로 가져옵니다. `/path/to/...`는 자신의 실제 파일 위치로 바꿔야 합니다.
+Mac 주소가 바뀌었다면 Mac의 `orangedeck-connector pairing --config /path/to/connector.toml --output /path/to/private-pairing.toml`로 연결 파일을 다시 만들고, Ally에서 `orangedeck-ui pair --config /path/to/config.toml --bundle /path/to/private-pairing.toml --force`로 가져옵니다. `/path/to/...`는 자신의 실제 파일 위치로 바꿔야 합니다.
 
-인증값이 공개됐다면 먼저 Agent를 끄세요. `orangedeck-agent init --force`는 인증값뿐 아니라 Mac의 초기 프로젝트 설정도 다시 만듭니다. 기존 프로젝트 설정을 확인·보관한 뒤 새 연결 파일로 다시 연결해야 합니다. [공개 파일 문제 대응](PUBLICATION.md)을 참고하세요.
+인증값이 공개됐다면 먼저 통신 모듈을 끄세요. `orangedeck-connector init --force`는 인증값뿐 아니라 Mac의 초기 프로젝트 설정도 다시 만듭니다. 기존 프로젝트 설정을 확인·보관한 뒤 새 연결 파일로 다시 연결해야 합니다. [공개 파일 문제 대응](PUBLICATION.md)을 참고하세요.
 
 ## 제거
 
-Ally 앱과 Mac Agent를 먼저 끕니다. Codex `/hooks`에서 OrangeDeck 연결을 해제하고 OrangeDeck 전용 설치 폴더와 만든 바로가기를 지웁니다. 다른 앱의 설정 폴더, Codex 대화, 프로젝트 폴더는 지우지 마세요. Codex·Tailscale·Rust는 각각 따로 설치한 프로그램입니다.
+Ally 앱과 Mac 통신 모듈을 먼저 끕니다. Codex `/hooks`에서 OrangeDeck 연결을 해제하고 OrangeDeck 전용 설치 폴더와 만든 바로가기를 지웁니다. 다른 앱의 설정 폴더, Codex 대화, 프로젝트 폴더는 지우지 마세요. Codex·Tailscale·Rust는 각각 따로 설치한 프로그램입니다.

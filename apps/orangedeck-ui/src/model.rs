@@ -80,7 +80,7 @@ impl UiModel {
                 self.connected = false;
                 self.connecting = true;
                 self.latency_ms = None;
-                self.connection_message = Some("Connecting to OrangeDeck Agent".to_owned());
+                self.connection_message = Some("Connecting to OrangeDeck Connector".to_owned());
             }
             NetworkEvent::Connected { latency_ms } => {
                 if self.snapshot_state != SnapshotState::Missing {
@@ -141,7 +141,7 @@ impl UiModel {
     fn apply_server(&mut self, envelope: ServerEnvelope) {
         if envelope.protocol_version != orangedeck_protocol::PROTOCOL_VERSION {
             self.protocol_error = Some(format!(
-                "Protocol mismatch: UI {}, Agent {}",
+                "Protocol mismatch: UI {}, Connector {}",
                 orangedeck_protocol::PROTOCOL_VERSION,
                 envelope.protocol_version
             ));

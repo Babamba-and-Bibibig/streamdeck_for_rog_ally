@@ -18,7 +18,7 @@ from release_policy import MAX_PUBLIC_FILE_BYTES, private_path, public_path, rea
 from check_public import inspect_bytes, inspect_content, report_path
 
 VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?")
-COMMANDS = ("Start OrangeDeck Agent.command", "Enable Codex Notifications.command", "Setup OrangeDeck.command")
+COMMANDS = ("Start OrangeDeck Connector.command", "Enable Codex Notifications.command", "Setup OrangeDeck.command")
 MAX_ARCHIVE_FILES = 4096
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 

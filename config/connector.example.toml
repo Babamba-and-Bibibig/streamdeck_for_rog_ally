@@ -1,7 +1,7 @@
 host_name = "CODEX HOST"
 bind_mode = "tailscale"
 port = 45831
-token_file = "~/.config/orangedeck/agent.token"
+token_file = "~/.config/orangedeck/connector.token"
 cargo_binary = "/Users/YOU/.cargo/bin/cargo"
 codex_binary = "/Users/YOU/.local/bin/codex"
 log_level = "info"

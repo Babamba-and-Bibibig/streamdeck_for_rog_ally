@@ -5,7 +5,7 @@ if [ "$(uname -s)" != Darwin ]; then
   echo 'Use sh install.sh on Linux.' >&2
   exit 1
 fi
-sh "$ORANGEDECK_ROOT/install.sh" --role agent "$@" || {
+sh "$ORANGEDECK_ROOT/install.sh" --role connector "$@" || {
   code=$?
   printf 'Setup stopped. Press Return / 설치 중단. Enter를 누르세요. '
   read -r answer

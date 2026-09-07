@@ -45,12 +45,12 @@ jobs:
         env:
           ORANGEDECK_TEST_BIN_DIR: target/release
 
-  mac-agent:
+  mac-connector:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
       - run: rustup toolchain install 1.95.0 --profile minimal
-      - run: cargo test -p orangedeck-agent --locked
-      - run: cargo build --release -p orangedeck-agent --locked
+      - run: cargo test -p orangedeck-connector --locked
+      - run: cargo build --release -p orangedeck-connector --locked

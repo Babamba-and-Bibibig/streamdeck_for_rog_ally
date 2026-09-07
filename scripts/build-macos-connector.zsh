@@ -12,4 +12,4 @@ if [[ ! -x "$ORANGEDECK_CARGO" ]]; then
   print -u2 "Cargo was not found. See docs/MACOS_SETUP.md."
   exit 1
 fi
-exec "$ORANGEDECK_CARGO" +1.95.0 build --locked --release -p orangedeck-agent
+exec "$ORANGEDECK_CARGO" +1.95.0 build --locked --release -p orangedeck-connector

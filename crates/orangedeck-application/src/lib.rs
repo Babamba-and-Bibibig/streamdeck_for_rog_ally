@@ -1,4 +1,4 @@
-//! OrangeDeck use-case helpers shared by the headless agent and native UI.
+//! OrangeDeck use-case helpers shared by the headless connector and native UI.
 
 mod backoff;
 mod deck;

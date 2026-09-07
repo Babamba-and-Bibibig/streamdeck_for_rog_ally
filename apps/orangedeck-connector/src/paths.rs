@@ -1,15 +1,15 @@
-//! Runtime locations selected at the Agent's composition root, never by domain policy.
+//! Runtime locations selected at the Connector's composition root, never by domain policy.
 use std::{
     io,
     path::{Path, PathBuf},
 };
 
-pub struct AgentPaths {
+pub struct ConnectorPaths {
     pub hook_socket: PathBuf,
     pub owned_threads: PathBuf,
 }
 
-impl AgentPaths {
+impl ConnectorPaths {
     pub fn for_config(config: &Path) -> io::Result<Self> {
         let config = config.canonicalize()?;
         let directory = config
@@ -33,10 +33,10 @@ mod tests {
         let second = root.path().join("second");
         for directory in [&first, &second] {
             std::fs::create_dir(directory).unwrap();
-            std::fs::write(directory.join("agent.toml"), "# path fixture").unwrap();
+            std::fs::write(directory.join("connector.toml"), "# path fixture").unwrap();
         }
-        let paths = AgentPaths::for_config(&first.join("agent.toml")).unwrap();
-        let other = AgentPaths::for_config(&second.join("agent.toml")).unwrap();
+        let paths = ConnectorPaths::for_config(&first.join("connector.toml")).unwrap();
+        let other = ConnectorPaths::for_config(&second.join("connector.toml")).unwrap();
         assert_ne!(paths.hook_socket, other.hook_socket);
         assert_ne!(paths.owned_threads, other.owned_threads);
         assert_eq!(

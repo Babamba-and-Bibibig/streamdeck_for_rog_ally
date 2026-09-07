@@ -97,7 +97,7 @@ pub async fn run(config_path: Option<&Path>, demo: bool, workspaces: bool) -> bo
     let mut reachable = false;
     let mut snapshot_ready = false;
     if let Some(token) = token {
-        println!("Agent URL: {}", config.agent_url);
+        println!("Connector URL: {}", config.connector_url);
         let client = match crate::network::http_client() {
             Ok(client) => client,
             Err(error) => {
@@ -107,7 +107,7 @@ pub async fn run(config_path: Option<&Path>, demo: bool, workspaces: bool) -> bo
         };
         let started = Instant::now();
         match client
-            .get(format!("{}/api/v1/health", config.agent_url))
+            .get(format!("{}/api/v1/health", config.connector_url))
             .timeout(Duration::from_secs(5))
             .bearer_auth(token.expose())
             .send()
@@ -121,7 +121,7 @@ pub async fn run(config_path: Option<&Path>, demo: bool, workspaces: bool) -> bo
                             && health.protocol_version == orangedeck_protocol::PROTOCOL_VERSION
                             && health.mode == expected_mode;
                         println!(
-                            "Agent: {} {} / mode {} / protocol {} / {}ms",
+                            "Connector: {} {} / mode {} / protocol {} / {}ms",
                             health.name,
                             health.version,
                             health.mode,
@@ -130,16 +130,16 @@ pub async fn run(config_path: Option<&Path>, demo: bool, workspaces: bool) -> bo
                         );
                         if health.mode != expected_mode {
                             println!(
-                                "Agent mode: ERROR (expected {expected_mode}, received {})",
+                                "Connector mode: ERROR (expected {expected_mode}, received {})",
                                 health.mode
                             );
                         }
                     }
-                    Err(error) => println!("Agent: invalid response ({error})"),
+                    Err(error) => println!("Connector: invalid response ({error})"),
                 }
             }
-            Ok(response) => println!("Agent: HTTP {}", response.status()),
-            Err(error) => println!("Agent: UNREACHABLE ({error})"),
+            Ok(response) => println!("Connector: HTTP {}", response.status()),
+            Err(error) => println!("Connector: UNREACHABLE ({error})"),
         }
         if reachable {
             match fetch_snapshot(&client, &config, &token).await {
@@ -168,7 +168,7 @@ pub(crate) async fn fetch_snapshot(
     token: &AuthToken,
 ) -> Result<SnapshotDto, String> {
     client
-        .get(format!("{}/api/v1/snapshot", config.agent_url))
+        .get(format!("{}/api/v1/snapshot", config.connector_url))
         .timeout(Duration::from_secs(5))
         .bearer_auth(token.expose())
         .send()
@@ -186,7 +186,7 @@ pub(crate) fn validate_snapshot(
     demo: bool,
 ) -> Result<(), String> {
     if !demo {
-        let url = reqwest::Url::parse(&config.agent_url).map_err(|error| error.to_string())?;
+        let url = reqwest::Url::parse(&config.connector_url).map_err(|error| error.to_string())?;
         if snapshot.host.name != config.host_label
             || !snapshot.host.tailscale
             || snapshot.host.address.as_deref() != url.host_str()
@@ -199,7 +199,7 @@ pub(crate) fn validate_snapshot(
         .iter()
         .any(|project| Some(project.id.as_str()) == snapshot.selected_project_id.as_deref())
     {
-        return Err("Agent has no selected registered project".to_owned());
+        return Err("Connector has no selected registered project".to_owned());
     }
     Ok(())
 }

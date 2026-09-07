@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>dev.orangedeck.agent</string>
+  <string>dev.orangedeck.connector</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/YOU/Code/OrangeDeck/target/release/orangedeck-agent</string>
+    <string>/Users/YOU/Code/OrangeDeck/target/release/orangedeck-connector</string>
     <string>serve</string>
     <string>--config</string>
-    <string>/Users/YOU/.config/orangedeck/agent.toml</string>
+    <string>/Users/YOU/.config/orangedeck/connector.toml</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -19,8 +19,8 @@
     <true/>
   </dict>
   <key>StandardOutPath</key>
-  <string>/Users/YOU/Library/Logs/OrangeDeck-Agent.log</string>
+  <string>/Users/YOU/Library/Logs/OrangeDeck-Connector.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/YOU/Library/Logs/OrangeDeck-Agent.error.log</string>
+  <string>/Users/YOU/Library/Logs/OrangeDeck-Connector.error.log</string>
 </dict>
 </plist>

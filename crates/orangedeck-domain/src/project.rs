@@ -102,7 +102,7 @@ pub enum ProjectRegistryError {
     DuplicateId,
     #[error("project `{id}` path must be absolute: {path}")]
     PathNotAbsolute { id: ProjectId, path: PathBuf },
-    #[error("project `{0}` is not in the agent allow-list")]
+    #[error("project `{0}` is not in the connector allow-list")]
     NotRegistered(ProjectId),
 }
 

@@ -4,4 +4,4 @@ Current scope: a native Codex companion with LIVE, shortcuts, projects, conversa
 
 Potential future work includes additional reviewed actions and broader platform support. These are not implemented features or release commitments. Existing Cargo/Git adapters are not additional UI tabs.
 
-The current installation guide targets macOS Agent and a ROG Ally running CachyOS Handheld in desktop mode. Testing priorities are a fresh Mac setup with that Ally, real touch/controller input and naturally occurring notifications/approval round trips. Keep those checks distinct from automated tests and simulated data. Steam Deck, SteamOS and other Linux distributions remain untested; broader platform support is future work.
+The current installation guide targets macOS Connector and a ROG Ally running CachyOS Handheld in desktop mode. Current priorities are clear setup, consistent product names and useful remote buttons. Possible additions include registered Mac apps, Mac shortcuts and media/volume controls; these are proposals, not available actions. Steam Deck, SteamOS and other Linux distributions remain untested; broader platform support is future work.

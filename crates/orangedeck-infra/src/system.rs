@@ -8,7 +8,7 @@ use orangedeck_domain::{Project, SystemSnapshot};
 use thiserror::Error;
 use tokio::process::Command;
 
-use crate::{AgentConfig, BindMode};
+use crate::{BindMode, ConnectorConfig};
 
 pub fn tailscale_command() -> Command {
     let binary = std::env::var_os("ORANGEDECK_TAILSCALE_BINARY").map_or_else(
@@ -53,7 +53,7 @@ pub async fn tailscale_stdout(args: &[&str]) -> Option<String> {
 }
 
 pub async fn resolve_bind_address(
-    config: &AgentConfig,
+    config: &ConnectorConfig,
 ) -> Result<std::net::SocketAddr, SystemError> {
     let ip = match config.bind_mode {
         BindMode::Tailscale => tailscale_ip().await?,

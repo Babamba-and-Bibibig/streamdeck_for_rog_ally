@@ -111,7 +111,7 @@ pub fn parse_observation(value: &Value) -> Result<ThreadObservation, CodexError>
         latest_user_prompt: prompt
             .filter(|text| !text.trim().is_empty())
             .map(|text| truncate(&text, 4000)),
-        latest_agent_message: reply.map(|text| truncate(text, 4000)),
+        latest_codex_reply: reply.map(|text| truncate(text, 4000)),
         last_turn_status: parse_turn_status(latest.and_then(|turn| turn.get("status"))),
         model: value
             .get("model")
@@ -561,7 +561,7 @@ mod tests {
         });
         let observation = parse_observation(&value).unwrap();
         assert_eq!(observation.latest_user_prompt.as_deref(), Some("최근 질문"));
-        assert_eq!(observation.latest_agent_message, None);
+        assert_eq!(observation.latest_codex_reply, None);
         assert_eq!(observation.last_turn_status, CodexThreadStatus::Working);
         assert_eq!(observation.model.as_deref(), Some("test-model"));
     }

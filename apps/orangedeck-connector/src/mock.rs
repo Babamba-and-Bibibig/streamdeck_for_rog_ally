@@ -16,7 +16,7 @@ use tokio::sync::{Mutex, RwLock, broadcast};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
-use crate::server::{AgentBackend, BackendError, BackendResult};
+use crate::server::{BackendError, BackendResult, ConnectorBackend};
 
 const DEMO_PROJECT_ID: &str = "orange-project";
 
@@ -45,7 +45,7 @@ impl MockBackend {
             for thread in &mut snapshot.codex.threads {
                 if let Some(observation) = &mut thread.observation {
                     observation.latest_user_prompt = Some("Build a clean LIVE dashboard so I can follow my Codex project, tokens and remaining quotas at a glance.".to_owned());
-                    observation.latest_agent_message = Some("I am organizing the dashboard around current work and usage, with clear navigation and a configurable control deck.".to_owned());
+                    observation.latest_codex_reply = Some("I am organizing the dashboard around current work and usage, with clear navigation and a configurable control deck.".to_owned());
                 }
             }
         }
@@ -340,7 +340,7 @@ impl MockBackend {
             backend.publish(ServerEvent::CodexActivity(CodexActivityDto {
                 thread_id: Some(thread_id.clone()),
                 turn_id: Some(spawned_turn_id.clone()),
-                kind: "agent_message".to_owned(),
+                kind: "codex_reply".to_owned(),
                 text: "Analyzing the selected Rust workspace".to_owned(),
             }));
             tokio::select! {
@@ -408,7 +408,7 @@ impl Default for MockBackend {
 }
 
 #[async_trait]
-impl AgentBackend for MockBackend {
+impl ConnectorBackend for MockBackend {
     async fn snapshot(&self) -> SnapshotDto {
         self.inner.state.read().await.clone()
     }
@@ -647,7 +647,7 @@ fn job_lines(kind: JobKindDto, fail: bool) -> &'static [&'static str] {
         &[
             "running 82 tests",
             "test parser::safe_command ... ok",
-            "test agent::connect ... FAILED",
+            "test connector::connect ... FAILED",
             "error: test failed",
         ]
     } else {
@@ -659,7 +659,7 @@ fn job_lines(kind: JobKindDto, fail: bool) -> &'static [&'static str] {
             ],
             JobKindDto::CargoClippy => &[
                 "Checking orangedeck-domain",
-                "Checking orangedeck-agent",
+                "Checking orangedeck-connector",
                 "Finished dev profile",
             ],
             JobKindDto::CargoFmtCheck => &[
@@ -754,7 +754,7 @@ fn demo_snapshot() -> SnapshotDto {
                     observation: Some(orangedeck_protocol::ThreadObservationDto {
                         turn_id: Some("simulated-turn".to_owned()),
                         latest_user_prompt: Some("지금 작업 중인 Codex의 토큰 사용량과 프로젝트를 한눈에 볼 수 있게, LIVE 화면을 멋있게 바꿔줘.".to_owned()),
-                        latest_agent_message: Some("작업 현황과 사용량을 중심으로 화면을 구성하고 있습니다.".to_owned()),
+                        latest_codex_reply: Some("작업 현황과 사용량을 중심으로 화면을 구성하고 있습니다.".to_owned()),
                         last_turn_status: CodexThreadStatusDto::Working,
                         model: Some("gpt-5.5".to_owned()), observed_at: now,
                     }),

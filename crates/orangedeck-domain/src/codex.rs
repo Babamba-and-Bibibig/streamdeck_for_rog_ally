@@ -97,7 +97,7 @@ pub struct ThreadObservation {
     #[serde(default)]
     pub turn_id: Option<String>,
     pub latest_user_prompt: Option<String>,
-    pub latest_agent_message: Option<String>,
+    pub latest_codex_reply: Option<String>,
     pub last_turn_status: CodexThreadStatus,
     pub model: Option<String>,
     pub observed_at: DateTime<Utc>,

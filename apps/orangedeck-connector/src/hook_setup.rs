@@ -196,7 +196,7 @@ pub async fn run(
     config_path: &Path,
 ) -> io::Result<()> {
     let executable = std::env::current_exe()?;
-    let socket = crate::paths::AgentPaths::for_config(config_path)?.hook_socket;
+    let socket = crate::paths::ConnectorPaths::for_config(config_path)?.hook_socket;
     let root = std::env::var_os("CODEX_HOME")
         .filter(|path| !path.is_empty())
         .map(PathBuf::from)
@@ -256,7 +256,7 @@ mod tests {
     #[test]
     fn merges_only_our_hooks_and_is_idempotent() {
         let user = json!({"description":"user config", "hooks":{"Stop":[{"hooks":[{"type":"command","command":"user-hook"}]}]}});
-        let exe = Path::new("/tmp/Orange Deck/agent");
+        let exe = Path::new("/tmp/Orange Deck/connector");
         let socket = Path::new("/tmp/private/hooks.sock");
         let merged = merge(user, exe, socket, true).unwrap();
         assert_eq!(merged["description"], "user config");
@@ -295,7 +295,7 @@ mod tests {
 
     #[test]
     fn older_codex_removes_only_our_interrupt_and_keeps_other_hooks() {
-        let exe = Path::new("/tmp/agent");
+        let exe = Path::new("/tmp/connector");
         let socket = Path::new("/tmp/private/hooks.sock");
         let newer = merge(json!({}), exe, socket, true).unwrap();
         let older = merge(newer.clone(), exe, socket, false).unwrap();
@@ -324,7 +324,7 @@ mod tests {
 
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("hooks.json");
-        let exe = Path::new("/tmp/agent");
+        let exe = Path::new("/tmp/connector");
         let socket = Path::new("/tmp/private/hooks.sock");
         install(&path, exe, socket, true).unwrap();
         let original = fs::read(&path).unwrap();

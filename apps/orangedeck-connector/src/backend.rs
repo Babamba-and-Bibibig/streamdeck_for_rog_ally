@@ -17,7 +17,7 @@ use orangedeck_domain::{
     JobEvent, Project, ProjectId, ProjectRegistry,
 };
 use orangedeck_infra::{
-    AgentConfig, CargoJobRunner, CodexClient, GitInspector, JobError, collect_system_snapshot,
+    CargoJobRunner, CodexClient, ConnectorConfig, GitInspector, JobError, collect_system_snapshot,
     open_browser, open_editor, open_project, open_terminal, probe_codex, tailscale_ip,
 };
 use orangedeck_protocol::{
@@ -27,7 +27,7 @@ use orangedeck_protocol::{
 use tokio::sync::{Mutex, RwLock, broadcast};
 use tracing::{info, warn};
 
-use crate::server::{AgentBackend, BackendError, BackendResult};
+use crate::server::{BackendError, BackendResult, ConnectorBackend};
 
 #[derive(Clone)]
 pub struct RealBackend {
@@ -35,7 +35,7 @@ pub struct RealBackend {
 }
 
 struct RealBackendInner {
-    config: AgentConfig,
+    config: ConnectorConfig,
     registry: ProjectRegistry,
     state: SharedDashboard,
     events: broadcast::Sender<ServerEnvelope>,
@@ -53,7 +53,7 @@ struct RealBackendInner {
 
 impl RealBackend {
     pub async fn new(
-        config: AgentConfig,
+        config: ConnectorConfig,
         owned_threads_path: PathBuf,
     ) -> Result<Self, BackendError> {
         let registry = config
@@ -719,7 +719,7 @@ impl RealBackend {
 }
 
 #[async_trait]
-impl AgentBackend for RealBackend {
+impl ConnectorBackend for RealBackend {
     async fn snapshot(&self) -> SnapshotDto {
         let mut snapshot = self.inner.state.snapshot().await;
         if let Ok(history) = self.inner.notifications.lock() {
@@ -886,7 +886,7 @@ impl AgentBackend for RealBackend {
             }
             ValidatedCommand::DemoScenario(_) => Err(BackendError::bad_request(
                 "demo_only",
-                "Demo scenarios are disabled on the real agent",
+                "Demo scenarios are disabled on the real connector",
             )),
         }
     }

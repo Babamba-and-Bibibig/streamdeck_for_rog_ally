@@ -463,7 +463,7 @@ fn token_hero(
     ui.interact(rect, ui.id().with("session_token_usage"), Sense::hover()).on_hover_text(if lang == Language::English { format!(
         "Source: host Codex session logs (read-only)\n{scope}: {number} tokens\nIncludes cached input {} and reasoning output {}\nBars show usage per recent model request, not tokens per second.\nNot an account lifetime total or billing amount.\nRecorded: {}\nProcess liveness is not checked separately.",
         separated(counted.cached_input_tokens), separated(counted.reasoning_output_tokens), usage.updated_at) } else { format!(
-        "출처: 연결된 Mac Agent의 Codex 세션 로그 (읽기 전용)\n{scope}: {number} 토큰\n입력에 캐시 {} 포함 · 출력에 추론 {} 포함\n막대: 최근 모델 요청별 토큰 수 (초당 속도 아님)\n계정 전체 누적량이나 결제 금액이 아닙니다.\n집계 시각: {}\n프로세스 생존 여부는 별도로 확인하지 않습니다.",
+        "출처: 연결된 Mac 통신 모듈의 Codex 세션 로그 (읽기 전용)\n{scope}: {number} 토큰\n입력에 캐시 {} 포함 · 출력에 추론 {} 포함\n막대: 최근 모델 요청별 토큰 수 (초당 속도 아님)\n계정 전체 누적량이나 결제 금액이 아닙니다.\n집계 시각: {}\n프로세스 생존 여부는 별도로 확인하지 않습니다.",
         separated(counted.cached_input_tokens), separated(counted.reasoning_output_tokens), usage.updated_at) });
 }
 

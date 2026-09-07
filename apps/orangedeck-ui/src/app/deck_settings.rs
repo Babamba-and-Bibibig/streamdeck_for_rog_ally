@@ -108,12 +108,12 @@ impl OrangeDeckApp {
                 self.model.command_message = Some(
                     match error {
                         ShortcutUnavailable::Disconnected => lang.text(
-                            "Agent에 연결한 뒤 이 키를 사용하세요.",
-                            "Connect to your Agent to use this key.",
+                            "Mac 통신 모듈에 연결한 뒤 이 키를 사용하세요.",
+                            "Connect to your Connector to use this key.",
                         ),
                         ShortcutUnavailable::UnregisteredProject => lang.text(
-                            "메인 PC 열기 기능은 Agent에 등록한 프로젝트에서 사용할 수 있습니다.",
-                            "Host shortcuts require a project registered with your Agent.",
+                            "Mac에서 여는 기능은 통신 모듈에 등록한 프로젝트에서 사용할 수 있습니다.",
+                            "Host shortcuts require a project registered with your Connector.",
                         ),
                         ShortcutUnavailable::MissingBrowser => lang.text(
                             "이 프로젝트에는 열 웹 주소가 설정되어 있지 않습니다.",

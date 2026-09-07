@@ -1,7 +1,8 @@
 use std::path::Path;
 
 use orangedeck_infra::{
-    AgentConfig, AuthToken, generate_codex_schema, is_tailscale_ip, probe_codex, tailscale_stdout,
+    AuthToken, ConnectorConfig, generate_codex_schema, is_tailscale_ip, probe_codex,
+    tailscale_stdout,
 };
 use tokio::process::Command;
 
@@ -10,7 +11,7 @@ pub async fn run(
     schema_output: Option<&Path>,
     codex_monitor: bool,
 ) -> bool {
-    println!("OrangeDeck Agent Doctor {}", env!("CARGO_PKG_VERSION"));
+    println!("OrangeDeck Connector Doctor {}", env!("CARGO_PKG_VERSION"));
     println!("OS: {}", std::env::consts::OS);
     println!("Architecture: {}", std::env::consts::ARCH);
 
@@ -40,7 +41,7 @@ pub async fn run(
     println!("Tailscale online: {tailscale_online}");
 
     let (config, config_ready) = if let Some(path) = config_path {
-        match AgentConfig::load(path) {
+        match ConnectorConfig::load(path) {
             Ok(config) => {
                 println!("Config: OK ({})", path.display());
                 println!("Bind mode: {:?}", config.bind_mode);
@@ -50,11 +51,11 @@ pub async fn run(
                 }
                 let token_ready = match AuthToken::load(&config.token_file) {
                     Ok(_) => {
-                        println!("Agent token: OK (redacted, private permissions)");
+                        println!("Connector token: OK (redacted, private permissions)");
                         true
                     }
                     Err(error) => {
-                        println!("Agent token: ERROR ({error})");
+                        println!("Connector token: ERROR ({error})");
                         false
                     }
                 };
@@ -62,12 +63,12 @@ pub async fn run(
             }
             Err(error) => {
                 println!("Config: ERROR ({error})");
-                (AgentConfig::default(), false)
+                (ConnectorConfig::default(), false)
             }
         }
     } else {
         println!("Config: not checked");
-        (AgentConfig::default(), true)
+        (ConnectorConfig::default(), true)
     };
 
     let codex = probe_codex(&config.codex_binary).await;

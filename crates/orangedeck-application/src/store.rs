@@ -500,7 +500,7 @@ mod tests {
         stale.observation = Some(orangedeck_domain::ThreadObservation {
             turn_id: Some("old".to_owned()),
             latest_user_prompt: Some("old question".to_owned()),
-            latest_agent_message: Some("old answer".to_owned()),
+            latest_codex_reply: Some("old answer".to_owned()),
             last_turn_status: CodexThreadStatus::Completed,
             model: None,
             observed_at: chrono::Utc::now(),

@@ -2,7 +2,7 @@
 
 **CachyOS Handheld를 쓰는 ROG Ally에서 0.1.20 앱을 1280 × 800으로 실행**하고 앱 화면을 촬영했습니다. 한국어 README에는 한국어 화면, English README에는 영어 화면을 사용합니다. 각 언어의 다섯 탭과 키 편집창, 총 12장입니다.
 
-촬영에는 기존 로컬 **demo** Agent만 사용했습니다. `SIMULATED MAC`, `LOCAL MOCK`, `/mock/` 프로젝트·모의 대화·토큰을 보여줍니다. 단축키는 **추천 구성 / Quick setup**을 적용한 예시이며, 단축키·알림·편집창은 내장 모의 승인 시나리오를 사용합니다. 실제 Mac 주소·계정·페어링 토큰·개인 프로젝트·바탕화면은 포함하지 않았습니다.
+촬영에는 기존 로컬 **demo** 통신 모듈만 사용했습니다. `SIMULATED MAC`, `LOCAL MOCK`, `/mock/` 프로젝트·모의 대화·토큰을 보여줍니다. 단축키는 **추천 구성 / Quick setup**을 적용한 예시이며, 단축키·알림·편집창은 내장 모의 승인 시나리오를 사용합니다. 실제 Mac 주소·계정·페어링 토큰·개인 프로젝트·바탕화면은 포함하지 않았습니다.
 
 비공개 소스 복사본에 탭 전환·촬영 자동화만 넣고 실제 앱의 프레임버퍼를 저장했습니다. 제품 화면 그리기 코드·배치·문구는 그대로이며 기기 합성 사진이나 생성형 UI 이미지가 아닙니다. 영어 예시 대화는 `demo --language en`으로 실행한 모의 데이터입니다. 실제 사용자 대화를 번역하거나 수정한 것이 아닙니다. 이 촬영은 실제 Mac 알림·승인 왕복이나 SteamOS 설치 검증을 뜻하지 않습니다.
 
@@ -29,6 +29,6 @@ Only the twelve screenshot paths above are permitted as public screenshots. PNGs
 
 ## 기기 연결 그림 · Device diagrams
 
-README 위쪽의 [한국어 그림](diagrams/device-roles-ko.svg)과 [영어 그림](diagrams/device-roles-en.svg)은 두 기기의 역할을 설명하려고 직접 그린 SVG입니다. Mac의 macOS에서 Codex·Agent를, CachyOS Handheld를 쓰는 ROG Ally에서 리모컨을 실행하는 구성을 보여줍니다. Steam Deck·SteamOS는 설치와 동작을 아직 확인하지 않았다고 표시합니다.
+README 위쪽의 [한국어 그림](diagrams/device-roles-ko.svg)과 [영어 그림](diagrams/device-roles-en.svg)은 두 기기의 역할을 설명하려고 직접 그린 SVG입니다. Mac의 macOS에서 Codex·통신 모듈을, CachyOS Handheld를 쓰는 ROG Ally에서 리모컨을 실행하는 구성을 보여줍니다. Steam Deck·SteamOS는 설치와 동작을 아직 확인하지 않았다고 표시합니다.
 
 The two static SVG diagrams explain device roles separately from the app screenshots. They contain no personal machine data, scripts, external resources or embedded images. Their exact paths and visually reviewed hashes are pinned in REVIEWED_DIAGRAMS; changed bytes require another review. The drawing is not evidence of a successful installation on another device.

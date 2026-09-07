@@ -85,7 +85,9 @@ def ask_path(label, default, unattended, directory=False):
 
 def saved_codex_home(directory):
     """Recover only our saved profile path, without executing a previous launcher."""
-    metadata = directory / "install-agent.json"
+    metadata = directory / "install-connector.json"
+    if not os.path.lexists(metadata):
+        metadata = directory / "install-agent.json"  # Read-only import from pre-0.1.23.
     if metadata.exists() or metadata.is_symlink():
         info = metadata.lstat()
         if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_size > 65_536:
@@ -97,7 +99,9 @@ def saved_codex_home(directory):
         if value is not None:
             return checked_text(value)
     # 0.1.17/18 stored CODEX_HOME only in their generated launcher.
-    start = directory / "start-agent.command"
+    start = directory / "start-connector.command"
+    if not os.path.lexists(start):
+        start = directory / "start-agent.command"  # Never execute the old launcher.
     if start.exists() or start.is_symlink():
         info = start.lstat()
         if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_size > 65_536:
@@ -262,9 +266,26 @@ def private_pairing(path):
     return path
 
 
+def installation_role(value):
+    # Accept old scripted installations while displaying only the new role names.
+    return "connector" if value == "agent" else value
+
+
+def existing_connector_config(directory):
+    current = directory / "connector.toml"
+    previous = directory / "agent.toml"
+    selected = current if os.path.lexists(current) else previous
+    if os.path.lexists(selected):
+        info = selected.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_size > 1_048_576:
+            raise SetupError("Cannot safely read the existing Connector settings / 기존 통신 모듈 설정을 확인하세요.")
+        return selected
+    return current
+
+
 def parser():
     result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("--role", choices=["agent", "ui"])
+    result.add_argument("--role", type=installation_role, choices=["connector", "ui"])
     result.add_argument("--project-path")
     result.add_argument("--project-name")
     result.add_argument("--host-name")
@@ -284,7 +305,7 @@ def main():
     options = parser().parse_args()
     system = platform.system()
     if system not in {"Linux", "Darwin"} or sys.version_info < (3, 9):
-        raise SetupError("Supported: macOS Agent / Linux Agent or desktop UI, Python 3.9+. Windows is not supported.")
+        raise SetupError("Use macOS for the Connector and CachyOS Handheld on the ROG Ally for the UI, with Python 3.9+. Windows is not supported.")
     if os.geteuid() == 0:
         raise SetupError("Run as your normal account, without sudo / 일반 계정으로 실행하세요.")
     if options.check:
@@ -292,8 +313,9 @@ def main():
         for name in ["cargo", "rustup", "cc", "pkg-config", "codex", "tailscale"]:
             print(f"{name}: {'on PATH' if executable(name) else 'not on PATH (installer also searches standard locations)'}")
         return
-    role = options.role or ("agent" if system == "Darwin" else ask("Role / 역할 (agent or ui)", "ui", options.non_interactive))
-    if role not in {"agent", "ui"} or (role == "ui" and system != "Linux"):
+    role = options.role or ("connector" if system == "Darwin" else ask("Install on this device / 이 기기에 설치할 것 (connector: Mac 통신 모듈, ui: Ally 리모컨)", "ui", options.non_interactive))
+    role = installation_role(role)
+    if role not in {"connector", "ui"} or (role == "ui" and system != "Linux"):
         raise SetupError("The desktop installer currently supports Linux UI only / 화면 앱 설치는 Linux에서 지원합니다.")
     if not 1 <= options.port <= 65535:
         raise SetupError("Port must be 1–65535.")
@@ -301,35 +323,36 @@ def main():
     checked_text(str(directory))
     if directory.is_symlink():
         raise SetupError("Config directory must not be a symlink.")
-    config = directory / ("agent.toml" if role == "agent" else "config.toml")
+    config = directory / ("connector.toml" if role == "connector" else "config.toml")
+    previous_config = existing_connector_config(directory) if role == "connector" else config
     if config.is_symlink():
         raise SetupError("Config must not be a symlink.")
-    if not config.exists():
-        credentials = ["agent.token", "orangedeck-pairing.toml"] if role == "agent" else ["ui.token"]
+    if not previous_config.exists():
+        credentials = ["connector.token", "agent.token", "orangedeck-pairing.toml"] if role == "connector" else ["ui.token"]
         if any(os.path.lexists(directory / name) for name in credentials):
             raise SetupError("Credentials exist without a config. Restore/review the existing setup or choose a new config directory / 설정 없이 남은 인증 파일이 있습니다. 기존 설정을 복원·확인하거나 새 설정 폴더를 사용하세요.")
-    if config.exists() and options.pairing:
+    if previous_config.exists() and options.pairing:
         raise SetupError("Already paired. Setup preserves existing credentials; use the documented explicit re-pair command.")
-    if config.exists():
+    if previous_config.exists():
         print("Existing config and token will be preserved / 기존 설정·토큰 유지. Project/host/port options apply only to first setup.")
     project = codex = host = project_name = pairing = None
-    if role == "agent" and not config.exists():
+    if role == "connector" and not previous_config.exists():
         project = ask_path("Project folder / 프로젝트 폴더", options.project_path, options.non_interactive, directory=True).resolve(strict=True)
         host = ask("Host label / 기기 표시 이름", options.host_name or "CODEX HOST", options.non_interactive)
         project_name = ask("Project label / 프로젝트 표시 이름", options.project_name or project.name, options.non_interactive)
-    if role == "agent" and not config.exists():
+    if role == "connector" and not previous_config.exists():
         codex = executable("codex", options.codex_binary, [Path.home()/".local/bin/codex", "/opt/homebrew/bin/codex", "/usr/local/bin/codex"])
         if not codex:
             codex = executable("codex", ask("Codex executable / Codex 실행 파일 경로", options.codex_binary, options.non_interactive))
         if not codex:
             raise SetupError("Install Codex CLI and sign in first: https://learn.chatgpt.com/docs/cli")
-    elif not config.exists():
-        pairing = private_pairing(ask_path("Pairing file from Agent / Agent의 페어링 파일 경로", options.pairing, options.non_interactive))
+    elif not previous_config.exists():
+        pairing = private_pairing(ask_path("Connection file from the Mac / Mac에서 가져온 연결 파일", options.pairing, options.non_interactive))
     print("\n[1/4] Checking your environment / 실행 환경 확인")
     tailscale = tailscale_binary()
     process_env = os.environ.copy()
     process_env["TAILSCALE_BE_CLI"] = "1"
-    if role == "agent":
+    if role == "connector":
         profile = os.environ.get("CODEX_HOME") or saved_codex_home(directory) or str(Path.home() / ".codex")
         process_env["CODEX_HOME"] = checked_text(str(Path(profile).expanduser().absolute()))
     address = ipaddress.ip_address(run([tailscale, "ip", "-4"], env=process_env, capture=True, timeout=10))
@@ -344,7 +367,7 @@ def main():
                             *([str(codex.parent)] if codex else []), *os.environ.get("PATH", "").split(os.pathsep)]))
     saved_env = {"PATH": process_env["PATH"], "TAILSCALE_BE_CLI": "1", "ORANGEDECK_TAILSCALE_BINARY": str(tailscale)}
     process_env["ORANGEDECK_TAILSCALE_BINARY"] = str(tailscale)
-    if role == "agent":
+    if role == "connector":
         saved_env["CODEX_HOME"] = process_env["CODEX_HOME"]
     name = f"orangedeck-{role}"
     print("\n[2/4] Building OrangeDeck; first build can take several minutes / 첫 빌드는 몇 분 이상 걸릴 수 있습니다")
@@ -353,41 +376,44 @@ def main():
     metadata = json.loads(run([cargo, f"+{RUST_VERSION}", "metadata", "--no-deps", "--format-version", "1", "--locked"], env=process_env, capture=True))
     source = Path(metadata["target_directory"]) / "release" / name
     binary = directory / "bin" / name
-    if config.exists():
-        previous = json.loads(run([source, "check-config", "--config", config], env=process_env, capture=True))
-        if role == "agent":
+    if previous_config.exists():
+        previous = json.loads(run([source, "check-config", "--config", previous_config], env=process_env, capture=True))
+        if role == "connector":
             codex = executable("codex", previous["codex_binary"])
             if not codex:
-                raise SetupError("The Codex path in your existing agent.toml is unavailable. Update that private setting and retry.")
+                raise SetupError("The Codex path in your existing connector.toml is unavailable. Update that private setting and retry.")
             run([codex, "login", "status"], env=process_env, capture=True, timeout=15)
             process_env["PATH"] = os.pathsep.join(dict.fromkeys([str(codex.parent), *process_env["PATH"].split(os.pathsep)]))
             saved_env["PATH"] = process_env["PATH"]
     print("\n[3/4] Installing private settings and launchers / 개인 설정과 실행기 설치")
+    if previous_config != config:
+        run([source, "migrate-config", "--from", previous_config, "--config", config], env=process_env, capture=True)
+        print("Previous settings imported / 기존 설정을 새 이름으로 이어받았습니다. 인증값과 이전 파일은 유지합니다.")
     secure_write(binary, source.read_bytes(), 0o700)
     if not config.exists():
-        if role == "agent":
+        if role == "connector":
             run([binary, "init", "--config", config, "--project-path", project, "--project-name", project_name,
                  "--host-name", host, "--port", str(options.port), "--cargo-binary", cargo, "--codex-binary", codex], env=process_env)
         else:
             run([binary, "pair", "--config", config, "--bundle", pairing], env=process_env)
-    start = directory / ("start-agent.command" if role == "agent" else "start-ui.sh")
-    secure_write(start, launcher(binary, ["serve" if role == "agent" else "run", "--config", config], saved_env), 0o700)
+    start = directory / ("start-connector.command" if role == "connector" else "start-ui.sh")
+    secure_write(start, launcher(binary, ["serve" if role == "connector" else "run", "--config", config], saved_env), 0o700)
     installation = {"role": role, "binary": str(binary), "config": str(config), "launcher": str(start), "source": str(ROOT)}
-    if role == "agent":
+    if role == "connector":
         installation["codex_home"] = saved_env["CODEX_HOME"]
     secure_write(directory / f"install-{role}.json", json.dumps(installation, indent=2).encode())
-    check = directory / ("check-agent.command" if role == "agent" else "check-ui.sh")
-    secure_write(check, launcher(binary, ["doctor" if role == "agent" else "verify", "--config", config], saved_env), 0o700)
+    check = directory / ("check-connector.command" if role == "connector" else "check-ui.sh")
+    secure_write(check, launcher(binary, ["doctor" if role == "connector" else "verify", "--config", config], saved_env), 0o700)
     print("\n[4/4] Setup ready — next steps / 설치 준비 완료 · 다음 단계")
-    if role == "agent":
+    if role == "connector":
         enable = directory / "enable-notifications.command"
         secure_write(enable, launcher(binary, ["codex-hooks", "--install", "--config", config, "--codex-binary", codex], saved_env), 0o700)
-        print(f"\nInstalled / 설치됨: {binary}\n1. Start Agent / Agent 실행: {shlex.quote(str(start))}")
+        print(f"\nInstalled / 설치됨: {binary}\n1. Start the Mac Connector / Mac 통신 모듈 실행: {shlex.quote(str(start))}")
         print(f"2. In another terminal, enable notifications / 다른 터미널에서 알림 설치: {shlex.quote(str(enable))}")
         print("3. In your usual Codex session, open /hooks and review/trust OrangeDeck / 평소 Codex에서 /hooks 검토·신뢰")
         print(f"4. Privately transfer {directory / 'orangedeck-pairing.toml'} to the UI device; run sh install.sh there.")
         print("Pairing contains a secret. Keep it out of GitHub/chat/logs / 페어링 파일은 비밀이며 공개하면 안 됩니다.")
-        print(f"Agent check / Agent 진단: {shlex.quote(str(check))}")
+        print(f"Connector check / 통신 모듈 검사: {shlex.quote(str(check))}")
     else:
         desktop = directory / "OrangeDeck.desktop"
         # Desktop Exec quoting differs from shell quoting. Escape reserved field characters.

@@ -240,7 +240,7 @@ pub fn render(
             egui::Label::new(
                 RichText::new(
                     observation
-                        .and_then(|value| value.latest_agent_message.as_deref())
+                        .and_then(|value| value.latest_codex_reply.as_deref())
                         .unwrap_or(lang.text("응답을 기다리고 있습니다", "Waiting for a response")),
                 )
                 .size(22.0),

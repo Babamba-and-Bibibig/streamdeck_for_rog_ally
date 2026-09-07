@@ -31,10 +31,10 @@ pub async fn run(
         "OrangeDeck real connection verification {}",
         env!("CARGO_PKG_VERSION")
     );
-    println!("Agent URL: {}", config.agent_url);
+    println!("Connector URL: {}", config.connector_url);
     let client = network::http_client().map_err(|error| error.to_string())?;
     let (mut socket, latency_ms) =
-        network::connect(&client, &config.agent_url, &token, "real").await?;
+        network::connect(&client, &config.connector_url, &token, "real").await?;
     let snapshot = doctor::fetch_snapshot(&client, &config, &token).await?;
     doctor::validate_snapshot(&snapshot, &config, false)?;
     doctor::print_snapshot_summary(&snapshot);
@@ -59,7 +59,7 @@ pub async fn run(
             .iter()
             .any(|project| project.id == project_id)
         {
-            return Err("requested project is not registered on this Agent".to_owned());
+            return Err("requested project is not registered on this Connector".to_owned());
         }
         if cargo_check {
             timeout(
@@ -107,7 +107,7 @@ pub async fn run(
         return Err("UI did not enter disconnected state".to_owned());
     }
     let (mut socket, latency_ms) =
-        network::connect(&client, &config.agent_url, &token, "real").await?;
+        network::connect(&client, &config.connector_url, &token, "real").await?;
     model.apply_network(NetworkEvent::Connected { latency_ms });
     expect_snapshot(&mut socket, &mut model, &config).await?;
     socket
@@ -123,8 +123,8 @@ async fn next_event(socket: &mut Socket, model: &mut UiModel) -> Result<ServerEv
     loop {
         let message = timeout(Duration::from_secs(35), socket.next())
             .await
-            .map_err(|_| "Agent event stream timed out")?
-            .ok_or("Agent event stream closed")?
+            .map_err(|_| "Connector event stream timed out")?
+            .ok_or("Connector event stream closed")?
             .map_err(|error| error.to_string())?;
         match message {
             Message::Text(text) => {
@@ -137,7 +137,7 @@ async fn next_event(socket: &mut Socket, model: &mut UiModel) -> Result<ServerEv
                 model.apply_network(NetworkEvent::Server(envelope));
                 return Ok(event);
             }
-            Message::Close(_) => return Err("Agent closed its event stream".to_owned()),
+            Message::Close(_) => return Err("Connector closed its event stream".to_owned()),
             _ => {}
         }
     }
@@ -173,7 +173,7 @@ async fn check_cargo(
     }
     let response = network::execute(
         client,
-        &config.agent_url,
+        &config.connector_url,
         token,
         ClientCommand::RunCargoCheck {
             project_id: project_id.to_owned(),
@@ -259,7 +259,7 @@ async fn check_codex(
         .collect();
     network::execute(
         client,
-        &config.agent_url,
+        &config.connector_url,
         token,
         ClientCommand::CodexStartThread {
             project_id: project_id.to_owned(),
@@ -276,7 +276,7 @@ async fn check_codex(
         }
     };
     println!("Codex: created OrangeDeck-owned thread {thread_id}");
-    network::execute(client, &config.agent_url, token, ClientCommand::CodexSendPrompt {
+    network::execute(client, &config.connector_url, token, ClientCommand::CodexSendPrompt {
         thread_id: thread_id.clone(),
         prompt: "Reply with exactly ORANGEDECK_OK. Do not use tools, run commands, read files, or create, modify, or delete any files.".to_owned(),
     }).await?;

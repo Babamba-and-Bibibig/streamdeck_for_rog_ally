@@ -23,7 +23,7 @@ use clap::{Parser, Subcommand};
 use eframe::egui;
 use orangedeck_infra::{
     AuthToken, PairingBundle, UiConfig, check_setup_destinations, default_ui_config_path,
-    validate_tailscale_agent_url, write_secure, write_toml_secure,
+    validate_tailscale_connector_url, write_secure, write_toml_secure,
 };
 use tracing_subscriber::EnvFilter;
 
@@ -47,14 +47,14 @@ enum Command {
         #[arg(long, default_value_os_t = default_ui_config_path())]
         config: PathBuf,
     },
-    /// Connect to a paired Mac Agent over Tailscale.
+    /// Connect to a paired Mac Connector over Tailscale.
     Run {
         #[arg(long, default_value_os_t = default_ui_config_path())]
         config: PathBuf,
         #[arg(long)]
         notifications: bool,
     },
-    /// Connect to a loopback Mock Agent.
+    /// Connect to a loopback Mock Connector.
     Demo {
         #[arg(long)]
         notifications: bool,
@@ -71,13 +71,13 @@ enum Command {
         #[arg(long)]
         force: bool,
     },
-    /// Inspect display, controller, Tailscale, config, and Agent reachability.
+    /// Inspect display, controller, Tailscale, config, and Connector reachability.
     Doctor {
         #[arg(long)]
         config: Option<PathBuf>,
         #[arg(long)]
         demo: bool,
-        /// List workspace paths reported by the paired Agent, without conversation text.
+        /// List workspace paths reported by the paired Connector, without conversation text.
         #[arg(long)]
         workspaces: bool,
     },
@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             input_backend::prepare()?;
             let preferences = config.with_file_name("ui-preferences.toml");
             let config = UiConfig::load(&config)?;
-            require_tailscale_url(&config.agent_url)?;
+            require_tailscale_url(&config.connector_url)?;
             let token = AuthToken::load(&config.token_file)?;
             init_tracing(&config.log_level);
             run_ui(config, token, false, notifications, Some(preferences), None)?;
@@ -136,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             force,
         } => {
             let bundle = PairingBundle::load(&bundle)?;
-            require_tailscale_url(&bundle.agent_url)?;
+            require_tailscale_url(&bundle.connector_url)?;
             let parent = config
                 .parent()
                 .ok_or_else(|| format!("config path has no parent: {}", config.display()))?;
@@ -144,7 +144,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             check_setup_destinations(&[&config, &token_path], force)?;
             write_secure(&token_path, &bundle.token)?;
             let ui_config = UiConfig {
-                agent_url: bundle.agent_url,
+                connector_url: bundle.connector_url,
                 token_file: token_path,
                 host_label: bundle.host_label,
                 log_level: "info".to_owned(),
@@ -230,7 +230,7 @@ fn run_ui(
 }
 
 fn require_tailscale_url(url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    validate_tailscale_agent_url(url).map_err(Into::into)
+    validate_tailscale_connector_url(url).map_err(Into::into)
 }
 
 fn init_tracing(default_level: &str) {

@@ -1,4 +1,4 @@
-//! Versioned network contract between OrangeDeck UI and Agent.
+//! Versioned network contract between OrangeDeck UI and Connector.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -390,7 +390,9 @@ pub struct ThreadObservationDto {
     #[serde(default)]
     pub turn_id: Option<String>,
     pub latest_user_prompt: Option<String>,
-    pub latest_agent_message: Option<String>,
+    // Keep the v1 wire key readable by previously paired clients.
+    #[serde(rename = "latest_agent_message", alias = "latest_codex_reply")]
+    pub latest_codex_reply: Option<String>,
     pub last_turn_status: CodexThreadStatusDto,
     pub model: Option<String>,
     pub observed_at: DateTime<Utc>,
@@ -561,7 +563,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn old_agent_threads_and_snapshots_remain_readable() {
+    fn connector_rename_preserves_the_v1_codex_reply_field() {
+        let old = serde_json::json!({
+            "latest_user_prompt": "question", "latest_agent_message": "complete answer",
+            "last_turn_status": "completed", "model": null,
+            "observed_at": "2026-01-01T00:00:00Z"
+        });
+        let observation: ThreadObservationDto = serde_json::from_value(old).unwrap();
+        assert_eq!(
+            observation.latest_codex_reply.as_deref(),
+            Some("complete answer")
+        );
+        let encoded = serde_json::to_value(&observation).unwrap();
+        assert_eq!(encoded["latest_agent_message"], "complete answer");
+        assert!(encoded.get("latest_codex_reply").is_none());
+    }
+
+    #[test]
+    fn old_connector_threads_and_snapshots_remain_readable() {
         let thread = serde_json::json!({"id":"old","project_id":null,"cwd":"/tmp/old","title":"old","preview":"first question","status":"not_loaded","ownership":"external_read_only","updated_at":10,"active_turn_id":null,"token_usage":null});
         let snapshot: CodexSnapshotDto = serde_json::from_value(serde_json::json!({
             "connection":{"state":"connected","version":"0.146.0","compatible":false,"message":null},

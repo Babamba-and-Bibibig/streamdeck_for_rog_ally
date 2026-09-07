@@ -106,7 +106,7 @@ impl OrangeDeckApp {
     ) -> Result<Self, String> {
         theme::apply(&context.egui_ctx);
         let network = NetworkHandle::start(
-            config.agent_url.clone(),
+            config.connector_url.clone(),
             token,
             if demo_mode { "mock" } else { "real" },
             context.egui_ctx.clone(),
@@ -143,7 +143,7 @@ impl OrangeDeckApp {
     fn send(&mut self, command: ClientCommand) {
         if !self.model.connected {
             self.model.command_message =
-                Some("Agent is disconnected; command was not sent".to_owned());
+                Some("Connector is disconnected; command was not sent".to_owned());
             return;
         }
         if let Err(error) = self.network.send(command) {
@@ -1421,8 +1421,8 @@ impl eframe::App for OrangeDeckApp {
                             ui.spinner();
                             ui.label(
                                 RichText::new(self.preferences.language.text(
-                                    "OrangeDeck Agent에 연결 중",
-                                    "CONNECTING TO ORANGEDECK AGENT",
+                                    "Mac 통신 모듈에 연결 중",
+                                    "CONNECTING TO ORANGEDECK CONNECTOR",
                                 ))
                                 .strong()
                                 .color(theme::MUTED),

@@ -45,13 +45,17 @@ credentials.json export-ignore
 hooks.json* export-ignore
 owned-codex-threads.json export-ignore
 install-agent.json export-ignore
+install-connector.json export-ignore
 install-ui.json export-ignore
 start-agent.command export-ignore
+start-connector.command export-ignore
 enable-notifications.command export-ignore
 check-agent.command export-ignore
+check-connector.command export-ignore
 start-ui.sh export-ignore
 check-ui.sh export-ignore
 agent.toml export-ignore
+connector.toml export-ignore
 ui.toml export-ignore
 id_ed25519* export-ignore
 id_rsa* export-ignore

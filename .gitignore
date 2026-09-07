@@ -13,7 +13,7 @@
 !/SECURITY.md
 !/install.sh
 !/Setup OrangeDeck.command
-!/Start OrangeDeck Agent.command
+!/Start OrangeDeck Connector.command
 !/Enable Codex Notifications.command
 !/OrangeDeck.desktop
 
@@ -90,6 +90,7 @@ USAGE_KO.md
 setup_bridge.py
 *.local.toml
 agent.toml
+connector.toml
 ui.toml
 auth.json
 credentials.json
@@ -97,10 +98,13 @@ hooks.json
 hooks.json.orangedeck-backup-*
 owned-codex-threads.json
 install-agent.json
+install-connector.json
 install-ui.json
 start-agent.command
+start-connector.command
 enable-notifications.command
 check-agent.command
+check-connector.command
 start-ui.sh
 check-ui.sh
 .env*
