@@ -81,4 +81,4 @@ The fixed approval keys cannot be edited and are disabled in editing mode.
 Actions: LIVE, Projects, Conversations, Notifications, Refresh, Follow latest,
 Previous/Next project, Previous/Next chat, Open editor, Open terminal, Open folder,
 and Open website. Host open actions use only registered project IDs and a configured
-website; they expose no user-entered shell command. See [host settings](INSTALL.md#host-shortcuts).
+website; they expose no user-entered shell command. See [host settings](INSTALL.en.md#host-shortcuts).

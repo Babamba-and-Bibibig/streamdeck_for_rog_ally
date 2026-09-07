@@ -6,7 +6,7 @@ import os
 import shutil
 
 import check_public
-from release_policy import REVIEWED_SCREENSHOTS, public_path
+from release_policy import REVIEWED_DIAGRAMS, REVIEWED_SCREENSHOTS, public_path
 
 
 class PublicSourceTests(unittest.TestCase):
@@ -18,12 +18,13 @@ class PublicSourceTests(unittest.TestCase):
             shutil.copy(workspace / ".gitignore", root / ".gitignore")
             public = ["README.md", "Cargo.lock", "apps/orangedeck-agent/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
                       "config/agent.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
-                      "docs/SCREENSHOTS.md", *REVIEWED_SCREENSHOTS]
+                      "docs/SCREENSHOTS.md", "docs/INSTALL.en.md", *REVIEWED_SCREENSHOTS, *REVIEWED_DIAGRAMS]
             private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "agent.toml", "ui-preferences.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
                        "config/local/github-ssh/id_ed25519", "download-page/config.local.toml", "scripts/start-ui.sh",
                        "apps/example/local/private.rs", "crates/example/.codex/private.rs", "scripts/credentials.json",
                        "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt",
-                       "docs/screenshots/private.png", "docs/screenshots/local/live.png", "docs/screenshots/live.jpg"]
+                       "docs/screenshots/private.png", "docs/screenshots/local/live.png", "docs/screenshots/live.jpg",
+                       "docs/diagrams/private.svg", "docs/diagrams/local/device-roles-ko.svg"]
             for relative in public + private:
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -58,6 +59,19 @@ class PublicSourceTests(unittest.TestCase):
                 self.assertTrue(check_public.inspect_content(path, b"replacement picture"))
                 self.assertTrue(check_public.inspect_content("README.md", data))
                 self.assertTrue(check_public.inspect_content("docs/screenshots/private.png", data))
+
+    def test_diagram_replacements_and_added_active_content_require_review(self):
+        workspace = Path(__file__).resolve().parents[1]
+        for path in REVIEWED_DIAGRAMS:
+            with self.subTest(path=path):
+                data = (workspace / path).read_bytes()
+                self.assertTrue(public_path(path))
+                self.assertEqual(check_public.inspect_content(path, data), [])
+                for extra in [b'<script>alert("changed")</script>', b'<image href="https://example.com/changed.png"/>', b'private metadata']:
+                    changed = data.replace(b'</svg>', extra + b'</svg>')
+                    self.assertNotEqual(changed, data)
+                    self.assertTrue(check_public.inspect_content(path, changed))
+        self.assertFalse(public_path("docs/diagrams/unreviewed.svg"))
 
     def test_screenshot_history_checks_aliases_and_rejected_bytes_after_removal(self):
         workspace = Path(__file__).resolve().parents[1]

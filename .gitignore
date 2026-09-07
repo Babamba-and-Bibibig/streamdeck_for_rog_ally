@@ -48,6 +48,7 @@
 !/docs/NOTIFICATIONS_KO.md
 !/docs/MACOS_SETUP.md
 !/docs/INSTALL.md
+!/docs/INSTALL.en.md
 !/docs/CHANGELOG.md
 !/docs/PUBLICATION.md
 !/docs/SCREENSHOTS.md
@@ -150,3 +151,8 @@ ui-preferences.toml
 !/docs/screenshots/en-conversations.png
 !/docs/screenshots/en-notifications.png
 !/docs/screenshots/en-key-editor.png
+
+# Only the two reviewed device-role diagrams are public.
+!/docs/diagrams/
+!/docs/diagrams/device-roles-ko.svg
+!/docs/diagrams/device-roles-en.svg

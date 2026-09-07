@@ -22,6 +22,13 @@ REVIEWED_SCREENSHOTS = {
     'docs/screenshots/en-key-editor.png': {'5e78db2fb5a0cdf37c2eaf03b7993494332e2ab4a6c58bce3df66f67a5cf74cc'},
 }
 
+# Static, hand-drawn SVGs: reviewed for layout, private data and active content.
+# Preserve earlier hashes when a reviewed diagram is replaced.
+REVIEWED_DIAGRAMS = {
+    'docs/diagrams/device-roles-ko.svg': {'45745816058257029e30b6c181f8b18a5dd18aa5a9f799735222157fd8947810'},
+    'docs/diagrams/device-roles-en.svg': {'04342216d152ba87f507334bd3dca4c7d6f045f44c1ca345f5211b6b851350d5'},
+}
+
 
 def read_public_file(path):
     """Read a bounded regular source file without following a final symlink or FIFO."""
@@ -51,7 +58,7 @@ ROOT_FILES = {
 }
 PUBLIC_DOCS = {
     "ARCHITECTURE.md", "CONTROLS.md", "SECURITY.md", "PROTOCOL.md", "ROADMAP.md",
-    "QUICKSTART_KO.md", "NOTIFICATIONS_KO.md", "MACOS_SETUP.md", "INSTALL.md",
+    "QUICKSTART_KO.md", "NOTIFICATIONS_KO.md", "MACOS_SETUP.md", "INSTALL.md", "INSTALL.en.md",
     "CHANGELOG.md", "PUBLICATION.md", "SCREENSHOTS.md",
 }
 
@@ -85,7 +92,8 @@ def public_path(path):
     if folder == "config":
         return len(path.parts) == 2 and (path.name.endswith(".example.toml") or path.name.endswith(".plist.example"))
     if folder == "docs":
-        return str(path) in REVIEWED_SCREENSHOTS or (len(path.parts) == 2 and path.name in PUBLIC_DOCS)
+        return (str(path) in REVIEWED_SCREENSHOTS or str(path) in REVIEWED_DIAGRAMS
+                or (len(path.parts) == 2 and path.name in PUBLIC_DOCS))
     if folder == "scripts":
         return len(path.parts) == 2 and path.suffix in {".py", ".sh", ".zsh"}
     if folder == "download-page":

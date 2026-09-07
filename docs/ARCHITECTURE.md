@@ -5,7 +5,7 @@ OrangeDeck separates state and command policy from operating-system, Codex, netw
 ## Runtime topology
 
 ```text
-Linux display                          macOS / Linux Codex host
+ROG Ally / CachyOS Handheld            Mac / macOS
 orangedeck-ui                          orangedeck-agent
   egui rendering                        authenticated axum endpoints
   touch / mouse / controller            command validation + project allow-list
@@ -18,6 +18,8 @@ orangedeck-ui                          orangedeck-agent
                               |
                          Codex CLI app-server
 ```
+
+This is the pairing covered by the installation guide: macOS Agent and a CachyOS Handheld ROG Ally remote in desktop mode. Steam Deck and SteamOS are untested. Other platform adapters and development paths do not establish successful installation on those systems.
 
 The Agent starts Codex App Server locally and owns its stdio and lifecycle. App Server is not exposed as a network listener. Existing independent Codex sessions are monitored read-only; reviewed hooks supply a separate, explicit approval channel.
 

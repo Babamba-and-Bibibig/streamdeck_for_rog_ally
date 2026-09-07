@@ -17,7 +17,28 @@ The shared source policy is `scripts/release_policy.py`. Only reviewed source/co
 
 The export contains only the allow-listed members within these directories. Do not upload `starter.md`, handoff/progress notes, `config/local/`, `config.local.toml`, tokens/pairing files, Codex authentication, logs, personal screenshots, databases, build outputs or the historical `dist/` directory. Local contributor instructions are excluded from packaged/exported source.
 
-The only image exceptions are the twelve reviewed Korean/English demo screenshots documented in [SCREENSHOTS.md](SCREENSHOTS.md). Their exact paths and SHA256 hashes are pinned in `scripts/release_policy.py`, and the index/history scanner and ZIP/TAR validator use the same content check. Replacing an image or adding private metadata fails verification until it has been reviewed and its hash explicitly approved. Git export attributes preserve these images in GitHub source downloads; other screenshots remain excluded.
+The image exceptions are the twelve reviewed Korean/English demo screenshots and two static device-role SVG diagrams documented in [SCREENSHOTS.md](SCREENSHOTS.md). Their exact paths and SHA256 hashes are pinned in `scripts/release_policy.py`, and the index/history scanner and ZIP/TAR validator use the same content check. Replacing an image or adding private metadata fails verification until it has been reviewed and its hash explicitly approved. Diagrams also pass the text privacy scan; their reviewed SVGs contain no script, external resource or embedded image. Git export attributes preserve these assets in GitHub source downloads; other images remain excluded.
+
+<a id="development"></a>
+
+## Development checks and demo
+
+The user guide targets macOS Agent and a CachyOS Handheld ROG Ally remote. Implementation paths for other systems do not establish successful installation on those systems. Steam Deck/SteamOS remain untested.
+
+```sh
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo fmt --all --check
+python3 scripts/check_architecture.py
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 download-page/test_manage.py
+cargo build --release --workspace --locked
+./scripts/run-demo.zsh
+# English UI and example conversations:
+./scripts/run-demo.zsh en
+```
+
+Demo uses SIMULATED MAC / LOCAL MOCK data. The recorded Codex CLI schema baseline is 0.153.2. Demo and build checks do not verify real Mac installation, notifications or approvals.
 
 ## Prepare a separate upload candidate
 
