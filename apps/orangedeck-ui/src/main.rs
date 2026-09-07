@@ -2,6 +2,8 @@ mod alerts;
 mod app;
 mod controller;
 mod doctor;
+mod i18n;
+mod icons;
 mod input_backend;
 mod model;
 mod monitor;
@@ -56,6 +58,9 @@ enum Command {
     Demo {
         #[arg(long)]
         notifications: bool,
+        /// Initial UI language for this temporary demo session.
+        #[arg(long, value_parser = ["ko", "en"], default_value = "ko")]
+        language: String,
     },
     /// Import a private pairing bundle created on the Mac.
     Pair {
@@ -103,18 +108,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             notifications,
         } => {
             input_backend::prepare()?;
+            let preferences = config.with_file_name("ui-preferences.toml");
             let config = UiConfig::load(&config)?;
             require_tailscale_url(&config.agent_url)?;
             let token = AuthToken::load(&config.token_file)?;
             init_tracing(&config.log_level);
-            run_ui(config, token, false, notifications)?;
+            run_ui(config, token, false, notifications, Some(preferences), None)?;
         }
-        Command::Demo { notifications } => {
+        Command::Demo {
+            notifications,
+            language,
+        } => {
             input_backend::prepare()?;
             let config = UiConfig::demo();
             let token = AuthToken::parse(orangedeck_infra::DEMO_TOKEN)?;
             init_tracing("info");
-            run_ui(config, token, true, notifications)?;
+            let language = if language == "en" {
+                i18n::Language::English
+            } else {
+                i18n::Language::Korean
+            };
+            run_ui(config, token, true, notifications, None, Some(language))?;
         }
         Command::Pair {
             bundle,
@@ -181,6 +195,8 @@ fn run_ui(
     token: AuthToken,
     demo_mode: bool,
     notifications: bool,
+    preferences: Option<PathBuf>,
+    demo_language: Option<i18n::Language>,
 ) -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -196,6 +212,10 @@ fn run_ui(
         Box::new(move |context| {
             OrangeDeckApp::new(context, config, token, demo_mode)
                 .map(|mut app| {
+                    app.load_preferences(&context.egui_ctx, preferences);
+                    if let Some(language) = demo_language {
+                        app.change_language(&context.egui_ctx, language);
+                    }
                     if notifications {
                         app.open_notifications();
                     }

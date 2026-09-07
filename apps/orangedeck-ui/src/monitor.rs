@@ -1,4 +1,5 @@
 //! A read-only instrument panel. Unknown data is never turned into a zero or a live signal.
+use crate::i18n::{self, Language};
 use chrono::Utc;
 use eframe::egui::{self, Align2, Color32, FontId, Pos2, Rect, Sense, Stroke, Vec2};
 use orangedeck_protocol::{
@@ -22,6 +23,7 @@ pub fn render(
     following: bool,
     height: f32,
 ) -> MonitorAction {
+    let lang = i18n::language(ui.ctx());
     let mut action = MonitorAction::default();
     let width = (ui.available_width() - 2.0).max(1.0);
     let row_height = (height - 184.0).clamp(196.0, 240.0);
@@ -36,11 +38,17 @@ pub fn render(
         Pos2::new(canvas.right(), canvas.top()),
         Align2::RIGHT_TOP,
         if !connected {
-            "연결 끊김 · 수신 대기"
+            lang.text("연결 끊김 · 수신 대기", "Offline · awaiting data")
         } else if following {
-            "현재 프로젝트 · 최신 대화 자동"
+            lang.text(
+                "현재 프로젝트 · 최신 대화 자동",
+                "Current project · auto-follow",
+            )
         } else {
-            "현재 프로젝트 · 대화 고정"
+            lang.text(
+                "현재 프로젝트 · 대화 고정",
+                "Current project · pinned conversation",
+            )
         },
         FontId::proportional(12.0),
         if connected {
@@ -64,12 +72,18 @@ pub fn render(
     } else {
         card(&p, hero, true);
         let inner = hero.shrink(16.0);
-        text(&p, inner.min, "현재 질의 토큰", 15.0, theme::ORANGE);
+        text(
+            &p,
+            inner.min,
+            lang.text("현재 질의 토큰", "Current turn tokens"),
+            15.0,
+            theme::ORANGE,
+        );
         text(&p, inner.min + Vec2::new(0.0, 24.0), "—", 94.0, theme::TEXT);
         fitted(
             &p,
             inner.min + Vec2::new(0.0, if dense { inner.height() - 24.0 } else { 140.0 }),
-            "새 토큰 집계 대기",
+            lang.text("새 토큰 집계 대기", "Waiting for token usage"),
             20.0,
             theme::MUTED,
             inner.width(),
@@ -79,7 +93,10 @@ pub fn render(
             fitted(
                 &p,
                 inner.min + Vec2::new(0.0, 177.0),
-                "모델 요청이 끝날 때 갱신 · 약 5초 간격 확인",
+                lang.text(
+                    "모델 요청이 끝날 때 갱신 · 약 5초 간격 확인",
+                    "Updates after model requests · checks every ~5s",
+                ),
                 12.0,
                 theme::MUTED,
                 inner.width(),
@@ -87,11 +104,17 @@ pub fn render(
             );
         }
         ui.interact(hero, ui.id().with("pending_tokens"), Sense::hover())
-            .on_hover_text("모델 요청이 끝나면 약 5초 간격으로 새 토큰 집계를 읽습니다. 새 질의가 시작되면 이전 질의의 수치를 비웁니다.");
+            .on_hover_text(lang.text("모델 요청이 끝나면 약 5초 간격으로 새 토큰 집계를 읽습니다. 새 질의가 시작되면 이전 질의의 수치를 비웁니다.", "Reads completed model-request usage about every five seconds. A new question clears the previous reading."));
     }
     card(&p, workspace, false);
     let inside = workspace.shrink(16.0);
-    text(&p, inside.min, "현재 프로젝트", 12.0, theme::CYAN);
+    text(
+        &p,
+        inside.min,
+        lang.text("현재 프로젝트", "CURRENT PROJECT"),
+        12.0,
+        theme::CYAN,
+    );
     if let Some(thread) = thread {
         let path = crate::selection::project_path(&thread.cwd);
         let folder = path
@@ -120,11 +143,19 @@ pub fn render(
             fitted(
                 &p,
                 inside.min + Vec2::new(0.0, 83.0),
-                &format!(
-                    "{} · 대화 {}개",
-                    snapshot.host.name,
-                    snapshot.codex.threads.len()
-                ),
+                &(if lang == Language::English {
+                    format!(
+                        "{} · {} conversations",
+                        snapshot.host.name,
+                        snapshot.codex.threads.len()
+                    )
+                } else {
+                    format!(
+                        "{} · 대화 {}개",
+                        snapshot.host.name,
+                        snapshot.codex.threads.len()
+                    )
+                }),
                 11.0,
                 theme::MUTED,
                 inside.width(),
@@ -139,13 +170,19 @@ pub fn render(
     text(
         &p,
         query.min,
-        "현재 질의 · 눌러서 크게 보기",
+        lang.text(
+            "현재 질의 · 눌러서 크게 보기",
+            "CURRENT QUESTION · TAP FOR DETAILS",
+        ),
         11.0,
         theme::ORANGE,
     );
     let prompt = thread
         .and_then(crate::selection::latest_prompt)
-        .unwrap_or("현재 질의 내용을 기다리고 있습니다");
+        .unwrap_or(lang.text(
+            "현재 질의 내용을 기다리고 있습니다",
+            "Waiting for the current question",
+        ));
     fitted(
         &p,
         query.min + Vec2::new(0.0, 19.0),
@@ -161,7 +198,11 @@ pub fn render(
     {
         action.detail = true;
     }
-    let buttons = [("‹", -1), ("›", 1), ("최근 자동", 0)];
+    let buttons = [
+        ("‹", -1),
+        ("›", 1),
+        (lang.text("최근 자동", "Follow latest"), 0),
+    ];
     let button_width = (inside.width() - 12.0) / 3.0;
     for (index, (label, delta)) in buttons.into_iter().enumerate() {
         let x = inside.left() + f32::from(u16::try_from(index).unwrap_or(0)) * (button_width + 6.0);
@@ -170,7 +211,11 @@ pub fn render(
             Vec2::new(button_width, 34.0),
         );
         let active = index == 2 && following;
-        let label = if active { "자동 ON" } else { label };
+        let label = if active {
+            lang.text("자동 ON", "AUTO ON")
+        } else {
+            label
+        };
         let response = ui
             .interact(
                 rect,
@@ -179,13 +224,13 @@ pub fn render(
             )
             .on_hover_cursor(egui::CursorIcon::PointingHand)
             .on_hover_text(match index {
-                0 => "이전 프로젝트 선택",
-                1 => "다음 프로젝트 선택",
+                0 => lang.text("이전 프로젝트 선택", "Previous project"),
+                1 => lang.text("다음 프로젝트 선택", "Next project"),
                 _ if following => {
-                    "자동 모드가 켜져 있습니다. 현재 프로젝트의 최신 대화를 따라갑니다. 이미 최신 대화를 보고 있으면 화면은 그대로입니다. 대화 탭에서 다른 대화를 고르면 고정 모드로 바뀝니다."
+                    lang.text("자동 모드가 켜져 있습니다. 현재 프로젝트의 최신 대화를 따라갑니다. 이미 최신 대화를 보고 있으면 화면은 그대로입니다. 대화 탭에서 다른 대화를 고르면 고정 모드로 바뀝니다.", "Auto-follow is on for this project. Choose another conversation to pin it.")
                 }
                 _ => {
-                    "현재 프로젝트에서 가장 최근에 활동한 대화로 돌아가고, 이후에도 최신 대화를 자동으로 따라갑니다."
+                    lang.text("현재 프로젝트에서 가장 최근에 활동한 대화로 돌아가고, 이후에도 최신 대화를 자동으로 따라갑니다.", "Return to the latest conversation in this project and keep following activity.")
                 }
             });
         p.rect_filled(
@@ -239,17 +284,28 @@ fn visible_usage(thread: &CodexThreadDto, now: i64) -> Option<&LiveTokenUsageDto
         .then_some(usage)
 }
 
-fn usage_caption(usage: &LiveTokenUsageDto, connected: bool, now: i64) -> (String, Color32) {
+fn usage_caption_localized(
+    lang: Language,
+    usage: &LiveTokenUsageDto,
+    connected: bool,
+    now: i64,
+) -> (String, Color32) {
     let (state, color) = if !connected {
-        ("연결 끊김 · 기록", theme::MUTED)
+        (
+            lang.text("연결 끊김 · 기록", "Offline reading"),
+            theme::MUTED,
+        )
     } else if now - usage.observed_at.timestamp() > 20 {
-        ("수신 지연 · 기록", theme::YELLOW)
+        (
+            lang.text("수신 지연 · 기록", "Stale reading"),
+            theme::YELLOW,
+        )
     } else if usage.status == CodexThreadStatusDto::Completed {
-        ("완료", theme::GREEN)
+        (lang.text("완료", "Complete"), theme::GREEN)
     } else if now - usage.updated_at.timestamp() <= 20 {
-        ("집계 수신", theme::ORANGE)
+        (lang.text("집계 수신", "Updated"), theme::ORANGE)
     } else {
-        ("집계 대기", theme::YELLOW)
+        (lang.text("집계 대기", "Awaiting update"), theme::YELLOW)
     };
     (
         format!(
@@ -271,12 +327,13 @@ fn token_hero(
     connected: bool,
     now: i64,
 ) {
+    let lang = i18n::language(ui.ctx());
     card(p, rect, true);
     let inner = rect.shrink(16.0);
     let dense = rect.height() < 230.0;
     let seconds = (now - usage.updated_at.timestamp()).max(0);
     let finished = usage.status == CodexThreadStatusDto::Completed;
-    let (caption, accent) = usage_caption(usage, connected, now);
+    let (caption, accent) = usage_caption_localized(lang, usage, connected, now);
     p.rect_filled(
         Rect::from_min_size(inner.min, Vec2::new(3.0, 13.0)),
         2,
@@ -286,9 +343,9 @@ fn token_hero(
         p,
         inner.min + Vec2::new(11.0, -1.0),
         if usage.turn_tokens.is_none() {
-            "최근 모델 요청 토큰"
+            lang.text("최근 모델 요청 토큰", "Last model request tokens")
         } else {
-            "현재 질의 토큰"
+            lang.text("현재 질의 토큰", "Current turn tokens")
         },
         14.0,
         accent,
@@ -302,11 +359,14 @@ fn token_hero(
     );
     let counted = usage.turn_tokens.as_ref().unwrap_or(&usage.last_request);
     let scope = if usage.turn_tokens.is_none() {
-        "최근 모델 요청 · 1회"
+        lang.text("최근 모델 요청 · 1회", "Last model request · one request")
     } else if finished {
-        "완료한 질의의 최종 집계"
+        lang.text(
+            "완료한 질의의 최종 집계",
+            "Final usage for the completed turn",
+        )
     } else {
-        "이번 작업에서 사용한 토큰"
+        lang.text("이번 작업에서 사용한 토큰", "Tokens used in this turn")
     };
     if !dense {
         text(
@@ -332,7 +392,11 @@ fn token_hero(
     fitted(
         p,
         inner.min + Vec2::new(0.0, if dense { inner.height() - 24.0 } else { 149.0 }),
-        &format!("입력  {}", separated(counted.input_tokens)),
+        &(if lang == Language::English {
+            format!("IN  {}", separated(counted.input_tokens))
+        } else {
+            format!("입력  {}", separated(counted.input_tokens))
+        }),
         18.0,
         theme::CYAN,
         half - 8.0,
@@ -341,7 +405,11 @@ fn token_hero(
     fitted(
         p,
         inner.min + Vec2::new(half, if dense { inner.height() - 24.0 } else { 149.0 }),
-        &format!("출력  {}", separated(counted.output_tokens)),
+        &(if lang == Language::English {
+            format!("OUT  {}", separated(counted.output_tokens))
+        } else {
+            format!("출력  {}", separated(counted.output_tokens))
+        }),
         18.0,
         theme::ORANGE,
         half,
@@ -381,16 +449,22 @@ fn token_hero(
         fitted(
             p,
             inner.min + Vec2::new(0.0, 193.0),
-            &format!("{seconds}초 전 집계 · 모델 요청이 끝날 때 갱신"),
+            &(if lang == Language::English {
+                format!("Updated {seconds}s ago · after each model request")
+            } else {
+                format!("{seconds}초 전 집계 · 모델 요청이 끝날 때 갱신")
+            }),
             11.0,
             theme::MUTED,
             inner.width(),
             1,
         );
     }
-    ui.interact(rect, ui.id().with("session_token_usage"), Sense::hover()).on_hover_text(format!(
+    ui.interact(rect, ui.id().with("session_token_usage"), Sense::hover()).on_hover_text(if lang == Language::English { format!(
+        "Source: host Codex session logs (read-only)\n{scope}: {number} tokens\nIncludes cached input {} and reasoning output {}\nBars show usage per recent model request, not tokens per second.\nNot an account lifetime total or billing amount.\nRecorded: {}\nProcess liveness is not checked separately.",
+        separated(counted.cached_input_tokens), separated(counted.reasoning_output_tokens), usage.updated_at) } else { format!(
         "출처: 연결된 Mac Agent의 Codex 세션 로그 (읽기 전용)\n{scope}: {number} 토큰\n입력에 캐시 {} 포함 · 출력에 추론 {} 포함\n막대: 최근 모델 요청별 토큰 수 (초당 속도 아님)\n계정 전체 누적량이나 결제 금액이 아닙니다.\n집계 시각: {}\n프로세스 생존 여부는 별도로 확인하지 않습니다.",
-        separated(counted.cached_input_tokens), separated(counted.reasoning_output_tokens), usage.updated_at));
+        separated(counted.cached_input_tokens), separated(counted.reasoning_output_tokens), usage.updated_at) });
 }
 
 fn separated(value: i64) -> String {
@@ -410,7 +484,7 @@ fn card(p: &egui::Painter, rect: Rect, warm: bool) {
         rect,
         16,
         if warm {
-            Color32::from_rgb(31, 25, 23)
+            theme::tint(theme::PANEL, theme::ORANGE, 0.035)
         } else {
             theme::PANEL
         },
@@ -421,7 +495,7 @@ fn card(p: &egui::Painter, rect: Rect, warm: bool) {
         Stroke::new(
             1.0,
             if warm {
-                Color32::from_rgb(70, 44, 32)
+                theme::tint(theme::BORDER, theme::ORANGE, 0.25)
             } else {
                 theme::BORDER
             },
@@ -459,6 +533,11 @@ fn fitted(
     job.wrap.break_anywhere = true;
     let galley = p.layout_job(job);
     p.galley(at, galley, color);
+}
+
+#[cfg(test)]
+fn usage_caption(usage: &LiveTokenUsageDto, connected: bool, now: i64) -> (String, Color32) {
+    usage_caption_localized(Language::Korean, usage, connected, now)
 }
 
 #[cfg(test)]

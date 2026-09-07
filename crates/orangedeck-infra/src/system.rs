@@ -155,11 +155,37 @@ async fn collect_macos_system_snapshot() -> SystemSnapshot {
 }
 
 pub fn open_editor(project: &Project) -> Result<(), SystemError> {
+    let path = path_str(&project.path)?;
     #[cfg(target_os = "macos")]
-    return spawn_detached("open", &["-a", "Zed", path_str(&project.path)?]);
+    {
+        let mut directories = vec![PathBuf::from("/Applications")];
+        if let Some(user_home) = std::env::var_os("HOME") {
+            directories.push(PathBuf::from(user_home).join("Applications"));
+        }
+        for app in ["Zed.app", "Visual Studio Code.app", "VSCodium.app"] {
+            for directory in &directories {
+                let bundle = directory.join(app);
+                if bundle.is_dir() {
+                    return spawn_detached("open", &["-a", path_str(&bundle)?, path]);
+                }
+            }
+        }
+        Err(SystemError::Command(
+            "Install Zed, Visual Studio Code or VSCodium in Applications to use Open editor"
+                .to_owned(),
+        ))
+    }
 
     #[cfg(not(target_os = "macos"))]
-    spawn_detached("xdg-open", &[path_str(&project.path)?])
+    spawn_first_available(
+        &[
+            ("zed", &[path]),
+            ("zeditor", &[path]),
+            ("code", &[path]),
+            ("codium", &[path]),
+        ],
+        "Install Zed, VS Code or VSCodium and expose its command in PATH to use Open editor",
+    )
 }
 
 pub fn open_terminal(project: &Project) -> Result<(), SystemError> {
@@ -167,7 +193,28 @@ pub fn open_terminal(project: &Project) -> Result<(), SystemError> {
     return spawn_detached("open", &["-a", "Terminal", path_str(&project.path)?]);
 
     #[cfg(not(target_os = "macos"))]
-    spawn_detached("konsole", &["--workdir", path_str(&project.path)?])
+    {
+        let path = path_str(&project.path)?;
+        spawn_first_available(
+            &[
+                ("konsole", &["--workdir", path]),
+                ("gnome-terminal", &["--working-directory", path]),
+                ("xfce4-terminal", &["--working-directory", path]),
+            ],
+            "Install Konsole, GNOME Terminal or Xfce Terminal to use Open terminal",
+        )
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn spawn_first_available(candidates: &[(&str, &[&str])], missing: &str) -> Result<(), SystemError> {
+    for (program, args) in candidates {
+        match spawn_detached(program, args) {
+            Err(SystemError::Spawn(error)) if error.kind() == std::io::ErrorKind::NotFound => {}
+            result => return result,
+        }
+    }
+    Err(SystemError::Command(missing.to_owned()))
 }
 
 pub fn open_project(project: &Project) -> Result<(), SystemError> {

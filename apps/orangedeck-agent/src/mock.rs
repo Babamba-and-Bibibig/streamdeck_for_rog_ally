@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use chrono::Utc;
+use orangedeck_domain::UiLanguage;
 use orangedeck_protocol::{
     ApprovalDecisionDto, ApprovalDto, ApprovalKindDto, ClientCommand, CodexActivityDto,
     CodexConnectionDto, CodexConnectionStateDto, CodexLimitsDto, CodexSnapshotDto, CodexThreadDto,
@@ -25,6 +26,7 @@ pub struct MockBackend {
 }
 
 struct MockInner {
+    language: UiLanguage,
     state: RwLock<SnapshotDto>,
     events: broadcast::Sender<ServerEnvelope>,
     cancellations: Mutex<HashMap<Uuid, CancellationToken>>,
@@ -33,10 +35,28 @@ struct MockInner {
 
 impl MockBackend {
     pub fn new() -> Self {
+        Self::with_english_demo(false)
+    }
+
+    pub fn with_english_demo(english: bool) -> Self {
         let (events, _) = broadcast::channel(512);
+        let mut snapshot = demo_snapshot();
+        if english {
+            for thread in &mut snapshot.codex.threads {
+                if let Some(observation) = &mut thread.observation {
+                    observation.latest_user_prompt = Some("Build a clean LIVE dashboard so I can follow my Codex project, tokens and remaining quotas at a glance.".to_owned());
+                    observation.latest_agent_message = Some("I am organizing the dashboard around current work and usage, with clear navigation and a configurable control deck.".to_owned());
+                }
+            }
+        }
         Self {
             inner: Arc::new(MockInner {
-                state: RwLock::new(demo_snapshot()),
+                language: if english {
+                    UiLanguage::English
+                } else {
+                    UiLanguage::Korean
+                },
+                state: RwLock::new(snapshot),
                 events,
                 cancellations: Mutex::new(HashMap::new()),
                 turn_cancellations: Mutex::new(HashMap::new()),
@@ -228,16 +248,32 @@ impl MockBackend {
     }
 
     async fn add_approval(&self) -> ApprovalDto {
+        let lang = self.inner.language;
         let approval = ApprovalDto {
             turn_id: Some("simulated-turn".to_owned()),
             id: Uuid::new_v4(),
             thread_id: Some("external-tui".to_owned()),
             kind: ApprovalKindDto::CommandExecution,
-            title: "CODEX APPROVAL REQUIRED".to_owned(),
-            summary: "Run `cargo test --workspace` in the selected project?".to_owned(),
+            title: lang
+                .text("Codex 명령 실행 승인", "CODEX APPROVAL REQUIRED")
+                .to_owned(),
+            summary: lang
+                .text(
+                    "선택한 프로젝트에서 `cargo test --workspace`를 실행할까요?",
+                    "Run `cargo test --workspace` in the selected project?",
+                )
+                .to_owned(),
             details: vec![
-                "Command execution".to_owned(),
-                "Working tree is not modified by this command".to_owned(),
+                lang.text(
+                    "명령 실행 · 모의 요청",
+                    "Command execution · simulated request",
+                )
+                .to_owned(),
+                lang.text(
+                    "데모이므로 실제 명령은 실행하지 않습니다.",
+                    "Demo only; no real command is executed.",
+                )
+                .to_owned(),
             ],
             requested_at: Utc::now(),
         };
@@ -556,7 +592,10 @@ impl AgentBackend for MockBackend {
             ClientCommand::DemoScenario { scenario } => match scenario {
                 orangedeck_protocol::DemoScenario::Approval => {
                     self.add_approval().await;
-                    Ok(BackendResult::accepted("Approval scenario started"))
+                    Ok(BackendResult::accepted(self.inner.language.text(
+                        "모의 승인 요청을 표시했습니다.",
+                        "Approval scenario started",
+                    )))
                 }
                 orangedeck_protocol::DemoScenario::CargoFailure => {
                     self.start_job(DEMO_PROJECT_ID.to_owned(), JobKindDto::CargoTest, true)

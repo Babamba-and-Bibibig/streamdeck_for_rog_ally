@@ -33,7 +33,7 @@ Steam Input or InputPlumber may expose a virtual controller instead of the physi
 device. On the inspected Ally, gilrs detected the InputPlumber Xbox-compatible device;
 keyboard and touch remain available if controller access changes.
 
-## Five tabs (0.1.14)
+## Five tabs
 
 LB/RB (Q/E) cycles LIVE, 단축키, 프로젝트들, 대화, 알림. The fifth tab shows one current question
 and its corresponding reply, with a pulsing border for a decision request, approval or
@@ -41,7 +41,7 @@ completed response. 확인했어요 acknowledges only the current query's notifi
 
 A/B decides only a request displayed on Shortcuts or Notifications. Shortcuts uses ten
 square keys in five columns and two rows: key 01 approves, key 02 rejects, keys 03–10
-are unassigned. D-pad/stick navigation follows the grid. A executes the focused key;
+accept one of 14 built-in actions. Empty keys open the action editor. D-pad/stick navigation follows the grid. A executes the focused key;
 B rejects the displayed request. The Notifications page keeps its direct A approve / B reject.
 LT/RT cycles requests within that query. Sending locks both decisions
 until acknowledgement/resolution; failures allow explicit retry. Keyboard Enter/Escape
@@ -55,8 +55,27 @@ Other projects/turns and ordinary completion notices do not trigger this page sw
 announcements do not open a modal over the keys. A pointer press begun on an older request
 cannot decide a replacement request when released. Keyboard Enter/Escape/Space never decide.
 
-In 0.1.15 both decision keys stay neutral gray without a request, while disconnected,
+Both decision keys stay neutral gray without a request, while disconnected,
 before a new request is armed, and during sending. Each key names its state. Only actionable
 requests light the green/pink keys and enable their identical hover/press feedback and hand
 cursor. Controller focus uses a small A badge during actionable requests; it no longer
 lights the first idle key or overrides pointer feedback.
+
+## Language and custom keys (0.1.20)
+
+The top-right **한국어 / EN** toggle immediately changes all tab and control labels.
+Your own project names and conversation contents stay unchanged. Normal UI runs save
+language and key assignments beside the selected config as `ui-preferences.toml`.
+Demo runs keep these changes only for the session.
+
+Tap an empty **+** key to choose an action. **Edit keys** or right-click edits an
+assigned key; **Clear key** removes it. **Quick setup** fills only empty slots and
+preserves existing assignments. Opening/closing the editor does not execute a key.
+Inside the editor, D-pad/stick moves through two columns, **A saves**, and **B cancels**.
+B also exits deck editing mode. These editor controls never decide an obscured approval.
+The fixed approval keys cannot be edited and are disabled in editing mode.
+
+Actions: LIVE, Projects, Conversations, Notifications, Refresh, Follow latest,
+Previous/Next project, Previous/Next chat, Open editor, Open terminal, Open folder,
+and Open website. Host open actions use only registered project IDs and a configured
+website; they expose no user-entered shell command. See [host settings](INSTALL.md#host-shortcuts).

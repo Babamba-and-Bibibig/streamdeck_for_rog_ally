@@ -66,7 +66,18 @@ Session-usage reads accept only app-server-provided paths for listed thread IDs.
 
 A valid baseline permits a current-turn token delta. Otherwise the UI explicitly labels the latest model request. New turns clear previous readings. Completed readings retain their timestamp; stale or disconnected data is distinguished from current activity. Counts update at model-request boundaries, not for every generated token. Rollout records are an internal integration and can change with Codex versions.
 
-The five tabs are LIVE, shortcuts, projects, conversations and notifications. They share project/conversation/current-turn selection. Recent automatic selection stays within the selected project. A new actionable approval for that turn opens shortcuts once. The deck contains two decision keys and eight unassigned keys; no user-editable shell macro system is exposed.
+The five tabs are LIVE, shortcuts, projects, conversations and notifications. They share project/conversation/current-turn selection. Recent automatic selection stays within the selected project. A new actionable approval for that turn opens shortcuts once. The deck contains two fixed decision keys and eight customizable keys from a finite 14-action catalog. Arbitrary shell macros are not exposed.
+
+The 0.1.20 preferences follow the same inward dependency rules: domain owns the language,
+finite shortcut catalog and fixed-key invariant; application resolves a shortcut into local
+navigation or a typed registered-project command; infrastructure reads bounded private
+preferences and writes them atomically with mode 0600. The UI composition root chooses
+`ui-preferences.toml` beside the active UI config. Rendering uses a per-window language;
+user content is not translated. Preference writes are small synchronous file operations on
+explicit user changes, separate from network and process workers. Corrupt or newer-schema
+files are preserved and a visible warning explains that the session cannot save them.
+Demo preferences are ephemeral. The action editor intercepts A/B and suppresses background
+approval routing; assignment never executes the selected action.
 
 ## Hook and input boundary
 

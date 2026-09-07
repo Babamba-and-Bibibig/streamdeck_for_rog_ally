@@ -13,6 +13,26 @@ import install
 
 
 class InstallerTests(unittest.TestCase):
+    def test_ui_with_build_tools_still_requires_korean_font_and_respects_consent(self):
+        options = install.parser().parse_args([])
+        with patch.object(install.platform, "system", return_value="Linux"), \
+                patch.object(install, "executable", side_effect=lambda name: "/usr/bin/" + name if name in {"cc", "pkg-config", "apt-get"} else None), \
+                patch.object(install, "has_korean_font", return_value=False), \
+                patch.object(install.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)), \
+                patch.object(install, "consent", return_value=False) as consent, \
+                patch.object(install, "run") as run, contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(install.SetupError):
+                install.install_dependencies("ui", options)
+            run.assert_not_called()
+            consent.return_value = True
+            install.install_dependencies("ui", options)
+            self.assertIn("fonts-noto-cjk", run.call_args.args[0])
+            run.reset_mock()
+            consent.reset_mock()
+            install.install_dependencies("agent", options)
+            consent.assert_not_called()
+            run.assert_not_called()
+
     def test_launcher_quotes_paths_and_values_without_shell_execution(self):
         with tempfile.TemporaryDirectory(prefix="orangedeck-launcher-test-") as tmp:
             root = Path(tmp)

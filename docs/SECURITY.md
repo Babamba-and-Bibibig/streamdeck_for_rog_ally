@@ -19,6 +19,7 @@ to the Ally.
 - Token comparison is constant-time. Token debug and malformed TOML errors withhold secret contents. Real pairing rejects the public demo token.
 - HTTP bypasses system proxy settings and refuses redirects; Agent WebSocket input frames/messages are capped at 64 KiB.
 - Token, pairing, and generated config files use mode `0600` on Unix.
+- UI language/key preferences are a separate bounded `ui-preferences.toml`, saved atomically with private permissions and excluded from publication. Unrecognized actions, unsupported schemas and symlink files are refused.
 - Projects are canonicalized and resolved only from the Agent-side allow-list.
 - Cargo commands are fixed arrays: `check`, `test`, `clippy`, `fmt --check`, and `build`.
 - Git commands are fixed read-only status, log, and diff invocations. Optional index
@@ -29,6 +30,7 @@ to the Ally.
 - Prompts are bounded, are not logged by default, and can target only owned threads.
 - API authentication runs before request-body reading/JSON parsing or WebSocket extraction. Command bodies are capped at 64 KiB and only one Cargo job can run at a time.
 - Commands pressed while disconnected or connecting are rejected, never replayed later.
+- The customizable key catalog contains no arbitrary commands or approval decisions. Host open actions resolve only registered project IDs. Editing a key saves a choice without executing it; A/B in that modal never decide a background approval.
 - `Ctrl-C` and `SIGTERM` trigger process-group cleanup for active Cargo and Codex children.
 - Codex stderr content is suppressed rather than copied into OrangeDeck logs.
 

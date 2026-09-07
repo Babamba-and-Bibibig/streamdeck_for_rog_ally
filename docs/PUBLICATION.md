@@ -10,14 +10,14 @@ The shared source policy is `scripts/release_policy.py`. Only reviewed source/co
 | --- | --- |
 | `apps/`, `crates/`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml` | Application source and reproducible dependency/toolchain selection |
 | `install.sh`, the three `.command` launchers, `OrangeDeck.desktop`, `scripts/` | Guided installation, launchers and local release checks |
-| `README.md`, `README.ko.md`, `docs/`, `LICENSE`, `SECURITY.md` | English/Korean setup, features, controls and security information |
+| `README.md`, `README.ko.md`, `README.en.md`, `docs/`, `LICENSE`, `SECURITY.md` | Korean-first and English setup, features, controls and security information |
 | `config/*.example.toml`, `config/*.plist.example` | Templates for each user's own environment |
 | `.github/`, `.gitignore`, `.gitattributes` | CI checks and publication exclusions; keep these hidden files |
 | Reviewed `download-page/` source and empty `config.toml` template | Optional private update tool, with no machine settings |
 
 The export contains only the allow-listed members within these directories. Do not upload `starter.md`, handoff/progress notes, `config/local/`, `config.local.toml`, tokens/pairing files, Codex authentication, logs, personal screenshots, databases, build outputs or the historical `dist/` directory. Local contributor instructions are excluded from packaged/exported source.
 
-The only image exceptions are the five reviewed demo screenshots documented in [SCREENSHOTS.md](SCREENSHOTS.md). Their exact paths and SHA256 hashes are pinned in `scripts/release_policy.py`, and the index/history scanner and ZIP/TAR validator use the same content check. Replacing an image or adding private metadata fails verification until it has been reviewed and its hash explicitly approved. Git export attributes preserve these images in GitHub source downloads; other screenshots remain excluded.
+The only image exceptions are the twelve reviewed Korean/English demo screenshots documented in [SCREENSHOTS.md](SCREENSHOTS.md). Their exact paths and SHA256 hashes are pinned in `scripts/release_policy.py`, and the index/history scanner and ZIP/TAR validator use the same content check. Replacing an image or adding private metadata fails verification until it has been reviewed and its hash explicitly approved. Git export attributes preserve these images in GitHub source downloads; other screenshots remain excluded.
 
 ## Prepare a separate upload candidate
 

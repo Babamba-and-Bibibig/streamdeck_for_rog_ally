@@ -1,3 +1,7 @@
+use crate::i18n::{self, Language};
+mod deck_settings;
+use orangedeck_domain::UiPreferences;
+use orangedeck_infra::UiPreferenceStore;
 use std::{
     collections::BTreeSet,
     process::Command,
@@ -39,6 +43,7 @@ impl Page {
         Self::Notifications,
     ];
 
+    #[cfg(test)]
     const fn label(self) -> &'static str {
         match self {
             Self::Dashboard => "LIVE",
@@ -46,6 +51,16 @@ impl Page {
             Self::Projects => "프로젝트들",
             Self::Codex => "대화",
             Self::Notifications => "알림",
+        }
+    }
+
+    const fn translated(self, lang: Language) -> &'static str {
+        match self {
+            Self::Dashboard => "LIVE",
+            Self::Shortcuts => lang.text("단축키", "Shortcuts"),
+            Self::Projects => lang.text("프로젝트들", "Projects"),
+            Self::Codex => lang.text("대화", "Conversations"),
+            Self::Notifications => lang.text("알림", "Notifications"),
         }
     }
 
@@ -61,6 +76,11 @@ impl Page {
 }
 
 pub struct OrangeDeckApp {
+    preferences: UiPreferences,
+    preference_store: Option<UiPreferenceStore>,
+    preference_warning: Option<String>,
+    editor: Option<deck_settings::EditorState>,
+    deck_editing: bool,
     config: UiConfig,
     network: NetworkHandle,
     model: UiModel,
@@ -92,6 +112,11 @@ impl OrangeDeckApp {
             context.egui_ctx.clone(),
         )?;
         Ok(Self {
+            preferences: UiPreferences::default(),
+            preference_store: None,
+            preference_warning: None,
+            editor: None,
+            deck_editing: false,
             config,
             network,
             model: UiModel::default(),
@@ -131,6 +156,10 @@ impl OrangeDeckApp {
     }
 
     fn handle_action(&mut self, action: ControlAction) {
+        if self.editor.is_some() {
+            self.handle_editor_input(action);
+            return;
+        }
         if self.toast_is_current() {
             match action {
                 ControlAction::Activate | ControlAction::Detail => self.dismiss_notification(true),
@@ -138,6 +167,16 @@ impl OrangeDeckApp {
                 _ => {}
             }
             return;
+        }
+        if self.page == Page::Shortcuts && self.deck_editing {
+            if action == ControlAction::Back {
+                self.deck_editing = false;
+                self.displayed_approval = None;
+                return;
+            }
+            if action == ControlAction::Activate && self.focus_index < 2 {
+                return;
+            }
         }
         if let Some(approval_id) = self.current_approval_id() {
             let decision = match action {
@@ -330,6 +369,10 @@ impl OrangeDeckApp {
     }
 
     fn activate_focus(&mut self) {
+        if self.page == Page::Shortcuts && self.focus_index >= 2 {
+            self.activate_custom_key(self.focus_index);
+            return;
+        }
         let Some(snapshot) = &self.model.snapshot else {
             return;
         };
@@ -428,12 +471,16 @@ impl OrangeDeckApp {
         }
     }
 
-    fn render_header(&self, root: &mut egui::Ui) {
+    fn render_header(&mut self, root: &mut egui::Ui) {
+        let lang = self.preferences.language;
+        let ctx = root.ctx().clone();
         egui::Panel::top("header")
             .exact_size(56.0)
-            .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(12.0))
+            .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(10.0))
             .show(root, |ui| {
-                ui.horizontal(|ui| {
+                ui.spacing_mut().interact_size = Vec2::new(44.0, 32.0);
+                ui.spacing_mut().button_padding = Vec2::new(10.0, 6.0);
+                ui.horizontal_centered(|ui| {
                     ui.label(
                         RichText::new("ORANGE")
                             .size(19.0)
@@ -441,47 +488,65 @@ impl OrangeDeckApp {
                             .color(theme::ORANGE),
                     );
                     ui.label(RichText::new("DECK").size(19.0).strong());
-                    ui.add_space(12.0);
+                    ui.add_space(10.0);
                     ui.label(
-                        RichText::new(self.page.label())
+                        RichText::new(self.page.translated(lang))
                             .size(13.0)
                             .color(theme::MUTED),
                     )
                     .on_hover_text(self.controller.detected().join(" · "));
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        let (marker, label, color) = if self.model.connected {
-                            ("+", "CONNECTED", theme::GREEN)
+                        for (language, label, width) in [
+                            (Language::English, "EN", 44.0),
+                            (Language::Korean, "한국어", 62.0),
+                        ] {
+                            let selected = lang == language;
+                            if ui
+                                .add_sized(
+                                    [width, 32.0],
+                                    egui::Button::new(
+                                        RichText::new(label)
+                                            .size(13.0)
+                                            .strong()
+                                            .color(if selected { theme::BG } else { theme::MUTED }),
+                                    )
+                                    .fill(if selected {
+                                        theme::ORANGE
+                                    } else {
+                                        theme::PANEL_RAISED
+                                    }),
+                                )
+                                .on_hover_text(language.text("한국어로 보기", "Switch to English"))
+                                .clicked()
+                            {
+                                self.change_language(&ctx, language);
+                            }
+                        }
+                        ui.add_space(8.0);
+                        let (label, color) = if self.model.connected {
+                            (lang.text("연결됨", "CONNECTED"), theme::GREEN)
                         } else if self.model.connecting {
-                            ("~", "CONNECTING", theme::YELLOW)
+                            (lang.text("연결 중", "CONNECTING"), theme::YELLOW)
                         } else {
-                            ("x", "DISCONNECTED", theme::RED)
+                            (lang.text("연결 끊김", "OFFLINE"), theme::RED)
                         };
-                        ui.label(
-                            RichText::new(format!("{marker} {label}"))
-                                .strong()
-                                .color(color),
-                        );
-                        ui.label(
-                            RichText::new(self.model.latency_ms.map_or_else(
-                                || "-- ms".to_owned(),
-                                |latency| format!("{latency} ms"),
-                            ))
-                            .color(theme::MUTED),
-                        );
+                        ui.label(RichText::new(format!("● {label}")).size(12.0).color(color));
                         ui.label(
                             RichText::new(if self.demo_mode {
                                 "LOCAL MOCK"
                             } else {
                                 "TAILSCALE"
                             })
-                            .color(if self.demo_mode {
-                                theme::CYAN
-                            } else {
-                                theme::GREEN
-                            })
-                            .strong(),
+                            .size(11.0)
+                            .color(theme::CYAN),
                         );
-                        ui.label(RichText::new(&self.config.host_label).strong());
+                        if ctx.content_rect().width() > 1_100.0 {
+                            ui.label(
+                                RichText::new(&self.config.host_label)
+                                    .size(12.0)
+                                    .color(theme::MUTED),
+                            );
+                        }
                     });
                 });
             });
@@ -509,87 +574,91 @@ impl OrangeDeckApp {
     }
 
     fn render_nav(&mut self, root: &mut egui::Ui) {
+        let lang = self.preferences.language;
         egui::Panel::left("navigation")
             .exact_size(96.0)
             .resizable(false)
             .frame(egui::Frame::new().fill(theme::BG).inner_margin(8.0))
             .show(root, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.spacing_mut().button_padding = Vec2::new(3.0, 6.0);
-                    ui.add_space(4.0);
-                    let tab_height = ((ui.available_height() - 4.0 * ui.spacing().item_spacing.y)
-                        / 5.0)
-                        .clamp(48.0, 78.0);
-                    for page in Page::ALL {
-                        let selected = self.page == page;
-                        let attention = match page {
-                            Page::Notifications => self.attention_color(),
-                            Page::Shortcuts
-                                if !self.pending_for_selection().is_empty()
-                                    && self.model.approval_ready() =>
-                            {
-                                Some(theme::YELLOW)
-                            }
-                            _ => None,
-                        };
-                        let pulse = Self::attention_pulse(ui.ctx());
-                        let fill = attention.map_or(
-                            if selected {
-                                theme::ORANGE
-                            } else {
-                                theme::PANEL
-                            },
-                            |color| color.gamma_multiply(0.8 + 0.2 * pulse),
-                        );
-                        let label = if attention.is_some() {
-                            format!(
-                                "{}\n{} ●\n{}",
-                                page.short(),
-                                page.label(),
-                                if page == Page::Shortcuts {
-                                    "승인 대기"
-                                } else {
-                                    "확인 필요"
-                                }
-                            )
+                ui.add_space(4.0);
+                let height = ((ui.available_height() - 40.0) / 5.0).clamp(48.0, 78.0);
+                for page in Page::ALL {
+                    let selected = self.page == page;
+                    let attention = match page {
+                        Page::Notifications => self.attention_color(),
+                        Page::Shortcuts
+                            if !self.pending_for_selection().is_empty()
+                                && self.model.approval_ready() =>
+                        {
+                            Some(theme::YELLOW)
+                        }
+                        _ => None,
+                    };
+                    let color = attention.unwrap_or(if selected {
+                        theme::ORANGE
+                    } else {
+                        theme::MUTED
+                    });
+                    let (rect, response) =
+                        ui.allocate_exact_size(Vec2::new(78.0, height), egui::Sense::click());
+                    let p = ui.painter();
+                    p.rect_filled(
+                        rect,
+                        12,
+                        if selected || attention.is_some() {
+                            theme::tint(theme::PANEL, color, 0.12)
+                        } else if response.hovered() {
+                            theme::PANEL_RAISED
                         } else {
-                            format!("{}\n{}", page.short(), page.label())
-                        };
-                        let button = egui::Button::new(
-                            RichText::new(label)
-                                .size(if attention.is_some() { 14.0 } else { 13.0 })
-                                .strong()
-                                .color(if selected || attention.is_some() {
-                                    Color32::BLACK
-                                } else {
-                                    theme::TEXT
-                                }),
-                        )
-                        .fill(fill)
-                        .stroke(Stroke::new(
-                            1.0,
-                            if selected {
-                                theme::ORANGE
-                            } else {
-                                theme::BORDER
-                            },
-                        ));
-                        let response = ui
-                            .add_sized([78.0, tab_height], button)
-                            .on_hover_text(format!("{} 탭", page.label()));
-                        if let Some(color) = attention {
-                            ui.painter().rect_stroke(
-                                response.rect.expand(2.0),
-                                8,
-                                Stroke::new(3.0 + 2.0 * pulse, color),
-                                egui::StrokeKind::Outside,
-                            );
-                        }
-                        if response.clicked() {
-                            self.select_page(page);
-                        }
+                            theme::BG
+                        },
+                    );
+                    if selected || attention.is_some() {
+                        p.rect_stroke(rect, 12, Stroke::new(1.2, color), egui::StrokeKind::Inside);
                     }
-                });
+                    let icon = match page {
+                        Page::Dashboard => orangedeck_domain::Shortcut::Live,
+                        Page::Shortcuts => orangedeck_domain::Shortcut::OpenTerminal,
+                        Page::Projects => orangedeck_domain::Shortcut::Projects,
+                        Page::Codex => orangedeck_domain::Shortcut::Conversations,
+                        Page::Notifications => orangedeck_domain::Shortcut::Notifications,
+                    };
+                    let label = match page {
+                        Page::Codex => lang.text("대화", "Chats"),
+                        Page::Notifications => lang.text("알림", "Alerts"),
+                        Page::Shortcuts => lang.text("단축키", "Deck"),
+                        _ => page.translated(lang),
+                    };
+                    if height >= 62.0 {
+                        crate::icons::draw(
+                            p,
+                            rect.center() - Vec2::new(0.0, 10.0),
+                            21.0,
+                            color,
+                            icon,
+                        );
+                    }
+                    p.text(
+                        egui::pos2(rect.center().x, rect.bottom() - 12.0),
+                        egui::Align2::CENTER_BOTTOM,
+                        label,
+                        egui::FontId::proportional(12.0),
+                        color,
+                    );
+                    p.text(
+                        rect.right_top() + Vec2::new(-7.0, 7.0),
+                        egui::Align2::RIGHT_TOP,
+                        page.short(),
+                        egui::FontId::monospace(9.0),
+                        theme::MUTED,
+                    );
+                    if attention.is_some() {
+                        p.circle_filled(rect.min + Vec2::splat(9.0), 3.0, color);
+                    }
+                    if response.on_hover_text(page.translated(lang)).clicked() {
+                        self.select_page(page);
+                    }
+                }
             });
     }
 
@@ -615,7 +684,10 @@ impl OrangeDeckApp {
     }
 
     fn current_approval_id(&self) -> Option<uuid::Uuid> {
-        if !matches!(self.page, Page::Notifications | Page::Shortcuts) || self.toast.is_some() {
+        if !matches!(self.page, Page::Notifications | Page::Shortcuts)
+            || self.toast.is_some()
+            || self.editor.is_some()
+        {
             return None;
         }
         let pending = self.pending_for_selection();
@@ -625,6 +697,9 @@ impl OrangeDeckApp {
     }
 
     fn route_shortcut_approval(&mut self) {
+        if self.editor.is_some() {
+            return;
+        }
         if !self.model.approval_ready() {
             return;
         }
@@ -727,6 +802,7 @@ impl OrangeDeckApp {
     }
 
     fn render_approval(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
+        let lang = self.preferences.language;
         let Some(id) = self.current_approval_id() else {
             self.displayed_approval = None;
             return;
@@ -749,7 +825,14 @@ impl OrangeDeckApp {
             })
             .count();
         ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("승인 대기 {pending_count}건")).color(theme::YELLOW));
+            ui.label(
+                RichText::new(if lang == Language::English {
+                    format!("{pending_count} approval(s) pending")
+                } else {
+                    format!("승인 대기 {pending_count}건")
+                })
+                .color(theme::YELLOW),
+            );
             if let Some(thread) = snapshot
                 .codex
                 .threads
@@ -764,10 +847,16 @@ impl OrangeDeckApp {
         });
         if pending_count > 1 {
             ui.horizontal(|ui| {
-                if ui.button("‹ 이전 요청 · LT").clicked() {
+                if ui
+                    .button(lang.text("‹ 이전 요청 · LT", "‹ Previous · LT"))
+                    .clicked()
+                {
                     self.cycle_approval(true);
                 }
-                if ui.button("다음 요청 · RT ›").clicked() {
+                if ui
+                    .button(lang.text("다음 요청 · RT ›", "Next · RT ›"))
+                    .clicked()
+                {
                     self.cycle_approval(false);
                 }
             });
@@ -814,9 +903,15 @@ impl OrangeDeckApp {
             .iter()
             .position(|request| Some(request.id) == id)
             .unwrap_or(0);
-        let action = shortcuts::render(
+        let action: shortcuts::DeckAction = shortcuts::render(
             ui,
             &shortcuts::DeckView {
+                slots: std::array::from_fn(|index| self.preferences.action(index + 2)),
+                mode: if self.deck_editing {
+                    shortcuts::DeckMode::Edit
+                } else {
+                    shortcuts::DeckMode::Run
+                },
                 approval,
                 position,
                 pending: pending.len(),
@@ -838,7 +933,16 @@ impl OrangeDeckApp {
         if let Some(id) = id {
             self.selected_approval = Some(id);
         }
-        if action.details {
+        if let Some(index) = action.edit {
+            self.open_key_editor(index);
+        } else if let Some(index) = action.activate {
+            self.activate_custom_key(index);
+        } else if action.toggle_edit {
+            self.deck_editing = !self.deck_editing;
+            self.displayed_approval = None;
+        } else if action.recommended {
+            self.use_recommended_keys();
+        } else if action.details {
             self.open_notifications();
         } else if action.cycle != 0 {
             self.cycle_approval(action.cycle < 0);
@@ -918,6 +1022,7 @@ impl OrangeDeckApp {
     }
 
     fn render_toast(&mut self, ctx: &egui::Context) {
+        let lang = self.preferences.language;
         if !self.toast_is_current() {
             self.toast = None;
             return;
@@ -934,7 +1039,7 @@ impl OrangeDeckApp {
         let project = thread.map(|thread| thread.cwd.clone()).unwrap_or_default();
         let question = thread
             .and_then(selection::latest_prompt)
-            .unwrap_or("현재 질의")
+            .unwrap_or(lang.text("현재 질의", "Current question"))
             .to_owned();
         let width = (ctx.content_rect().width() - 88.0).clamp(240.0, 580.0);
         egui::Modal::new(egui::Id::new("notification_toast"))
@@ -955,10 +1060,12 @@ impl OrangeDeckApp {
                     .show(ui, |ui| {
                         let width = ui.available_width();
                         ui.label(
-                            RichText::new("CODEX · 현재 질의 알림")
-                                .size(14.0)
-                                .strong()
-                                .color(color),
+                            RichText::new(
+                                lang.text("CODEX · 현재 질의 알림", "CODEX · CURRENT TURN"),
+                            )
+                            .size(14.0)
+                            .strong()
+                            .color(color),
                         );
                         let mut title = egui::text::LayoutJob::simple(
                             alert.notification.title.clone(),
@@ -990,9 +1097,12 @@ impl OrangeDeckApp {
                         ui.label(body);
                     });
                 ui.label(
-                    RichText::new("확인할 때까지 이 알림을 표시합니다")
-                        .size(13.0)
-                        .color(theme::MUTED),
+                    RichText::new(lang.text(
+                        "확인할 때까지 이 알림을 표시합니다",
+                        "This alert stays until you acknowledge it",
+                    ))
+                    .size(13.0)
+                    .color(theme::MUTED),
                 );
                 ui.horizontal(|ui| {
                     let size = [(width - 12.0) / 2.0, 54.0];
@@ -1000,7 +1110,7 @@ impl OrangeDeckApp {
                         .add_sized(
                             size,
                             egui::Button::new(
-                                RichText::new("내용 보기 · A")
+                                RichText::new(lang.text("내용 보기 · A", "View details · A"))
                                     .size(19.0)
                                     .strong()
                                     .color(Color32::BLACK),
@@ -1014,7 +1124,10 @@ impl OrangeDeckApp {
                     if ui
                         .add_sized(
                             size,
-                            egui::Button::new(RichText::new("확인했어요 · B").size(19.0)),
+                            egui::Button::new(
+                                RichText::new(lang.text("확인했어요 · B", "Mark as read · B"))
+                                    .size(19.0),
+                            ),
                         )
                         .clicked()
                     {
@@ -1025,6 +1138,7 @@ impl OrangeDeckApp {
     }
 
     fn render_project_picker(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
+        let lang = self.preferences.language;
         let projects = selection::projects(
             snapshot,
             self.model.connected,
@@ -1032,16 +1146,16 @@ impl OrangeDeckApp {
         );
         let mut chosen = None;
         ui.horizontal(|ui| {
-            ui.label(RichText::new("프로젝트").size(12.0).color(theme::MUTED));
+            ui.label(RichText::new(lang.text("프로젝트", "Project")).size(12.0).color(theme::MUTED));
             egui::ComboBox::from_id_salt("active_project").width((ui.available_width() - 180.0).max(150.0))
-                .selected_text(self.selection.project.as_deref().unwrap_or("프로젝트 선택"))
+                .selected_text(self.selection.project.as_deref().unwrap_or(lang.text("프로젝트 선택", "Choose a project")))
                 .show_ui(ui, |ui| {
                     for project in &projects {
                         if ui.selectable_label(self.selection.project.as_deref() == Some(&project.path), &project.path).clicked() { chosen = Some(project.path.clone()); }
                     }
                 });
-            ui.label(RichText::new(format!("전체 {} · 활성 {}", projects.len(), projects.iter().filter(|project| project.active > 0).count())).size(12.0).color(theme::CYAN))
-                .on_hover_text("Mac Codex에 기록된 프로젝트 · 활성은 최근 2분 이내 작업 활동 또는 현재 승인 대기 기준입니다.");
+            ui.label(RichText::new(if lang == Language::English { format!("{} projects · {} active", projects.len(), projects.iter().filter(|project| project.active > 0).count()) } else { format!("전체 {} · 활성 {}", projects.len(), projects.iter().filter(|project| project.active > 0).count()) }).size(12.0).color(theme::CYAN))
+                .on_hover_text(lang.text("Mac Codex에 기록된 프로젝트 · 활성은 최근 2분 이내 작업 활동 또는 현재 승인 대기 기준입니다.", "Projects found in Codex history. Active means work within two minutes or a pending approval."));
         });
         if let Some(path) = chosen {
             self.select_project(&path);
@@ -1088,16 +1202,24 @@ impl OrangeDeckApp {
     }
 
     fn render_projects(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
+        let lang = self.preferences.language;
         let projects = selection::projects(
             snapshot,
             self.model.connected,
             chrono::Utc::now().timestamp(),
         );
-        section_title(ui, "MAC STUDIO · 프로젝트들", theme::ORANGE);
+        section_title(
+            ui,
+            lang.text("작업 공간 · 프로젝트들", "WORKSPACE · PROJECTS"),
+            theme::ORANGE,
+        );
         ui.label(
-            RichText::new("판단 대기 · 작업 중인 프로젝트 우선, 최근 활동 순")
-                .size(13.0)
-                .color(theme::MUTED),
+            RichText::new(lang.text(
+                "판단 대기 · 작업 중인 프로젝트 우선, 최근 활동 순",
+                "Approvals and active projects first, then recent activity",
+            ))
+            .size(13.0)
+            .color(theme::MUTED),
         );
         for (index, project) in projects.iter().enumerate() {
             let selected = self.selection.project.as_deref() == Some(&project.path);
@@ -1119,14 +1241,25 @@ impl OrangeDeckApp {
                     ui.horizontal(|ui| {
                         ui.label(RichText::new(&project.name).size(23.0).strong());
                         if selected {
-                            ui.label(RichText::new("선택됨").size(12.0).color(theme::ORANGE));
+                            ui.label(
+                                RichText::new(lang.text("선택됨", "Selected"))
+                                    .size(12.0)
+                                    .color(theme::ORANGE),
+                            );
                         }
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             ui.label(
-                                RichText::new(format!(
-                                    "대화 {} · 활성 {} · 판단 대기 {}",
-                                    project.conversations, project.active, project.waiting
-                                ))
+                                RichText::new(if lang == Language::English {
+                                    format!(
+                                        "{} chats · {} active · {} waiting",
+                                        project.conversations, project.active, project.waiting
+                                    )
+                                } else {
+                                    format!(
+                                        "대화 {} · 활성 {} · 판단 대기 {}",
+                                        project.conversations, project.active, project.waiting
+                                    )
+                                })
                                 .size(13.0)
                                 .color(color),
                             );
@@ -1139,9 +1272,13 @@ impl OrangeDeckApp {
                         .truncate(),
                     );
                     ui.label(
-                        RichText::new(format!("최근 활동 {}", activity_time(project.updated_at)))
-                            .size(12.0)
-                            .color(theme::MUTED),
+                        RichText::new(if lang == Language::English {
+                            format!("Last active {}", activity_time(lang, project.updated_at))
+                        } else {
+                            format!("최근 활동 {}", activity_time(lang, project.updated_at))
+                        })
+                        .size(12.0)
+                        .color(theme::MUTED),
                     );
                 })
                 .response
@@ -1155,29 +1292,36 @@ impl OrangeDeckApp {
             }
         }
         if projects.is_empty() {
-            ui.label("Mac Codex의 프로젝트 목록을 기다리고 있습니다.");
+            ui.label(lang.text(
+                "Mac Codex의 프로젝트 목록을 기다리고 있습니다.",
+                "Waiting for projects from Codex on your host.",
+            ));
         }
         self.scroll_focus = false;
     }
 
     fn render_codex(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
+        let lang = self.preferences.language;
         ui.horizontal(|ui| {
-            section_title(ui, "현재 프로젝트 · 대화", theme::ORANGE);
+            section_title(ui, lang.text("현재 프로젝트 · 대화", "PROJECT · CONVERSATIONS"), theme::ORANGE);
             if small_action(
                 ui,
-                if self.selection.follow_latest { "자동 ON" } else { "최근 자동" },
+                if self.selection.follow_latest { lang.text("자동 ON", "AUTO ON") } else { lang.text("최근 자동", "Follow latest") },
                 self.selection.follow_latest,
             )
-            .on_hover_text("현재 프로젝트의 최신 대화를 자동으로 따라갑니다. 이미 최신 대화면 선택을 유지합니다. 다른 대화를 고르면 고정 모드로 바뀝니다.")
+            .on_hover_text(lang.text("현재 프로젝트의 최신 대화를 자동으로 따라갑니다. 이미 최신 대화면 선택을 유지합니다. 다른 대화를 고르면 고정 모드로 바뀝니다.", "Follow the newest conversation in this project. Selecting another conversation pins it."))
             .clicked()
             {
                 self.selection.follow_latest = true;
             }
         });
         ui.label(
-            RichText::new("최신 질문 · 최근 활동 순 · 현재 LIVE와 같은 대화가 선택되어 있습니다.")
-                .size(13.0)
-                .color(theme::MUTED),
+            RichText::new(lang.text(
+                "최신 질문 · 최근 활동 순 · 현재 LIVE와 같은 대화가 선택되어 있습니다.",
+                "Recent questions, newest first. Selection is shared with LIVE.",
+            ))
+            .size(13.0)
+            .color(theme::MUTED),
         );
         let threads = self.selection.threads(snapshot);
         for (index, thread) in threads.iter().enumerate() {
@@ -1204,17 +1348,27 @@ impl OrangeDeckApp {
             }
         }
         if threads.is_empty() {
-            ui.label("이 프로젝트의 대화가 없습니다.");
+            ui.label(lang.text(
+                "이 프로젝트의 대화가 없습니다.",
+                "No conversations in this project yet.",
+            ));
         }
         self.scroll_focus = false;
     }
 
     fn render_status_line(&self, root: &mut egui::Ui) {
+        let lang = self.preferences.language;
+        let preferences_warning = self.preference_warning.as_ref().map(|_| lang.text(
+            "화면 설정을 저장하지 못했습니다. 기존 설정 파일은 보존하며 이번 창에서만 변경합니다.",
+            "UI preferences could not be saved. The original file is preserved; changes apply to this window only.",
+        ));
         let Some(message) = self
             .model
             .protocol_error
-            .as_ref()
-            .or(self.model.connection_message.as_ref())
+            .as_deref()
+            .or(self.model.connection_message.as_deref())
+            .or(preferences_warning)
+            .or(self.model.command_message.as_deref())
         else {
             return;
         };
@@ -1242,13 +1396,16 @@ impl OrangeDeckApp {
 
 impl eframe::App for OrangeDeckApp {
     fn ui(&mut self, root: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        i18n::set_language(root.ctx(), self.preferences.language);
         self.process_network();
         self.update_monitor_selection();
         let ctx = root.ctx().clone();
-        self.announce_notifications(&ctx);
+        if self.editor.is_none() {
+            self.announce_notifications(&ctx);
+        }
         self.route_shortcut_approval();
         let focused = ctx.input(|input| input.viewport().focused.unwrap_or(true));
-        let approval_pending = self.current_approval_id().is_some();
+        let approval_pending = self.current_approval_id().is_some() && self.editor.is_none();
         for action in self.controller.poll(&ctx, focused, approval_pending) {
             self.handle_action(action);
         }
@@ -1263,9 +1420,12 @@ impl eframe::App for OrangeDeckApp {
                         ui.vertical_centered(|ui| {
                             ui.spinner();
                             ui.label(
-                                RichText::new("CONNECTING TO ORANGEDECK AGENT")
-                                    .strong()
-                                    .color(theme::MUTED),
+                                RichText::new(self.preferences.language.text(
+                                    "OrangeDeck Agent에 연결 중",
+                                    "CONNECTING TO ORANGEDECK AGENT",
+                                ))
+                                .strong()
+                                .color(theme::MUTED),
                             );
                         });
                     });
@@ -1297,6 +1457,7 @@ impl eframe::App for OrangeDeckApp {
             });
         self.render_toast(&ctx);
         self.render_attention(&ctx);
+        self.render_key_editor(&ctx);
         ctx.request_repaint_after(Duration::from_millis(100));
     }
 }
@@ -1323,6 +1484,7 @@ fn thread_card(
     focused: bool,
     status: CodexThreadStatusDto,
 ) -> egui::Response {
+    let lang = i18n::language(ui.ctx());
     let frame = if selected || focused {
         theme::accent_panel(codex_status_color(status))
     } else {
@@ -1339,7 +1501,10 @@ fn thread_card(
                     |ui| {
                         let mut question = egui::text::LayoutJob::simple(
                             selection::latest_prompt(thread)
-                                .unwrap_or("최신 질문을 아직 읽지 못했습니다")
+                                .unwrap_or(lang.text(
+                                    "최신 질문을 아직 읽지 못했습니다",
+                                    "Latest question not available yet",
+                                ))
                                 .to_owned(),
                             egui::FontId::proportional(20.0),
                             theme::TEXT,
@@ -1349,18 +1514,29 @@ fn thread_card(
                         ui.label(question);
                         ui.add(
                             egui::Label::new(
-                                RichText::new(format!("대화 제목 · {}", thread.title))
-                                    .size(12.0)
-                                    .monospace()
-                                    .color(theme::MUTED),
+                                RichText::new(if lang == Language::English {
+                                    format!("Conversation · {}", thread.title)
+                                } else {
+                                    format!("대화 제목 · {}", thread.title)
+                                })
+                                .size(12.0)
+                                .monospace()
+                                .color(theme::MUTED),
                             )
                             .truncate(),
                         );
                         ui.label(
-                            RichText::new(format!(
-                                "최근 활동 {}",
-                                activity_time(selection::updated_at(thread))
-                            ))
+                            RichText::new(if lang == Language::English {
+                                format!(
+                                    "Last active {}",
+                                    activity_time(lang, selection::updated_at(thread))
+                                )
+                            } else {
+                                format!(
+                                    "최근 활동 {}",
+                                    activity_time(lang, selection::updated_at(thread))
+                                )
+                            })
                             .size(12.0)
                             .color(theme::MUTED),
                         );
@@ -1369,14 +1545,14 @@ fn thread_card(
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if selected {
                         ui.label(
-                            RichText::new("현재 LIVE")
+                            RichText::new(lang.text("현재 LIVE", "ON LIVE"))
                                 .size(14.0)
                                 .strong()
                                 .color(theme::ORANGE),
                         );
                     }
                     ui.label(
-                        RichText::new(codex_status_label(status))
+                        RichText::new(codex_status_label(lang, status))
                             .size(14.0)
                             .strong()
                             .color(codex_status_color(status)),
@@ -1388,14 +1564,16 @@ fn thread_card(
     response.interact(egui::Sense::click())
 }
 
-const fn codex_status_label(status: CodexThreadStatusDto) -> &'static str {
+const fn codex_status_label(lang: Language, status: CodexThreadStatusDto) -> &'static str {
     match status {
-        CodexThreadStatusDto::NotLoaded | CodexThreadStatusDto::Unknown => "활동 미확인",
-        CodexThreadStatusDto::Idle => "대기",
-        CodexThreadStatusDto::Working => "작업 중",
-        CodexThreadStatusDto::WaitingApproval => "판단 대기",
-        CodexThreadStatusDto::Completed => "완료 기록",
-        CodexThreadStatusDto::Error => "오류",
+        CodexThreadStatusDto::NotLoaded | CodexThreadStatusDto::Unknown => {
+            lang.text("활동 미확인", "Unknown")
+        }
+        CodexThreadStatusDto::Idle => lang.text("대기", "Idle"),
+        CodexThreadStatusDto::Working => lang.text("작업 중", "Working"),
+        CodexThreadStatusDto::WaitingApproval => lang.text("판단 대기", "Needs attention"),
+        CodexThreadStatusDto::Completed => lang.text("완료 기록", "Completed"),
+        CodexThreadStatusDto::Error => lang.text("오류", "Error"),
     }
 }
 
@@ -1424,9 +1602,9 @@ fn desktop_notification(title: &str, body: &str) {
         .spawn();
 }
 
-fn activity_time(timestamp: i64) -> String {
+fn activity_time(lang: Language, timestamp: i64) -> String {
     chrono::DateTime::from_timestamp(timestamp, 0).map_or_else(
-        || "시각 미제공".to_owned(),
+        || lang.text("시각 미제공", "Time unavailable").to_owned(),
         |at| {
             at.with_timezone(&chrono::Local)
                 .format("%m-%d %H:%M")
@@ -1454,6 +1632,11 @@ mod tests {
         ));
         let (network, commands) = NetworkHandle::for_test();
         let app = OrangeDeckApp {
+            preferences: UiPreferences::default(),
+            preference_store: None,
+            preference_warning: None,
+            editor: None,
+            deck_editing: false,
             config: UiConfig::demo(),
             network,
             model,
@@ -1715,6 +1898,14 @@ mod tests {
         assert_eq!(app.focus_index, 5);
         app.handle_action(ControlAction::Activate);
         assert!(commands.try_recv().is_err());
+        assert!(app.editor.is_some(), "an empty key opens its editor");
+        app.handle_action(ControlAction::Back);
+        assert!(app.editor.is_none());
+        assert!(
+            commands.try_recv().is_err(),
+            "closing the editor must not reject an approval"
+        );
+        shortcuts_frame(&mut app, &ctx, vec![]);
         app.handle_action(ControlAction::NavigateUp);
         app.handle_action(ControlAction::NavigateRight);
         assert_eq!(app.focus_index, 1);
@@ -1726,6 +1917,193 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn key_editor_never_decides_or_executes_the_action_being_assigned() {
+        let mut snapshot = crate::test_support::snapshot();
+        let request = shortcut_request("a", "new");
+        snapshot.codex.pending_approvals.push(request.clone());
+        let (mut app, mut commands) = test_app(&snapshot);
+        app.select_project("/Users/mac/project-a");
+        app.route_shortcut_approval();
+        let ctx = egui::Context::default();
+        theme::apply(&ctx);
+        shortcuts_frame(&mut app, &ctx, vec![]);
+        app.open_key_editor(2);
+        assert!(app.current_approval_id().is_none());
+        app.route_shortcut_approval();
+        app.handle_action(ControlAction::NavigateDown);
+        app.handle_action(ControlAction::NavigateDown);
+        app.handle_action(ControlAction::Activate);
+        assert!(app.editor.is_none());
+        assert_eq!(
+            app.preferences.action(2),
+            Some(orangedeck_domain::Shortcut::Refresh)
+        );
+        assert!(commands.try_recv().is_err());
+        assert!(app.displayed_approval.is_none());
+        app.activate_custom_key(2);
+        assert_eq!(
+            commands.try_recv().unwrap(),
+            ClientCommand::CodexRefreshThreads
+        );
+        assert!(commands.try_recv().is_err());
+        app.open_key_editor(2);
+        app.handle_action(ControlAction::Back);
+        assert!(app.editor.is_none());
+        assert!(commands.try_recv().is_err());
+        assert_eq!(app.current_approval_id(), Some(request.id));
+    }
+
+    #[test]
+    fn host_keys_use_registered_ids_and_refuse_external_or_unconfigured_targets() {
+        use orangedeck_domain::Shortcut;
+        let mut snapshot = crate::test_support::snapshot();
+        snapshot.projects.push(orangedeck_protocol::ProjectDto {
+            id: "registered".to_owned(),
+            name: "Registered".to_owned(),
+            path: "/Users/mac/project-a".to_owned(),
+            has_browser_url: false,
+        });
+        let (mut app, mut commands) = test_app(&snapshot);
+        app.select_project("/Users/mac/project-a");
+        for (action, expected) in [
+            (
+                Shortcut::OpenEditor,
+                ClientCommand::OpenEditor {
+                    project_id: "registered".to_owned(),
+                },
+            ),
+            (
+                Shortcut::OpenTerminal,
+                ClientCommand::OpenTerminal {
+                    project_id: "registered".to_owned(),
+                },
+            ),
+            (
+                Shortcut::OpenProject,
+                ClientCommand::OpenProject {
+                    project_id: "registered".to_owned(),
+                },
+            ),
+        ] {
+            app.preferences.assign(2, Some(action));
+            app.activate_custom_key(2);
+            assert_eq!(commands.try_recv().unwrap(), expected);
+        }
+        app.preferences.assign(2, Some(Shortcut::OpenBrowser));
+        app.activate_custom_key(2);
+        assert!(commands.try_recv().is_err());
+        app.model.snapshot.as_mut().unwrap().projects[0].has_browser_url = true;
+        app.activate_custom_key(2);
+        assert_eq!(
+            commands.try_recv().unwrap(),
+            ClientCommand::OpenBrowser {
+                project_id: "registered".to_owned()
+            }
+        );
+        app.select_project("/Users/mac/project-b");
+        app.activate_custom_key(2);
+        assert!(commands.try_recv().is_err());
+    }
+
+    #[test]
+    fn language_buttons_switch_all_five_tabs_and_editor_without_translating_user_data() {
+        let snapshot = crate::test_support::snapshot();
+        let (mut app, mut commands) = test_app(&snapshot);
+        app.select_project("/Users/mac/project-a");
+        let ctx = egui::Context::default();
+        theme::apply(&ctx);
+        let frame = |app: &mut OrangeDeckApp, events| {
+            ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(820.0, 480.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ui| app.render_header(ui),
+            )
+        };
+        let output = frame(&mut app, vec![]);
+        for shape in &output.shapes {
+            if let egui::Shape::Rect(rect) = &shape.shape
+                && rect.fill == theme::ORANGE
+            {
+                assert!(
+                    shape.clip_rect.contains_rect(rect.rect),
+                    "Language button clipped by the header"
+                );
+            }
+        }
+        let en = output
+            .shapes
+            .iter()
+            .find_map(|shape| match &shape.shape {
+                egui::Shape::Text(text) if text.galley.job.text == "EN" => {
+                    Some(text.galley.rect.translate(text.pos.to_vec2()).center())
+                }
+                _ => None,
+            })
+            .unwrap();
+        output.drop_without_applying_deltas();
+        frame(&mut app, pointer_events(en, true)).drop_without_applying_deltas();
+        frame(&mut app, pointer_events(en, false)).drop_without_applying_deltas();
+        assert_eq!(app.preferences.language, Language::English);
+        assert_eq!(i18n::language(&ctx), Language::English);
+        app.use_recommended_keys();
+        for page in Page::ALL {
+            app.page = page;
+            let labels = crate::test_support::render_text(1038.0, 584.0, |ui| {
+                i18n::set_language(ui.ctx(), Language::English);
+                app.render_header(ui);
+                app.render_nav(ui);
+                egui::CentralPanel::default().show(ui, |ui| {
+                    app.render_project_picker(ui, &snapshot);
+                    match page {
+                        Page::Dashboard => app.render_dashboard(ui, &snapshot),
+                        Page::Shortcuts => app.render_shortcuts(ui, &snapshot),
+                        Page::Projects => app.render_projects(ui, &snapshot),
+                        Page::Codex => app.render_codex(ui, &snapshot),
+                        Page::Notifications => app.render_notifications(ui, &snapshot),
+                    }
+                });
+            });
+            for label in labels
+                .iter()
+                .filter(|label| label.rect.intersects(label.clip))
+            {
+                assert!(
+                    label.text == "한국어"
+                        || !label.text.chars().any(|ch| ('가'..='힣').contains(&ch)),
+                    "Untranslated {page:?}: {}",
+                    label.text
+                );
+            }
+        }
+        app.open_key_editor(2);
+        let labels = crate::test_support::render_text(820.0, 480.0, |ui| {
+            i18n::set_language(ui.ctx(), Language::English);
+            app.render_key_editor(ui.ctx());
+        });
+        assert!(
+            labels
+                .iter()
+                .any(|label| label.text.starts_with("Assign key"))
+        );
+        assert!(
+            labels
+                .iter()
+                .all(|label| !label.text.chars().any(|ch| ('가'..='힣').contains(&ch)))
+        );
+        assert!(commands.try_recv().is_err());
+        assert_eq!(
+            app.model.snapshot.as_ref().unwrap().codex.threads[0].observation,
+            snapshot.codex.threads[0].observation
+        );
     }
 
     #[test]
@@ -1753,7 +2131,7 @@ mod tests {
                 label.text == "승인"
                     || label.text == "거절"
                     || label.text == "미지정"
-                    || label.text.starts_with("05\n")
+                    || label.text == "알림"
             }) {
                 assert!(
                     label.clip.contains_rect(label.rect),
@@ -1766,16 +2144,8 @@ mod tests {
                 labels.iter().filter(|label| label.text == "미지정").count(),
                 8
             );
-            assert!(
-                labels
-                    .iter()
-                    .any(|label| label.text.starts_with("02\n단축키"))
-            );
-            assert!(
-                labels
-                    .iter()
-                    .any(|label| label.text.starts_with("05\n알림"))
-            );
+            assert!(labels.iter().any(|label| label.text == "단축키"));
+            assert!(labels.iter().any(|label| label.text == "알림"));
         }
     }
 

@@ -139,3 +139,14 @@ authorized_keys
 !/docs/screenshots/projects.png
 !/docs/screenshots/conversations.png
 !/docs/screenshots/notifications.png
+
+ui-preferences.toml
+
+# Reviewed 0.1.20 English gallery and key editors only.
+!/docs/screenshots/key-editor.png
+!/docs/screenshots/en-live.png
+!/docs/screenshots/en-shortcuts.png
+!/docs/screenshots/en-projects.png
+!/docs/screenshots/en-conversations.png
+!/docs/screenshots/en-notifications.png
+!/docs/screenshots/en-key-editor.png

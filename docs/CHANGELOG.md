@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.20
+
+- Make the default GitHub README Korean, with prominent one-click Korean/English links and matching native screenshots in each language.
+- Add an immediate Korean/English toggle across the five tabs, a dark coral/violet/mint theme, original vector icons and refreshed square keys.
+- Connect eight editable keys to 14 built-in actions: navigation, refresh, follow latest, project/conversation switching and registered host editor/terminal/folder/website launchers. Quick setup fills empty keys without overwriting existing choices.
+- Keep 01/02 as fixed approval decisions. The action editor saves or cancels without executing an action or deciding a background request.
+- Persist language/key preferences privately and atomically beside the UI config. Preserve malformed files, refuse links and display save failures; exclude preferences from publication.
+- Include Korean font detection and guided installation for supported Linux package managers, including the Fedora font path.
+- Detect supported installed editors and terminals on the host. Demo UI/Agent accept `--language ko|en` for matching synthetic content; real conversations remain unchanged.
+- Update installation, controls and Korean quick-start instructions. Keep domain preferences, application command resolution and infrastructure persistence separate.
+- Automated checks and native demo captures cover UI language, layout, key assignment, request guards and private persistence. Real Mac notifications/approval round trips and SteamOS installation remain unverified device checks.
+
 ## 0.1.19
 
 - Fix new/custom macOS Agent setup by selecting hook and owned-thread paths beside the active configuration. After updating an older Agent, rerun notification installation and Codex `/hooks` review.

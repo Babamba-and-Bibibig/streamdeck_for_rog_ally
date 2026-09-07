@@ -4,13 +4,18 @@ set -euo pipefail
 ROOT_DIR="${0:A:h:h}"
 AGENT="$ROOT_DIR/target/release/orangedeck-agent"
 UI="$ROOT_DIR/target/release/orangedeck-ui"
+DEMO_LANGUAGE="${1:-ko}"
+if [[ "$DEMO_LANGUAGE" != ko && "$DEMO_LANGUAGE" != en ]]; then
+  print -u2 "Usage: ./scripts/run-demo.zsh [ko|en]"
+  exit 1
+fi
 
 if [[ ! -x "$AGENT" || ! -x "$UI" ]]; then
   print -u2 "Release binaries are missing. Run: cargo build --release --workspace"
   exit 1
 fi
 
-"$AGENT" demo --port 45831 &
+"$AGENT" demo --port 45831 --language "$DEMO_LANGUAGE" &
 AGENT_PID=$!
 
 cleanup() {
@@ -35,4 +40,4 @@ if ! curl --silent --fail --max-time 1 http://127.0.0.1:45831/readyz >/dev/null;
   exit 1
 fi
 
-"$UI" demo
+"$UI" demo --language "$DEMO_LANGUAGE"

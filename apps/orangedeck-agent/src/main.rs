@@ -69,6 +69,9 @@ enum Command {
     Demo {
         #[arg(long, default_value_t = DEFAULT_PORT)]
         port: u16,
+        /// Language of the synthetic conversation content, never real Codex work.
+        #[arg(long, value_parser = ["ko", "en"], default_value = "ko")]
+        language: String,
     },
     /// Create a private token, agent config, and transferable pairing bundle.
     Init {
@@ -154,11 +157,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             server::serve(address, token, backend).await?;
         }
-        Command::Demo { port } => {
+        Command::Demo { port, language } => {
             init_tracing("info");
             let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
             let token = AuthToken::parse(DEMO_TOKEN)?;
-            let backend = MockBackend::new();
+            let backend = MockBackend::with_english_demo(language == "en");
             backend.start_usage_preview();
             server::serve(address, token, Arc::new(backend)).await?;
         }

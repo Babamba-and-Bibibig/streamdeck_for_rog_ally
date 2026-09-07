@@ -12,6 +12,7 @@ eframe.workspace = true
 futures-util.workspace = true
 gilrs.workspace = true
 orangedeck-application = { path = "../../crates/orangedeck-application" }
+orangedeck-domain = { path = "../../crates/orangedeck-domain" }
 orangedeck-infra = { path = "../../crates/orangedeck-infra" }
 orangedeck-protocol = { path = "../../crates/orangedeck-protocol" }
 reqwest.workspace = true
@@ -26,4 +27,3 @@ uuid.workspace = true
 
 [lints]
 workspace = true
-

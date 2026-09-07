@@ -19,7 +19,7 @@ class PublicSourceTests(unittest.TestCase):
             public = ["README.md", "Cargo.lock", "apps/orangedeck-agent/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
                       "config/agent.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
                       "docs/SCREENSHOTS.md", *REVIEWED_SCREENSHOTS]
-            private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "agent.toml", "auth.json", "received-Pairing.json",
+            private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "agent.toml", "ui-preferences.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
                        "config/local/github-ssh/id_ed25519", "download-page/config.local.toml", "scripts/start-ui.sh",
                        "apps/example/local/private.rs", "crates/example/.codex/private.rs", "scripts/credentials.json",
                        "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt",

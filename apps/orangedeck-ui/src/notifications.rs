@@ -1,3 +1,4 @@
+use crate::i18n::{self, Language};
 use chrono::Utc;
 use eframe::egui::{self, Color32, RichText};
 use orangedeck_protocol::{
@@ -23,11 +24,12 @@ pub fn approval_panel(
     sending: bool,
     detailed: bool,
 ) -> Option<ApprovalDecisionDto> {
+    let lang = i18n::language(ui.ctx());
     let mut decision = None;
     theme::accent_panel(theme::YELLOW).show(ui, |ui| {
         ui.set_min_width(ui.available_width());
         ui.label(
-            RichText::new("승인이 필요합니다")
+            RichText::new(lang.text("승인이 필요합니다", "Approval required"))
                 .size(18.0)
                 .strong()
                 .color(theme::YELLOW),
@@ -48,11 +50,20 @@ pub fn approval_panel(
         ui.add_space(7.0);
         ui.label(
             RichText::new(if !connected {
-                "연결이 끊겼습니다. 다시 연결되면 요청 상태를 확인합니다."
+                lang.text(
+                    "연결이 끊겼습니다. 다시 연결되면 요청 상태를 확인합니다.",
+                    "Disconnected. Approval state will be checked after reconnecting.",
+                )
             } else if sending {
-                "선택 전송 중 · Mac의 처리 결과를 기다립니다"
+                lang.text(
+                    "선택 전송 중 · Mac의 처리 결과를 기다립니다",
+                    "Sending decision · waiting for the host",
+                )
             } else {
-                "표시된 요청 한 건에 적용 · A 승인 / B 거부"
+                lang.text(
+                    "표시된 요청 한 건에 적용 · A 승인 / B 거부",
+                    "Applies once to this request · A approve / B reject",
+                )
             })
             .size(12.0)
             .color(theme::MUTED),
@@ -65,7 +76,7 @@ pub fn approval_panel(
                     .add_sized(
                         [width, 52.0],
                         egui::Button::new(
-                            RichText::new("A  승인")
+                            RichText::new(lang.text("A  승인", "A  Approve"))
                                 .size(19.0)
                                 .strong()
                                 .color(Color32::BLACK),
@@ -80,7 +91,7 @@ pub fn approval_panel(
                     .add_sized(
                         [width, 52.0],
                         egui::Button::new(
-                            RichText::new("B  거부")
+                            RichText::new(lang.text("B  거부", "B  Reject"))
                                 .size(19.0)
                                 .strong()
                                 .color(theme::TEXT),
@@ -104,10 +115,17 @@ pub fn render(
     alerts: &mut AlertCenter,
     connected: bool,
 ) {
+    let lang = i18n::language(ui.ctx());
     let Some(thread) = thread else {
         theme::panel().show(ui, |ui| {
-            ui.label(RichText::new("현재 질의를 기다리고 있습니다").size(25.0));
-            ui.label("프로젝트들 탭에서 확인할 프로젝트를 선택하세요.");
+            ui.label(
+                RichText::new(lang.text("현재 질의를 기다리고 있습니다", "Waiting for a question"))
+                    .size(25.0),
+            );
+            ui.label(lang.text(
+                "프로젝트들 탭에서 확인할 프로젝트를 선택하세요.",
+                "Choose a project in the Projects tab.",
+            ));
         });
         return;
     };
@@ -127,23 +145,25 @@ pub fn render(
             .map_or(theme::CYAN, |entry| level_color(entry.notification.level))
     };
     let label = if !connected {
-        "연결 끊김 · 마지막 기록"
+        lang.text("연결 끊김 · 마지막 기록", "Offline · last received data")
     } else if state == CodexThreadStatusDto::WaitingApproval {
-        "사용자 판단 / 승인 대기"
+        lang.text("사용자 판단 / 승인 대기", "Your decision is needed")
     } else if let Some(entry) = &latest {
         entry.notification.title.as_str()
     } else {
         match state {
-            CodexThreadStatusDto::Working => "Codex 작업 중",
-            CodexThreadStatusDto::Completed => "Codex 응답 완료",
-            CodexThreadStatusDto::Error => "Codex 작업 오류",
-            CodexThreadStatusDto::Idle => "작업 중단 / 대기",
-            _ => "현재 실행 상태 확인 중",
+            CodexThreadStatusDto::Working => lang.text("Codex 작업 중", "Codex is working"),
+            CodexThreadStatusDto::Completed => {
+                lang.text("Codex 응답 완료", "Codex response complete")
+            }
+            CodexThreadStatusDto::Error => lang.text("Codex 작업 오류", "Codex task error"),
+            CodexThreadStatusDto::Idle => lang.text("작업 중단 / 대기", "Stopped / idle"),
+            _ => lang.text("현재 실행 상태 확인 중", "Checking current status"),
         }
     };
     ui.horizontal(|ui| {
         ui.label(RichText::new(label).size(25.0).strong().color(color));
-        if unread && ui.button("확인했어요").clicked() {
+        if unread && ui.button(lang.text("확인했어요", "Mark as read")).clicked() {
             alerts.mark_current_read(thread);
         }
     });
@@ -163,17 +183,17 @@ pub fn render(
     theme::accent_panel(color).show(ui, |ui| {
         ui.set_min_width(ui.available_width());
         ui.label(
-            RichText::new("현재 질의 · 1건")
+            RichText::new(lang.text("현재 질의 · 1건", "CURRENT QUESTION · ONE TURN"))
                 .size(14.0)
                 .strong()
                 .color(theme::ORANGE),
         );
         ui.add(
             egui::Label::new(
-                RichText::new(
-                    crate::selection::latest_prompt(thread)
-                        .unwrap_or("현재 질의의 본문을 수신하고 있습니다"),
-                )
+                RichText::new(crate::selection::latest_prompt(thread).unwrap_or(lang.text(
+                    "현재 질의의 본문을 수신하고 있습니다",
+                    "Receiving the current question",
+                )))
                 .size(23.0),
             )
             .wrap(),
@@ -185,7 +205,7 @@ pub fn render(
             ui.add_space(12.0);
             ui.separator();
             ui.label(
-                RichText::new("판단이 필요합니다")
+                RichText::new(lang.text("판단이 필요합니다", "Your input is needed"))
                     .size(19.0)
                     .strong()
                     .color(theme::YELLOW),
@@ -197,25 +217,31 @@ pub fn render(
                 .wrap(),
             );
             ui.label(
-                RichText::new("이 질문의 답변은 Mac Codex에서 선택하세요.")
-                    .size(13.0)
-                    .color(theme::MUTED),
+                RichText::new(lang.text(
+                    "이 질문의 답변은 Mac Codex에서 선택하세요.",
+                    "Answer this question in Codex on your host.",
+                ))
+                .size(13.0)
+                .color(theme::MUTED),
             );
         }
         ui.add_space(14.0);
         ui.separator();
         ui.label(
-            RichText::new("이 질의에 대한 Codex 응답")
-                .size(14.0)
-                .strong()
-                .color(theme::CYAN),
+            RichText::new(lang.text(
+                "이 질의에 대한 Codex 응답",
+                "CODEX RESPONSE TO THIS QUESTION",
+            ))
+            .size(14.0)
+            .strong()
+            .color(theme::CYAN),
         );
         ui.add(
             egui::Label::new(
                 RichText::new(
                     observation
                         .and_then(|value| value.latest_agent_message.as_deref())
-                        .unwrap_or("응답을 기다리고 있습니다"),
+                        .unwrap_or(lang.text("응답을 기다리고 있습니다", "Waiting for a response")),
                 )
                 .size(22.0),
             )
@@ -224,13 +250,23 @@ pub fn render(
         if let Some(observation) = observation {
             ui.add_space(10.0);
             ui.label(
-                RichText::new(format!(
-                    "{} 조회",
-                    observation
-                        .observed_at
-                        .with_timezone(&chrono::Local)
-                        .format("%H:%M:%S")
-                ))
+                RichText::new(if lang == Language::English {
+                    format!(
+                        "Checked {}",
+                        observation
+                            .observed_at
+                            .with_timezone(&chrono::Local)
+                            .format("%H:%M:%S")
+                    )
+                } else {
+                    format!(
+                        "{} 조회",
+                        observation
+                            .observed_at
+                            .with_timezone(&chrono::Local)
+                            .format("%H:%M:%S")
+                    )
+                })
                 .size(11.0)
                 .color(theme::MUTED),
             );

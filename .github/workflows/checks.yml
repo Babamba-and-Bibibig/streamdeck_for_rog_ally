@@ -35,7 +35,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Native UI libraries
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev libxkbcommon-dev libwayland-dev libx11-dev libxi-dev libgl1-mesa-dev libdbus-1-dev
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev libxkbcommon-dev libwayland-dev libx11-dev libxi-dev libgl1-mesa-dev libdbus-1-dev fonts-noto-cjk
       - run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings

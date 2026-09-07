@@ -155,6 +155,14 @@ def launcher(binary, arguments, env):
             + " ".join(shlex.quote(str(x)) for x in [binary, *arguments]) + '\n').encode()
 
 
+def has_korean_font():
+    return any(Path(path).is_file() for path in (
+        "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/google-noto-sans-cjk-fonts/NotoSansCJK-Regular.ttc",
+    ))
+
+
 def install_dependencies(role, options):
     if platform.system() == "Darwin":
         if subprocess.run(["xcode-select", "-p"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
@@ -167,27 +175,29 @@ def install_dependencies(role, options):
     if role == "ui" and not missing:
         missing = subprocess.run(["pkg-config", "--exists", "libudev", "xkbcommon", "wayland-client"],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+    if role == "ui":
+        missing = missing or not has_korean_font()
     if not missing:
         return
     if executable("apt-get"):
         packages = ["build-essential", "pkg-config", "curl"]
         if role == "ui":
-            packages += ["libudev-dev", "libxkbcommon-dev", "libwayland-dev", "libx11-dev", "libxi-dev", "libgl1-mesa-dev", "libdbus-1-dev", "libnotify-bin"]
+            packages += ["libudev-dev", "libxkbcommon-dev", "libwayland-dev", "libx11-dev", "libxi-dev", "libgl1-mesa-dev", "libdbus-1-dev", "libnotify-bin", "fonts-noto-cjk"]
         commands = [["sudo", "apt-get", "update"], ["sudo", "apt-get", "install", "-y", *packages]]
     elif executable("dnf"):
         packages = ["gcc", "gcc-c++", "make", "pkgconf-pkg-config", "curl"]
         if role == "ui":
-            packages += ["systemd-devel", "libxkbcommon-devel", "wayland-devel", "libX11-devel", "libXi-devel", "mesa-libGL-devel", "dbus-devel", "libnotify"]
+            packages += ["systemd-devel", "libxkbcommon-devel", "wayland-devel", "libX11-devel", "libXi-devel", "mesa-libGL-devel", "dbus-devel", "libnotify", "google-noto-sans-cjk-fonts"]
         commands = [["sudo", "dnf", "install", "-y", *packages]]
     elif executable("pacman"):
         packages = ["base-devel", "pkgconf", "curl"]
         if role == "ui":
-            packages += ["systemd", "libxkbcommon", "wayland", "libx11", "libxi", "mesa", "dbus", "libnotify"]
+            packages += ["systemd", "libxkbcommon", "wayland", "libx11", "libxi", "mesa", "dbus", "libnotify", "noto-fonts-cjk"]
         commands = [["sudo", "pacman", "-S", "--needed", *packages]]
     else:
-        raise SetupError("Install a C toolchain and pkg-config; Linux UI also needs libudev, XKB, Wayland and OpenGL development libraries. See docs/INSTALL.md.")
+        raise SetupError("Install a C toolchain and pkg-config; Linux UI also needs libudev, XKB, Wayland, OpenGL development libraries and Noto Sans CJK. See docs/INSTALL.md.")
     print("\n".join(shlex.join(command) for command in commands))
-    if not consent("Install missing build dependencies? / 필요한 빌드 패키지 설치?",
+    if not consent("Install missing dependencies and UI fonts? / 필요한 패키지·화면 글꼴 설치?",
                    options.install_deps, options.non_interactive):
         raise SetupError("Install the dependencies above and retry / 위 패키지 설치 후 다시 실행하세요.")
     for command in commands:

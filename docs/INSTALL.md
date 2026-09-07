@@ -1,6 +1,6 @@
 # Installation / 설치 상세
 
-[English overview](../README.md#install) · [한국어 안내](../README.ko.md#설치하기)
+[English overview](../README.en.md#install) · [한국어 안내](../README.ko.md#설치하기)
 
 ## Before running setup / 준비
 
@@ -24,6 +24,7 @@ If a config is missing but a token or pairing file remains, setup stops before i
 | --- | --- |
 | `bin/orangedeck-agent` or `bin/orangedeck-ui` | Installed native executable |
 | `agent.toml` / `config.toml` | Agent / UI configuration |
+| `ui-preferences.toml` | UI language and eight custom keys; private, auto-saved, preserved on update |
 | `agent.token` / `ui.token` | Secret application credential, mode 0600 |
 | `orangedeck-pairing.toml` | Secret bundle to transfer privately to the UI |
 | `start-agent.command` / `start-ui.sh` | Start the component using the exact configured paths |
@@ -68,7 +69,11 @@ The UI installer restricts the received bundle to private permissions, then the 
 
 The installer recognizes `apt-get`, `dnf` and `pacman`. It shows the exact package command and asks before using `sudo`, unless `--install-deps` was explicitly given. Other distributions require manual package installation.
 
-For Debian/Ubuntu UI builds the package set includes `build-essential`, `pkg-config`, `libudev-dev`, `libxkbcommon-dev`, `libwayland-dev`, `libx11-dev`, `libxi-dev`, `libgl1-mesa-dev`, `libdbus-1-dev` and `libnotify-bin`. The installer contains corresponding Fedora/Arch package lists. Runtime needs a desktop session with graphics drivers; controller/notification support also depends on the desktop and available input device permissions.
+For Debian/Ubuntu UI builds the package set includes `build-essential`, `pkg-config`, `libudev-dev`, `libxkbcommon-dev`, `libwayland-dev`, `libx11-dev`, `libxi-dev`, `libgl1-mesa-dev`, `libdbus-1-dev` `libnotify-bin` and `fonts-noto-cjk`. The installer contains corresponding Fedora/Arch package lists. Runtime needs a desktop session with graphics drivers; controller/notification support also depends on the desktop and available input device permissions.
+
+The installer also checks for the Noto Sans CJK font used by Korean labels. Package names and paths are documented by [Ubuntu](https://packages.ubuntu.com/noble/all/fonts-noto-cjk/filelist), [Fedora](https://packages.fedoraproject.org/pkgs/google-noto-sans-cjk-fonts/google-noto-sans-cjk-fonts/) and [Arch](https://archlinux.org/packages/extra/any/noto-fonts-cjk/files/). If Korean appears as squares, install that distribution's package (`fonts-noto-cjk`, `google-noto-sans-cjk-fonts` or `noto-fonts-cjk`) and restart the UI. The English toggle remains available.
+
+**한국어가 네모로 보이면:** 설치기를 다시 실행해 글꼴 설치 안내를 따르고 UI를 다시 켜세요. Debian/Ubuntu는 `fonts-noto-cjk`, Fedora는 `google-noto-sans-cjk-fonts`, Arch는 `noto-fonts-cjk`를 사용합니다.
 
 Immutable handheld distributions may restrict package installation. Setup does not disable read-only system protection or change controller permissions. Use that distribution's supported development environment. This repository does not promise successful installation on every Linux image.
 
@@ -76,7 +81,7 @@ Official build reference: [Rust installation and native linker requirements](htt
 
 ## Update / 업데이트
 
-Download a new source version, extract it into a separate folder, and rerun the installer for the same role and config directory. It builds the new source and atomically replaces the installed executable. Existing tokens, projects and pairing are preserved. The previous process keeps running until you close it; the next launch uses the updated binary.
+Download a new source version, extract it into a separate folder, and rerun the installer for the same role and config directory. It builds the new source and atomically replaces the installed executable. Existing tokens, projects, pairing and UI preferences are preserved. The previous process keeps running until you close it; the next launch uses the updated binary.
 
 The newly built executable validates an existing configuration and credential before replacing the installed binary. Agent updates check the Codex executable configured in that file and preserve the previous Codex profile. `orangedeck-agent check-config --config ...` and `orangedeck-ui check-config --config ...` perform that local validation without starting services or contacting accounts.
 
@@ -85,6 +90,28 @@ The newly built executable validates an existing configuration and credential be
 **0.1.19로 Agent 업데이트:** Agent 재실행 → 알림 설치 실행기 재실행 → `/hooks` 재검토·신뢰를 한 번 진행하세요. 새 알림 소켓은 실제 Agent 설정 폴더를 사용합니다. 기존 소유 대화 기록이 다른 폴더에 있으면 자동 병합하지 않으며 해당 대화는 읽기 전용으로 표시합니다.
 
 If using the older source-folder installation, `scripts/run-ally.zsh`, `Start OrangeDeck Agent.command` and `Enable Codex Notifications.command` remain available. The guided installer can adopt the existing `~/.config/orangedeck` configuration. Review `/hooks` again when the hook definition or executable path changes. Never assume build success proves real Mac notifications or approval delivery.
+
+<a id="host-shortcuts"></a>
+
+## 메인 PC 열기 기능 · Host shortcuts
+
+**단축키의 에디터·터미널·폴더·웹페이지 열기**는 메인 PC의 Agent에 등록된 프로젝트를 대상으로 합니다. Codex 기록에서 발견한 폴더를 보기만 해서는 실행 권한이 추가되지 않습니다. 설치할 때 입력한 프로젝트는 이미 등록되어 있습니다.
+
+추가하려면 메인 PC에서 **개인 설정** `~/.config/orangedeck/agent.toml`을 열어 아래 형식의 `[[projects]]` 블록을 덧붙입니다. `id`는 기존 항목과 겹치지 않게, `path`는 **그 메인 PC의 실제 프로젝트 폴더**로 바꾸세요. 기존 프로젝트의 웹 주소만 추가할 때는 그 프로젝트 블록 안에 `browser_url` 한 줄을 넣습니다. 공개 `config/agent.example.toml`에는 개인정보를 쓰지 마세요.
+
+```toml
+[[projects]]
+id = "another-project"
+name = "My Website"
+path = "/Users/YOU/Code/my-website"
+browser_url = "http://127.0.0.1:3000"
+```
+
+`browser_url`은 선택 항목이며 HTTP/HTTPS 주소만 지원합니다. 위 주소는 **메인 PC 자체**의 개발 서버 예시입니다. 그 서버를 OrangeDeck이 대신 시작하지는 않습니다. 저장 후 Agent 터미널에서 Ctrl+C → 같은 Agent 실행기로 다시 켜고, UI에서 해당 프로젝트를 선택하세요. 페어링을 다시 할 필요는 없습니다.
+
+에디터는 Mac의 `/Applications` 또는 `~/Applications`에서 **Zed → Visual Studio Code → VSCodium** 순으로 찾습니다. Linux에서는 Agent 실행기의 PATH에 있는 `zed`/`zeditor` → `code` → `codium`을 찾습니다. 터미널은 Mac Terminal, Linux Konsole → GNOME Terminal → Xfce Terminal 순입니다. 설치된 앱이 없으면 오류를 표시합니다. 앱 실행 요청은 메인 PC에 전달되므로 메인 PC의 로그인된 데스크톱에서 결과를 확인하세요.
+
+**English:** host open actions require an Agent-registered project. Add a unique project block to your private `agent.toml`, using a real path on that host; add an optional HTTP/HTTPS `browser_url` inside the same block. Restart Agent after saving. No re-pairing is needed. The sample loopback URL refers to a server already running on the host. Editor detection supports Zed, VS Code and VSCodium; terminal detection supports macOS Terminal or Linux Konsole, GNOME Terminal and Xfce Terminal. Missing applications report an error. Linux commands must be on the launcher's PATH. Commands run on the host desktop, not the handheld.
 
 ## More projects, re-pairing and token rotation
 
