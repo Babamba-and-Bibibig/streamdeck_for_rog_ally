@@ -18,7 +18,7 @@ This guide targets **macOS on the work Mac, developed around a Mac Studio, and C
 
 After step 3, enter **`/hooks` in your usual Mac Codex session**, then **review and trust OrangeDeck**. **Only window 2 stays open for OrangeDeck on the Mac. For everyday use, run Start only.** Keep Codex and Tailscale running too.
 
-**The Linux Ally running CachyOS Handheld uses its own commands.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First Ally setup](../README.en.md#3-install-the-remote-ui-on-the-ally).
+**ROG Ally running CachyOS Handheld uses its own commands.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First handheld setup](../README.en.md#3-install-the-remote-ui-on-your-handheld).
 
 ## Prerequisites
 

@@ -1,9 +1,11 @@
 <h3 align="center"><a href="README.md">🇰🇷 한국어</a>　|　🌐 English · Current page</h3>
 
 <h1 align="center">OrangeDeck</h1>
-<h2 align="center">Your Mac's Codex work.<br>At a glance on your Ally.</h2>
+<h2 align="center">Your Mac's Codex agents.<br>Use a handheld like Steam Deck as your Stream Deck.</h2>
 
-Run Codex on your Mac and keep an eye on it from your Ally. **Follow progress, read replies and approval requests, and open changed files in your Mac editor** with a handheld remote.
+OrangeDeck is a Codex remote for **handheld gaming PCs, the category that includes Steam Deck and ROG Ally**. **Follow progress, read replies and approval requests, and open changed files in your Mac editor.**
+
+The current setup guide covers **ROG Ally running CachyOS Handheld**. Installation and operation on Steam Deck, SteamOS and other handhelds have not yet been verified.
 
 [⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Controls](docs/CONTROLS.md)
 
@@ -51,20 +53,22 @@ All screenshots use **simulated data**. Click a screenshot to enlarge it. [Scree
 
 ## How the two devices connect
 
-![Codex and Connector on the Mac send activity to LIVE and Agents on the Ally; approvals and file-open requests return to the Mac.](docs/diagrams/device-roles-en.svg)
+The diagram below shows **ROG Ally as an example handheld remote**.
 
-**Codex does the AI work on the Mac. OrangeDeck connects the devices.** You do not need to install Codex on the Ally.
+![Codex and Connector on the Mac send activity to LIVE and Agents on the handheld; approvals and file-open requests return to the Mac.](docs/diagrams/device-roles-en.svg)
+
+**Codex does the AI work on the Mac. OrangeDeck connects the devices.** You do not need to install Codex on the handheld remote.
 
 | Device | Install |
 | --- | --- |
 | **macOS work Mac** · developed around Mac Studio | Codex CLI + OrangeDeck **Connector** |
-| **ROG Ally running CachyOS Handheld** · desktop mode | OrangeDeck **remote UI** |
+| **Handheld gaming PC** · setup example: ROG Ally with CachyOS Handheld, desktop mode | OrangeDeck **remote UI** |
 
 This guide covers that configuration. Steam Deck and SteamOS installation and operation are unverified; other Linux distributions and Windows are outside this guide.
 
 ## Installation
 
-**Set up the Mac → transfer the connection file → set up the Ally.** Current version: **0.1.32**.
+**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.32**.
 
 Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
 
@@ -75,22 +79,22 @@ On both devices, use **Download ZIP** above and extract it. Git and SSH keys are
 **These three files run on the Mac.** In the extracted folder, double-click them in order.
 
 1. **Setup OrangeDeck.command** — install Connector and choose your work folder and editor. When setup finishes, press Enter as prompted and close the window.
-2. **Start OrangeDeck Connector.command** — connect the Mac and Ally. **Keep this window open while using OrangeDeck.**
+2. **Start OrangeDeck Connector.command** — connect the Mac and handheld. **Keep this window open while using OrangeDeck.**
 3. **Enable Codex Notifications.command** — connect completion alerts and approval requests. When configuration finishes, press Enter and close the window.
 
 Finally, open **`/hooks` in your usual Mac Codex session → review and trust OrangeDeck**. The only OrangeDeck window you need to keep open is **step 2, Connector**.
 
 If a developer-tool installer appears, finish it and run Setup again. [Mac setup help](docs/INSTALL.en.md#mac-command-file-will-not-open).
 
-### 2. Transfer the Mac's connection file to the Ally
+### 2. Transfer the Mac's connection file to your handheld
 
 In Mac **Finder → Go → Go to Folder…**, open `~/.config/orangedeck`.
 
-Copy **`orangedeck-pairing.toml`** to **your Ally's Downloads folder** using USB or another private transfer. This **personal connection file** contains your Mac's address and secret connection credential. Do not post it on GitHub or in a chat.
+Copy **`orangedeck-pairing.toml`** to **your handheld's Downloads folder** using USB or another private transfer. This **personal connection file** contains your Mac's address and secret connection credential. Do not post it on GitHub or in a chat.
 
-### 3. Install the remote UI on the Ally
+### 3. Install the remote UI on your handheld
 
-In the Ally's **desktop mode**, open the extracted folder, right-click an empty area and select **Open Terminal Here**. Use this command on the Ally:
+This step covers **ROG Ally running CachyOS Handheld in desktop mode**. Open the extracted folder, right-click an empty area and select **Open Terminal Here**. Run:
 
 ```sh
 sh install.sh --role ui
@@ -104,14 +108,14 @@ After installation, start the app:
 sh "$HOME/.config/orangedeck/start-ui.sh"
 ```
 
-When it shows **CONNECTED**, open **Agents → an upper + key** and assign a conversation. Use Codex on the Mac to check new LIVE records, replies and changed files on the Ally.
+When it shows **CONNECTED**, open **Agents → an upper + key** and assign a conversation. Use Codex on the Mac to check new LIVE records, replies and changed files on your handheld.
 
 ## Next time, just start the apps
 
 | Device | Start | Stop |
 | --- | --- | --- |
 | **Mac** | Double-click **Start OrangeDeck Connector.command** | Press Ctrl+C in the Connector terminal |
-| **Ally** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | Close the OrangeDeck window |
+| **Handheld PC** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | Close the OrangeDeck window |
 
 Keep Codex and Tailscale running. If you launch the app from a terminal, keep that terminal open too. Setup, Enable and installation are not daily steps.
 

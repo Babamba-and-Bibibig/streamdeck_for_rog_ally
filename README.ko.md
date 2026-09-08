@@ -1,9 +1,11 @@
 <h3 align="center">🇰🇷 한국어 · 현재 페이지　|　<a href="README.en.md">🌐 English</a></h3>
 
 <h1 align="center">OrangeDeck</h1>
-<h2 align="center">Mac의 Codex 작업을<br>Ally에서 한눈에.</h2>
+<h2 align="center">Mac의 Codex 에이전트 작업을,<br>스팀덱 같은 핸드헬드에서 Stream Deck처럼.</h2>
 
-Mac에서 Codex를 돌리고, 손에 든 Ally에서 진행 상황을 확인하세요. **작업 상태를 보고, 응답과 승인 요청을 읽고, 수정된 파일을 Mac 편집기로 여는 리모컨**입니다.
+OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC)에서 쓰는 Codex 작업용 리모컨입니다. **진행 상태를 보고, 응답과 승인 요청을 읽고, 수정 파일을 Mac 편집기로 열어 보세요.**
+
+현재 설치 안내는 **ROG Ally + CachyOS Handheld** 기준입니다. Steam Deck·SteamOS와 다른 핸드헬드 기기의 설치·동작은 아직 확인하지 않았습니다.
 
 [⬇ ZIP 다운로드](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [설치하기](#설치하기) · [간단 사용법](docs/QUICKSTART_KO.md)
 
@@ -51,20 +53,22 @@ Mac에서 Codex를 돌리고, 손에 든 Ally에서 진행 상황을 확인하�
 
 ## 두 기기는 이렇게 연결됩니다
 
-![Mac의 Codex와 통신 모듈을 Ally의 LIVE·에이전트들 화면에 연결하고, 승인과 파일 열기 요청을 Mac으로 보냅니다.](docs/diagrams/device-roles-ko.svg)
+아래 그림은 **ROG Ally를 핸드헬드 리모컨으로 사용하는 설치 예시**입니다.
 
-**AI 작업은 Mac의 Codex가 하고, OrangeDeck은 두 기기를 연결합니다.** Ally에 Codex를 설치할 필요는 없습니다.
+![Mac의 Codex와 통신 모듈을 핸드헬드의 LIVE·에이전트들 화면에 연결하고, 승인과 파일 열기 요청을 Mac으로 보냅니다.](docs/diagrams/device-roles-ko.svg)
+
+**AI 작업은 Mac의 Codex가 하고, OrangeDeck은 두 기기를 연결합니다.** 리모컨으로 쓸 핸드헬드에는 Codex를 설치할 필요가 없습니다.
 
 | 기기 | 설치할 것 |
 | --- | --- |
 | **macOS 작업용 Mac** · Mac Studio를 기준으로 개발 | Codex CLI + OrangeDeck **통신 모듈(Connector)** |
-| **CachyOS Handheld의 ROG Ally** · 데스크톱 모드 | OrangeDeck **리모컨(UI)** |
+| **핸드헬드 PC** · 이 안내의 설치 예시: ROG Ally + CachyOS Handheld, 데스크톱 모드 | OrangeDeck **리모컨(UI)** |
 
 이 설명서는 위 구성을 대상으로 합니다. Steam Deck·SteamOS는 설치·동작을 확인하지 않았으며, 다른 Linux 배포판과 Windows는 안내 대상에 포함하지 않습니다.
 
 ## 설치하기
 
-**Mac 설치 → 연결 파일 옮기기 → Ally 설치**, 세 단계입니다. 현재 버전은 **0.1.32**입니다.
+**Mac 설치 → 연결 파일 옮기기 → 핸드헬드에 리모컨 설치**, 세 단계입니다. 현재 버전은 **0.1.32**입니다.
 
 먼저 두 기기에 [Tailscale](https://tailscale.com/download)을 설치하고 같은 계정으로 로그인하세요. Mac에는 [Codex CLI](https://learn.chatgpt.com/docs/cli)를 설치하고 로그인해 둡니다. 두 기기에 Python 3.9 이상이 필요합니다. [준비물 확인](docs/INSTALL.md#준비물).
 
@@ -75,22 +79,22 @@ Mac에서 Codex를 돌리고, 손에 든 Ally에서 진행 상황을 확인하�
 **아래 세 파일은 Mac에서 실행합니다.** 압축을 푼 폴더에서 순서대로 두 번 누르세요.
 
 1. **Setup OrangeDeck.command** — 설치하고 내 작업 폴더·편집기를 고릅니다. 설치 완료 후 안내에 따라 Enter를 누르고 창을 닫습니다.
-2. **Start OrangeDeck Connector.command** — Mac과 Ally를 연결합니다. **OrangeDeck을 사용하는 동안 이 창은 켜 둡니다.**
+2. **Start OrangeDeck Connector.command** — Mac과 핸드헬드를 연결합니다. **OrangeDeck을 사용하는 동안 이 창은 켜 둡니다.**
 3. **Enable Codex Notifications.command** — 완료 알림·승인 요청을 연결합니다. 설정 완료 후 Enter를 누르고 창을 닫습니다.
 
 마지막으로 **평소 사용하는 Mac Codex**에서 **`/hooks` → OrangeDeck 확인·신뢰**를 진행하세요. Mac에서 계속 켜둘 OrangeDeck 창은 **2번 통신 모듈 하나**입니다.
 
 필요한 개발 도구 설치가 뜨면 설치를 마친 뒤 Setup을 다시 실행하세요. [Mac 설치 도움말](docs/INSTALL.md#mac-설치-파일이-안-열릴-때).
 
-### 2. Mac의 연결 파일을 Ally로 옮기기
+### 2. Mac의 연결 파일을 핸드헬드로 옮기기
 
 Mac Finder에서 **이동 → 폴더로 이동…** 메뉴를 고르고, `~/.config/orangedeck`을 엽니다.
 
-그 안의 `orangedeck-pairing.toml` 파일을 USB 등으로 **내 Ally의 다운로드 폴더**에 옮기세요. 내 Mac의 주소와 비밀 연결 인증값이 담긴 **개인 연결 파일**입니다. GitHub나 채팅에 올리지 마세요.
+그 안의 `orangedeck-pairing.toml` 파일을 USB 등으로 **내 핸드헬드의 다운로드 폴더**에 옮기세요. 내 Mac의 주소와 비밀 연결 인증값이 담긴 **개인 연결 파일**입니다. GitHub나 채팅에 올리지 마세요.
 
-### 3. Ally에 리모컨 설치
+### 3. 핸드헬드에 리모컨 설치
 
-Ally의 **데스크톱 모드**에서 압축을 푼 폴더를 열고, 빈 곳을 오른쪽 클릭해 **여기서 터미널 열기**를 누릅니다. Mac용 `.command` 파일 대신 아래 명령을 실행하세요.
+이 단계는 **ROG Ally의 CachyOS Handheld 데스크톱 모드** 기준입니다. 압축을 푼 폴더를 열고, 빈 곳을 오른쪽 클릭해 **여기서 터미널 열기**를 누릅니다. Mac용 `.command` 파일 대신 아래 명령을 실행하세요.
 
 ```sh
 sh install.sh --role ui
@@ -111,7 +115,7 @@ sh "$HOME/.config/orangedeck/start-ui.sh"
 | 기기 | 켜기 | 끄기 |
 | --- | --- | --- |
 | **Mac** | **Start OrangeDeck Connector.command** 두 번 누르기 | 통신 모듈 터미널에서 Ctrl+C |
-| **Ally** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | OrangeDeck 창 닫기 |
+| **핸드헬드 PC** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | OrangeDeck 창 닫기 |
 
 Codex와 두 기기의 Tailscale은 켜 두세요. 앱을 터미널에서 실행했다면 사용하는 동안 그 터미널도 켜 둡니다. Setup·Enable·설치는 매번 다시 하지 않습니다.
 

@@ -18,7 +18,7 @@
 
 ③ 다음에는 **평소 사용하는 Mac Codex에서 `/hooks` → OrangeDeck 확인·신뢰**를 진행하세요. **Mac에서 계속 켜둘 OrangeDeck 창은 ② 하나이며, 평소에는 Start만 실행합니다.** Codex와 Tailscale도 켜 두세요.
 
-**Ally의 Linux(CachyOS Handheld)는 위의 Mac 파일을 쓰지 않습니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.md#3-ally에-리모컨-설치).
+**ROG Ally의 CachyOS Handheld에서는 위의 Mac 파일을 쓰지 않습니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.md#3-핸드헬드에-리모컨-설치).
 
 ## 준비물
 
