@@ -25,6 +25,7 @@ pub(super) struct DeckModal {
     pub submitted: Option<uuid::Uuid>,
     pub just_opened: bool,
     pub file_request: Option<uuid::Uuid>,
+    pub queued_file: Option<String>,
     pub file_message: Option<String>,
     pub file_error: bool,
     pub connector_update_needed: bool,
@@ -202,33 +203,21 @@ impl OrangeDeckApp {
             submitted: None,
             just_opened: true,
             file_request: None,
+            queued_file: None,
             file_message: None,
             file_error: false,
             connector_update_needed: false,
             file_refresh: None,
         });
-        if kind == ModalKind::Files {
-            let first = self
-                .deck_modal
-                .as_ref()
-                .and_then(|modal| modal.thread.observation.as_ref())
-                .and_then(|observation| observation.changes.as_ref())
-                .and_then(|changes| {
-                    changes
-                        .files
-                        .iter()
-                        .position(|file| file.kind != CodeChangeKindDto::Deleted)
-                });
-            if let Some(index) = first {
-                self.open_modal_file(index);
-            } else if !matches!(
+        if kind == ModalKind::Files
+            && !matches!(
                 self.deck_modal
                     .as_ref()
                     .map(|modal| file_state(&modal.thread)),
                 Some(FileState::Changes(_))
-            ) {
-                self.refresh_modal_files();
-            }
+            )
+        {
+            self.refresh_modal_files();
         }
     }
 
@@ -521,18 +510,6 @@ impl OrangeDeckApp {
                     ).to_owned()),
                     _ => None,
                 };
-                if let Some(index) = thread
-                    .observation
-                    .as_ref()
-                    .and_then(|o| o.changes.as_ref())
-                    .and_then(|c| {
-                        c.files
-                            .iter()
-                            .position(|f| f.kind != CodeChangeKindDto::Deleted)
-                    })
-                {
-                    self.open_modal_file(index);
-                }
                 return;
             }
         }
@@ -585,6 +562,7 @@ impl OrangeDeckApp {
             return;
         };
         modal.selected_file = index;
+        modal.queued_file = None;
         if file.kind == CodeChangeKindDto::Deleted {
             modal.file_message = None;
             modal.file_error = false;
@@ -604,18 +582,18 @@ impl OrangeDeckApp {
         modal.connector_update_needed = false;
         // Keep the most recent selection queued while a previous editor navigation is in flight.
         if self.file_request.is_some() {
+            modal.queued_file = Some(file.path.clone());
             return;
         }
         let navigation_id = uuid::Uuid::new_v4();
-        let path = file.path.clone();
         let command = ClientCommand::OpenCodexChange {
             navigation_id,
             thread_id: modal.thread.id.clone(),
             turn_id,
-            path: path.clone(),
+            path: file.path.clone(),
         };
         modal.file_request = Some(navigation_id);
-        self.file_request = Some((navigation_id, path));
+        self.file_request = Some(navigation_id);
         if let Err(error) = self.network.send(command) {
             self.file_request = None;
             if let Some(modal) = &mut self.deck_modal {
@@ -638,9 +616,9 @@ impl OrangeDeckApp {
             && self
                 .file_request
                 .as_ref()
-                .is_some_and(|(id, _)| id == navigation_id)
+                .is_some_and(|id| id == navigation_id)
         {
-            let (_, path) = self.file_request.take().unwrap();
+            self.file_request = None;
             let mut next = None;
             if let Some(modal) = self
                 .deck_modal
@@ -678,15 +656,15 @@ impl OrangeDeckApp {
                         }
                     });
                 }
-                if let Some(file) = modal
-                    .thread
-                    .observation
-                    .as_ref()
-                    .and_then(|observation| observation.changes.as_ref())
-                    .and_then(|changes| changes.files.get(modal.selected_file))
-                    && (!same_request || file.path != path)
-                {
-                    next = Some(modal.selected_file);
+                if let Some(path) = modal.queued_file.take() {
+                    next = modal
+                        .thread
+                        .observation
+                        .as_ref()
+                        .and_then(|observation| observation.changes.as_ref())
+                        .and_then(|changes| {
+                            changes.files.iter().position(|file| file.path == path)
+                        });
                 }
             }
             if let Some(index) = next {
@@ -697,6 +675,7 @@ impl OrangeDeckApp {
             self.file_request = None;
             if let Some(modal) = &mut self.deck_modal {
                 modal.file_request = None;
+                modal.queued_file = None;
                 modal.file_refresh = None;
                 if modal.kind == ModalKind::Files {
                     modal.file_error = true;
@@ -813,12 +792,12 @@ impl OrangeDeckApp {
                     if modal.kind == ModalKind::Response {
                         "응답 · 이 질의의 내용"
                     } else {
-                        "수정 파일 · 누르면 Mac 편집기로 이동"
+                        "수정 파일 목록 · 파일을 선택하면 Mac에서 열립니다"
                     },
                     if modal.kind == ModalKind::Response {
                         "Response · this question"
                     } else {
-                        "Changed files · tap to open in your Mac editor"
+                        "Changed files · select a file to open on Mac"
                     },
                 ))
                 .color(theme::CYAN),
@@ -954,7 +933,9 @@ impl OrangeDeckApp {
             && self.current_approval_id() == Some(id)
         {
             self.submit_approval(id, decision);
-        } else if let Some(index) = file_clicked {
+        } else if let Some(index) = file_clicked
+            && !modal.just_opened
+        {
             self.open_modal_file(index);
         }
     }
@@ -1007,8 +988,8 @@ impl OrangeDeckApp {
             ui.colored_label(
                 theme::YELLOW,
                 lang.text(
-                    "일부 파일 기록이나 변경 내용이 빠져 있을 수 있습니다. 전체 내용은 Mac에서 확인하세요.",
-                    "Some file records or change details may be missing. Review the full files on your Mac.",
+                    "일부 파일 기록이 빠져 있을 수 있습니다. Mac에서 확인하세요.",
+                    "Some file records may be missing. Check on your Mac.",
                 ),
             );
         }
@@ -1020,8 +1001,8 @@ impl OrangeDeckApp {
                 .stroke(egui::Stroke::new(1.0, color)).inner_margin(10.0).show(ui, |ui| {
                     ui.set_min_width(ui.available_width());
                     ui.label(RichText::new(lang.text(
-                        if modal.connector_update_needed { "Mac 통신 모듈 업데이트 필요" } else if error { "파일을 열지 못했습니다" } else { "Mac 편집기" },
-                        if modal.connector_update_needed { "Update your Mac Connector" } else if error { "Could not open the file" } else { "Mac editor" }
+                        if modal.connector_update_needed { "Mac 통신 모듈 업데이트 필요" } else if !self.model.connected { "Mac 연결 끊김" } else if error { "파일을 열지 못했습니다" } else { "Mac 편집기" },
+                        if modal.connector_update_needed { "Update your Mac Connector" } else if !self.model.connected { "Mac disconnected" } else if error { "Could not open the file" } else { "Mac editor" }
                     )).size(18.0).strong().color(color));
                     egui::ScrollArea::vertical().id_salt("editor_result_notice").max_height(80.0).show(ui, |ui| {
                         let message = if self.model.connected {
@@ -1046,63 +1027,61 @@ impl OrangeDeckApp {
         }
         let status_height = ui.cursor().top() - status_start;
         let height = (screen_height - 230.0 - status_height).clamp(60.0, 430.0);
-        ui.columns(2, |columns| {
-            egui::ScrollArea::vertical()
-                .id_salt("changed_file_list")
-                .max_height(height)
-                .show(&mut columns[0], |ui| {
-                    for (index, file) in changes.files.iter().enumerate() {
+        egui::ScrollArea::vertical()
+            .id_salt("changed_file_list")
+            .max_height(height)
+            .show(ui, |ui| {
+                for (index, file) in changes.files.iter().enumerate() {
+                    let path = std::path::Path::new(&file.path);
+                    let name = path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or(&file.path);
+                    let full_path = std::path::Path::new(&modal.thread.cwd).join(path);
+                    let deleted = file.kind == CodeChangeKindDto::Deleted;
+                    let details = if deleted {
+                        lang.text("삭제 · 열 수 없음", "Deleted · cannot open")
+                            .to_owned()
+                    } else {
                         let kind = change_label(file.kind, lang);
-                        let label = format!("{kind} · {}\n{}", file.first_line, file.path);
-                        let response = ui.add_sized(
-                            [ui.available_width(), 64.0],
-                            egui::Button::new(RichText::new(label).size(13.0))
-                                .wrap()
-                                .selected(index == modal.selected_file),
+                        let line = file.first_line.max(1);
+                        match lang {
+                            super::Language::Korean => format!("{kind} · {line}행"),
+                            super::Language::English => format!("{kind} · line {line}"),
+                        }
+                    };
+                    let mut label = egui::text::LayoutJob::default();
+                    for (text, size, color) in [
+                        (format!("{name}  ·  {details}\n"), 16.0, theme::TEXT),
+                        (full_path.to_string_lossy().into_owned(), 13.0, theme::MUTED),
+                    ] {
+                        label.append(
+                            &text,
+                            0.0,
+                            egui::TextFormat {
+                                font_id: egui::FontId::proportional(size),
+                                color,
+                                ..Default::default()
+                            },
                         );
-                        if response.clicked() {
-                            *clicked = Some(index);
-                        }
                     }
-                });
-            egui::ScrollArea::both()
-                .id_salt("changed_file_diff")
-                .max_height(height)
-                .show(&mut columns[1], |ui| {
-                    if let Some(file) = changes.files.get(modal.selected_file) {
-                        ui.add(egui::Label::new(RichText::new(&file.path).strong()).wrap());
-                        if let Some(previous) = &file.previous_path {
-                            ui.add(egui::Label::new(format!("{previous} → {}", file.path)).wrap());
-                        }
-                        if file.kind == CodeChangeKindDto::Deleted {
-                            ui.label(lang.text(
-                                "삭제된 파일 · Mac에서 열 수 없습니다",
-                                "Deleted file · cannot open on Mac",
-                            ));
-                        }
-                        for line in file.diff.lines() {
-                            let color = if line.starts_with('+') {
-                                theme::GREEN
-                            } else if line.starts_with('-') {
-                                theme::PINK
-                            } else {
-                                theme::TEXT
-                            };
-                            ui.label(RichText::new(line).monospace().size(12.0).color(color));
-                        }
-                        if let Some(content) = &file.content {
-                            ui.label(lang.text("현재 파일 내용", "Current file contents"));
-                            ui.label(RichText::new(content).monospace().size(12.0));
-                        }
-                        if file.truncated {
-                            ui.colored_label(
-                                theme::YELLOW,
-                                lang.text("… 파일 내용 일부 생략", "… file contents shortened"),
-                            );
-                        }
+                    let response = ui.push_id(&file.path, |ui| {
+                        ui.visuals_mut().selection.bg_fill =
+                            theme::tint(theme::PANEL_RAISED, theme::ORANGE, 0.10);
+                        ui.visuals_mut().selection.stroke = egui::Stroke::new(1.5, theme::ORANGE);
+                        ui.add_enabled(
+                            !deleted,
+                            egui::Button::new(label)
+                                .wrap()
+                                .min_size(egui::vec2(ui.available_width(), 70.0))
+                                .selected(index == modal.selected_file),
+                        )
+                    });
+                    if response.inner.clicked() {
+                        *clicked = Some(index);
                     }
-                });
-        });
+                }
+            });
     }
 }
 

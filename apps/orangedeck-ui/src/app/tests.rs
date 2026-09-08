@@ -383,49 +383,45 @@ fn columns_stay_bound_across_project_selection_and_most_recent_thread_changes() 
 }
 
 #[test]
-fn review_file_modal_shows_current_contents_alongside_codex_diff_and_opens_once() {
-    for diff in ["", "@@ -1 +1 @@\n-old\n+codex edit"] {
+fn file_dialog_lists_names_full_paths_and_lines_without_rendering_contents() {
+    for language in [Language::Korean, Language::English] {
         let mut snapshot = files_snapshot();
-        let changes = snapshot
-            .codex
-            .threads
-            .iter_mut()
-            .find(|thread| thread.id == "a")
-            .unwrap()
+        let changes = snapshot.codex.threads[0]
             .observation
             .as_mut()
             .unwrap()
             .changes
             .as_mut()
             .unwrap();
-        changes.files.truncate(1);
-        changes.files[0].diff = diff.to_owned();
-        changes.files[0].content = Some("print('event preview')\n".to_owned());
-        changes.files[0].first_line = 1;
+        changes.files[0].content = Some("PRIVATE_PREVIEW_NOT_FOR_THIS_VIEW".to_owned());
+        changes.files[0].diff = "@@ -10 +10 @@\n-old\n+DIFF_NOT_FOR_THIS_VIEW".to_owned();
+        changes.files[1].path = "tests/first.rs".to_owned();
+        let cwd = snapshot.codex.threads[0].cwd.clone();
         let (mut app, mut commands) = test_app(&snapshot);
+        app.preferences.language = language;
         bind(&mut app, 0, "a");
         app.activate_pair(5);
+        assert!(
+            commands.try_recv().is_err(),
+            "opening the list must not launch an editor"
+        );
         let ctx = context();
         frame(&mut app, &ctx, vec![]);
         let painted = frame(&mut app, &ctx, vec![]);
-        assert!(
-            painted
-                .labels
-                .iter()
-                .any(|(text, _)| text == "현재 파일 내용")
-        );
-        assert!(
-            painted
-                .labels
-                .iter()
-                .any(|(text, _)| text.contains("print('event preview')"))
-        );
-        if !diff.is_empty() {
-            assert!(painted.labels.iter().any(|(text, _)| text == "+codex edit"));
+        for path in ["src/first.rs", "tests/first.rs"] {
+            painted.label(&format!("{cwd}/{path}"));
         }
+        painted.label(language.text("10행", "line 10"));
+        assert!(
+            !painted
+                .labels
+                .iter()
+                .any(|(text, _)| text.contains("NOT_FOR_THIS_VIEW") || text.contains("@@"))
+        );
+        click(&mut app, &ctx, painted.label("src/first.rs"));
         assert!(
             matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, thread_id, turn_id, .. }
-        if path == "src/first.rs" && thread_id == "a" && turn_id == "new")
+            if path == "src/first.rs" && thread_id == "a" && turn_id == "new")
         );
         assert!(commands.try_recv().is_err());
     }
@@ -462,9 +458,7 @@ fn response_and_file_modals_have_distinct_actions_and_outside_tap_never_opens_a_
     assert!(app.editor.is_none());
     assert!(commands.try_recv().is_err());
     app.activate_pair(5);
-    assert!(
-        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, thread_id, turn_id, .. } if path == "src/first.rs" && thread_id == "a" && turn_id == "new")
-    );
+    assert!(commands.try_recv().is_err());
     frame(&mut app, &ctx, vec![]);
     let painted = frame(&mut app, &ctx, vec![]);
     assert!(
@@ -523,6 +517,8 @@ fn file_clicks_keep_the_latest_selection_in_order_and_ignore_late_results_after_
     let (mut app, mut commands) = test_app(&snapshot);
     bind(&mut app, 0, "a");
     app.activate_pair(5);
+    assert!(commands.try_recv().is_err());
+    app.handle_action(ControlAction::Activate);
     let ClientCommand::OpenCodexChange {
         navigation_id: first,
         ..
@@ -566,11 +562,92 @@ fn file_clicks_keep_the_latest_selection_in_order_and_ignore_late_results_after_
 }
 
 #[test]
-fn files_open_directly_and_editor_failures_offer_retry_without_folder_registration() {
+fn file_list_reordering_during_a_click_cannot_open_a_different_file() {
     let snapshot = files_snapshot();
     let (mut app, mut commands) = test_app(&snapshot);
     bind(&mut app, 0, "a");
     app.activate_pair(5);
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    let position = painted.label("src/second.rs");
+    frame(&mut app, &ctx, pointer(position, true));
+    let mut updated = snapshot.codex.threads[0].clone();
+    let observation = updated.observation.as_mut().unwrap();
+    observation.observed_at += chrono::Duration::seconds(1);
+    let changes = observation.changes.as_mut().unwrap();
+    let mut added = changes.files[0].clone();
+    added.path = "src/new.rs".to_owned();
+    changes.files.insert(0, added);
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(updated),
+        )),
+    );
+    frame(&mut app, &ctx, pointer(position, false));
+    assert!(commands.try_recv().is_err());
+    let painted = frame(&mut app, &ctx, vec![]);
+    click(&mut app, &ctx, painted.label("src/second.rs"));
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, .. }
+        if path == "src/second.rs")
+    );
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn pending_editor_results_only_follow_an_explicit_file_choice() {
+    for reopen in [false, true] {
+        for choose in [false, true] {
+            let snapshot = files_snapshot();
+            let (mut app, mut commands) = test_app(&snapshot);
+            bind(&mut app, 0, "a");
+            app.activate_pair(5);
+            assert!(commands.try_recv().is_err());
+            app.handle_action(ControlAction::Activate);
+            let ClientCommand::OpenCodexChange { navigation_id, .. } = commands.try_recv().unwrap()
+            else {
+                panic!("explicit first file choice expected")
+            };
+            if reopen {
+                app.close_deck_modal();
+                app.activate_pair(5);
+            }
+            app.handle_action(ControlAction::NavigateDown);
+            if choose {
+                app.handle_action(ControlAction::Activate);
+            }
+            assert!(commands.try_recv().is_err());
+            event(
+                &mut app,
+                crate::model::NetworkEvent::FileOpenCompleted {
+                    navigation_id,
+                    result: Ok(outcome(true)),
+                },
+            );
+            if choose {
+                assert!(
+                    matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, .. }
+                    if path == "src/second.rs")
+                );
+            }
+            assert!(
+                commands.try_recv().is_err(),
+                "moving focus or reopening the list must not open a file"
+            );
+        }
+    }
+}
+
+#[test]
+fn selected_files_open_and_editor_failures_offer_retry_without_folder_registration() {
+    let snapshot = files_snapshot();
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    app.activate_pair(5);
+    assert!(commands.try_recv().is_err());
+    app.handle_action(ControlAction::Activate);
     let ClientCommand::OpenCodexChange {
         navigation_id,
         thread_id,
@@ -644,6 +721,8 @@ fn folder_errors_and_close_controls_remain_visible_on_small_korean_and_english_s
             app.preferences.language = language;
             bind(&mut app, 0, "a");
             app.activate_pair(5);
+            assert!(commands.try_recv().is_err());
+            app.handle_action(ControlAction::Activate);
             let ClientCommand::OpenCodexChange { navigation_id, .. } = commands.try_recv().unwrap()
             else {
                 panic!("open expected")
@@ -694,6 +773,8 @@ fn old_connector_explains_the_update_and_missing_approvals_do_not_create_choices
         "editor_project_not_registered: This folder is not registered",
     ] {
         app.activate_pair(5);
+        assert!(commands.try_recv().is_err());
+        app.handle_action(ControlAction::Activate);
         let ClientCommand::OpenCodexChange { navigation_id, .. } = commands.try_recv().unwrap()
         else {
             panic!("open expected")
@@ -834,10 +915,7 @@ fn file_modal_and_conversation_picker_cannot_decide_hidden_approvals() {
     let (mut app, mut commands) = test_app(&snapshot);
     bind(&mut app, 0, "a");
     app.activate_pair(5);
-    assert!(matches!(
-        commands.try_recv().unwrap(),
-        ClientCommand::OpenCodexChange { .. }
-    ));
+    assert!(commands.try_recv().is_err());
     app.handle_action(ControlAction::Back);
     assert!(app.deck_modal.is_none());
     assert!(commands.try_recv().is_err());
@@ -887,7 +965,7 @@ fn notices_light_only_the_assigned_pair_without_opening_any_modal_or_changing_pa
 }
 
 #[test]
-fn lower_key_click_opens_files_and_sends_the_exact_recorded_path() {
+fn lower_key_click_only_opens_the_list_and_a_file_click_opens_the_recorded_path() {
     let snapshot = files_snapshot();
     let (mut app, mut commands) = test_app(&snapshot);
     bind(&mut app, 0, "a");
@@ -899,14 +977,18 @@ fn lower_key_click_opens_files_and_sends_the_exact_recorded_path() {
         app.deck_modal.as_ref().unwrap().kind,
         paired_deck::ModalKind::Files
     );
+    assert!(commands.try_recv().is_err());
+    let painted = frame(&mut app, &ctx, vec![]);
+    click(&mut app, &ctx, painted.label("src/second.rs"));
     assert!(
-        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { thread_id, turn_id, path, .. } if thread_id == "a" && turn_id == "new" && path == "src/first.rs")
+        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { thread_id, turn_id, path, .. }
+        if thread_id == "a" && turn_id == "new" && path == "src/second.rs")
     );
-    frame(&mut app, &ctx, vec![]).label("src/first.rs");
+    assert!(commands.try_recv().is_err());
 }
 
 #[test]
-fn missing_records_are_clickable_and_fresh_matching_records_open_the_file() {
+fn missing_records_refresh_the_list_and_wait_for_a_file_click() {
     let mut snapshot = files_snapshot();
     let fresh = snapshot.codex.threads[0].clone();
     snapshot.codex.threads[0]
@@ -934,6 +1016,9 @@ fn missing_records_are_clickable_and_fresh_matching_records_open_the_file() {
         )),
     );
     frame(&mut app, &ctx, vec![]);
+    assert!(commands.try_recv().is_err());
+    let painted = frame(&mut app, &ctx, vec![]);
+    click(&mut app, &ctx, painted.label("src/first.rs"));
     assert!(
         matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { thread_id, turn_id, path, .. } if thread_id == "a" && turn_id == "new" && path == "src/first.rs")
     );
@@ -958,6 +1043,8 @@ fn cached_file_modal_still_opens_with_codex_or_transport_disconnected() {
         }
         app.activate_pair(5);
         assert!(app.deck_modal.is_some());
+        assert!(commands.try_recv().is_err());
+        app.handle_action(ControlAction::Activate);
         if transport {
             assert!(matches!(
                 commands.try_recv().unwrap(),
@@ -1019,7 +1106,7 @@ fn file_refresh_cannot_open_a_later_turn_or_a_closed_modal() {
 }
 
 #[test]
-fn live_file_capture_updates_the_waiting_dialog_and_opens_the_recorded_file_once() {
+fn live_file_capture_updates_the_list_without_opening_any_file() {
     let mut snapshot = files_snapshot();
     let thread = &mut snapshot.codex.threads[0];
     thread.status = CodexThreadStatusDto::Working;
@@ -1071,9 +1158,6 @@ fn live_file_capture_updates_the_waiting_dialog_and_opens_the_recorded_file_once
             .any(|(text, _)| text.contains("codex_approval_test.py")),
         "painted labels: {:?}",
         painted.labels
-    );
-    assert!(
-        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, .. } if path == "codex_approval_test.py")
     );
     assert!(commands.try_recv().is_err());
     assert!(app.deck_modal.as_ref().unwrap().file_refresh.is_none());
@@ -1165,7 +1249,7 @@ fn late_capture_recovers_an_open_incomplete_dialog_but_cannot_replace_it_with_an
 }
 
 #[test]
-fn recovered_deletions_show_their_diff_without_claiming_no_edits_or_opening_editor() {
+fn recovered_deletions_stay_in_the_list_without_opening_editor() {
     let mut snapshot = files_snapshot();
     let mut fresh = snapshot.codex.threads[0].clone();
     let observation = fresh.observation.as_mut().unwrap();
@@ -1199,5 +1283,12 @@ fn recovered_deletions_show_their_diff_without_claiming_no_edits_or_opening_edit
     );
     assert!(modal.file_message.is_none());
     assert!(!modal.file_error);
+    assert!(commands.try_recv().is_err());
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    painted.label("삭제 · 열 수 없음");
+    click(&mut app, &ctx, painted.label("src/first.rs"));
+    app.handle_action(ControlAction::Activate);
     assert!(commands.try_recv().is_err());
 }

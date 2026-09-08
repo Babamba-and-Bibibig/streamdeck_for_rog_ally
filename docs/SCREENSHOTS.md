@@ -1,8 +1,10 @@
 # README 스크린샷 · Screenshot provenance
 
-**CachyOS Handheld를 쓰는 ROG Ally에서 0.1.28 앱을 1280 × 800으로 실행**하고 화면을 촬영했습니다. 한국어 README에는 한국어 화면, English README에는 영어 화면을 사용합니다. 각 언어의 네 탭·대화 연결창·응답창·수정 파일창, 총 **14장**입니다.
+**CachyOS Handheld를 쓰는 ROG Ally에서 앱을 1280 × 800으로 실행**하고 화면을 촬영했습니다. 한국어 README에는 한국어 화면, English README에는 영어 화면을 사용합니다. 각 언어의 네 탭·대화 연결창·응답창·수정 파일창, 총 **14장**입니다.
 
 촬영에는 기존 로컬 **demo** 통신 모듈만 사용했습니다. `SIMULATED MAC`, `LOCAL MOCK`, `/mock/` 프로젝트와 모의 대화·토큰을 보여줍니다. 에이전트들은 다섯 모의 대화를 연결한 예시입니다. 두 대화는 파일 수정이 없고, 세 대화에는 모의 파일 편집을 넣었습니다. 응답창에는 내장 모의 승인 시나리오를 사용합니다. 실제 Mac 주소·계정·페어링 토큰·개인 프로젝트·바탕화면은 포함하지 않았습니다.
+
+**에이전트들·수정 파일 목록 사진 4장은 0.1.32로 갱신했습니다.** 아래 버튼으로 목록을 열고 파일을 선택해 Mac 편집기로 이동하는 흐름입니다. 나머지 10장은 0.1.28 사진입니다.
 
 비공개 소스 복사본에 탭 전환·촬영 자동화만 넣고 실제 앱의 프레임버퍼를 저장했습니다. 제품 화면 그리기 코드·배치·문구는 그대로이며, 기기 합성 사진이나 생성형 UI 이미지가 아닙니다. 영어 예시는 `demo --language en`의 모의 데이터입니다. 실제 사용자 대화를 번역하거나 수정한 것이 아닙니다. 이 촬영은 실제 Mac 알림·승인·편집기 왕복이나 SteamOS 설치 검증을 뜻하지 않습니다.
 
@@ -22,7 +24,9 @@
 
 ## English
 
-These are **0.1.28 app captures at 1280 × 800 on a ROG Ally running CachyOS Handheld**, with matching Korean/English UI and synthetic conversations. Each language has four tabs, an assignment dialog, a response dialog and a file dialog: **fourteen captures** in total. A private source copy automated navigation and framebuffer capture without changing production drawing code. The deck connects five synthetic conversations, including recorded file changes and questions with no edits. Approval views use the existing loopback demo scenario. No real account, address, credential, project or desktop pixels were used. No generated UI or device mockups are included.
+These are **app captures at 1280 × 800 on a ROG Ally running CachyOS Handheld**, with matching Korean/English UI and synthetic conversations. Each language has four tabs, an assignment dialog, a response dialog and a file dialog: **fourteen captures** in total. A private source copy automated navigation and framebuffer capture without changing production drawing code. The deck connects five synthetic conversations, including recorded file changes and questions with no edits. Approval views use the existing loopback demo scenario. No real account, address, credential, project or desktop pixels were used. No generated UI or device mockups are included.
+
+**The four Agents and file-list captures were updated for 0.1.32.** The lower key opens the list; selecting a file opens it in the Mac editor. The other ten captures remain from 0.1.28.
 
 Build, then run `./scripts/run-demo.zsh en` to explore the English demo or omit `en` for Korean. The language toggle changes UI text; actual user content stays unchanged. Demo data and timestamps vary. Captures do not establish real Mac notification, approval or editor delivery, or SteamOS support.
 

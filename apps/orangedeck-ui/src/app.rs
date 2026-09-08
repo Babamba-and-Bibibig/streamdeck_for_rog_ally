@@ -81,7 +81,7 @@ pub struct OrangeDeckApp {
     displayed_approval: Option<uuid::Uuid>,
     deck_modal: Option<paired_deck::DeckModal>,
     watched_deck: Option<Vec<String>>,
-    file_request: Option<(uuid::Uuid, String)>,
+    file_request: Option<uuid::Uuid>,
 }
 
 impl OrangeDeckApp {

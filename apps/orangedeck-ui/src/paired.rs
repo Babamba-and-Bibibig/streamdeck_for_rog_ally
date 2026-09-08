@@ -163,12 +163,12 @@ pub fn render(ui: &mut egui::Ui, view: &DeckView<'_>) -> DeckAction {
             if view.editing {
                 "위 행에서 연결할 대화를 고르세요 · 위아래가 한 쌍입니다"
             } else {
-                "위: 응답·승인   /   아래: 수정 파일·Mac 편집기"
+                "위: 응답·승인   /   아래: 수정 파일 목록"
             },
             if view.editing {
                 "Choose a conversation for each column · both keys stay paired"
             } else {
-                "Top: response & approval   /   Bottom: changes & Mac editor"
+                "Top: response & approval   /   Bottom: changed file list"
             },
         ),
         12.0,
@@ -311,7 +311,7 @@ pub fn render(ui: &mut egui::Ui, view: &DeckView<'_>) -> DeckAction {
         } else if !view.connected {
             lang.text("마지막 기록 보기", "Review cached files")
         } else if matches!(pair.files, FileState::Changes(_)) {
-            lang.text("Mac 편집기에서 보기", "Open in Mac editor")
+            lang.text("파일 목록 보기", "View file list")
         } else if matches!(pair.files, FileState::Loading | FileState::Unavailable) {
             lang.text("눌러서 다시 확인", "Tap to check again")
         } else {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.32 — Choose a file before opening the Mac editor
+
+- The lower conversation key opens only a full-width list of file names, full paths and recorded changed lines. Remove the in-dialog diff and content preview.
+- Open the Mac editor only after an explicit file selection. Loading, refreshing, moving focus and reopening a dialog do not launch it; pending requests retain only explicit selections.
+- Keep deleted files visible without an open action. Preserve the existing recorded-line navigation and first-line fallback when no changed line is available.
+- This Ally UI change works with the existing 0.1.31 Mac Connector.
+
 ## 0.1.31 — Preserve the latest file preview and harden event capture
 
 - Show the last captured file contents alongside an existing Codex diff. Later deletion or recreation updates whether that file can be opened.

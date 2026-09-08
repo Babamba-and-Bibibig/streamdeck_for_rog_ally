@@ -127,6 +127,8 @@ Approval keys are active only when Codex has an actual approval request. Answer 
 
 **Get updates from GitHub.** Download the [new ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) on both devices and extract it into a **new folder**. Then follow the steps for each device. The app does not install new versions automatically.
 
+**For the 0.1.32 file-list change, updating only the Ally is enough if your Mac already runs Connector 0.1.31.**
+
 **On the Mac:**
 
 1. Double-click **Setup OrangeDeck.command** in the new folder. After setup completes, press Enter when prompted and close its window.
@@ -148,7 +150,7 @@ For an older source-folder installation, run Setup on the Mac once during this u
 
 ## Mac editor and opening files
 
-**The lower row opens changed code in your Mac editor.** Choose the editor during first setup. Press Enter for automatic detection in this order: Zed → VS Code → Cursor → VSCodium.
+**The lower row opens the changed file list. Select a file to open its recorded changed line in your Mac editor.** Choose the editor during first setup. Press Enter for automatic detection in this order: Zed → VS Code → Cursor → VSCodium.
 
 To change it, edit the Mac’s private **`~/.config/orangedeck/connector.toml`**. Add or update `editor` **above the first `[[projects]]` block**:
 
@@ -158,15 +160,15 @@ editor = "zed"
 
 Choose `auto`, `zed`, `vs_code`, `cursor` or `vscodium`. Install that app in `/Applications` or `~/Applications` on the Mac, then restart Connector after saving. Existing installations default to automatic detection; rerunning setup preserves your private settings.
 
-Open **Agents → the conversation’s lower key** to open its recorded edits in your Mac editor. **The Codex conversation’s working folder is used automatically, without separate registration or a configuration entry.** Newly created files and files in subfolders open the same way.
+Open **Agents → the conversation’s lower key** to see file names, full paths and recorded changed lines. Opening or refreshing this list does not launch the editor; select a file to open it on the Mac. **The Codex conversation’s working folder is used automatically, without separate registration or a configuration entry.** Newly created files and files in subfolders open the same way.
 
-Relative file paths resolve from that conversation’s working folder. Files must be recorded in the displayed turn and remain inside that folder. Deleted files show their names and any available change records. When no changed line is recorded, the editor opens at the first line.
+Relative file paths resolve from that conversation’s working folder. Files must be recorded in the displayed turn and remain inside that folder. Deleted files show their names, paths and deletion status, without an open action. When no changed line is recorded, the editor opens at the first line.
 
 If opening fails, the reason and **Try again** appear above the file list. Automatic working-folder selection requires version 0.1.26 or later. If an older Mac Connector returns a folder-registration error, the Ally displays an update instruction.
 
-**Version 0.1.31 uses Mac filesystem events to fetch only edited or created files.** It removes whole-project scans, fixing collection failures caused by large unrelated folders. Codex diffs are preserved alongside the last captured **Current file contents**, including subsequent shell edits or deletions. After updating, rerun **Enable Codex Notifications.command** on the Mac and **review/trust the new hooks in Codex `/hooks`**. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes.
+Mac filesystem events fetch only changed paths without scanning the whole project. **The 0.1.32 file-list change is an Ally UI update and works with an existing 0.1.31 Mac Connector.** If upgrading an older Mac that cannot capture files, update it, rerun **Enable Codex Notifications.command**, and **review/trust the hooks in Codex `/hooks`**. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes.
 
-Capture stays inside the conversation's Mac working folder. Links, credential files, `.env` and common build/dependency directories are excluded; large previews may be shortened, and binary files may show names only. Overlapping work from different conversations, interrupted tools without a completion hook, OS-reported event loss, or too many changed files leaves an incomplete record. Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and retry. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
+Capture stays inside the conversation's Mac working folder. Links, credential files, `.env` and common build/dependency directories are excluded. Code contents are viewed in your Mac editor. Overlapping work from different conversations, interrupted tools without a completion hook, OS-reported event loss, or too many changed files leaves an incomplete record. Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and retry. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
 
 ## Where settings are stored
 
