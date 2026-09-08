@@ -1,55 +1,53 @@
 <h3 align="center"><a href="README.md">🇰🇷 한국어</a>　|　🌐 English · Current page</h3>
 
-# OrangeDeck
+<h1 align="center">OrangeDeck</h1>
+<h2 align="center">Your Mac's Codex work.<br>At a glance on your Ally.</h2>
 
-**Your Mac's Codex, at a glance on your Ally.**
-
-Follow current work in **LIVE**. Check replies and changed files from multiple Codex conversations in **Agents**. Respond to approval requests and tap a changed file to open it in your Mac editor.
+Run Codex on your Mac and keep an eye on it from your Ally. **Follow progress, read replies and approval requests, and open changed files in your Mac editor** with a handheld remote.
 
 [⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Controls](docs/CONTROLS.md)
 
-## LIVE · See what's happening now
+## LIVE · Current work and remaining quota
+
+### Your question, work status and token records in one view
 
 ![LIVE: the current question, work status, token records and remaining quota](docs/screenshots/en-live.png)
 
-**See the current question, work status, token usage and remaining quota together.**
-
-- **Current work:** follow the question and its progress.
-- **Usage records:** see input and output tokens as new records arrive.
-- **Remaining quota:** check the five-hour and weekly percentages. They decrease as you use them.
+See the current question, work status, and input/output token records. **Five-hour and weekly limits show the remaining percentage**, so you can see how much of your allowance is left.
 
 Pin one conversation, or turn **Auto ON** to follow the most recent conversation in the selected project.
 
-## Agents · Five conversations, replies and changed files
+## Agents · Conversations side by side, actions within reach
+
+### One column, one conversation. Replies above. Files below.
 
 ![Agents: five Codex conversations with paired response and changed-file keys](docs/screenshots/en-shortcuts.png)
 
-**One column, one conversation. Replies above. Changed files below.**
+Connect **up to five Codex conversations**. Choose a Mac conversation with an **upper + key** once; OrangeDeck remembers it next time.
 
-A new reply or approval request makes both keys in that column pulse, with a notification sound. Tap an **upper + key** to connect a Codex conversation from your Mac terminal once.
+A new reply or approval request makes **both keys in its column pulse, with a notification sound**. You can see which conversation needs attention and turn sound on or off.
 
-<table>
-<tr>
-<td width="50%">
-<b>① Upper key · Read and approve</b><br>
-<a href="docs/screenshots/en-response.png"><img src="docs/screenshots/en-response.png" alt="Reading the selected question, reply and approval request" width="640"></a><br>
-Read the question and reply. When an approval request arrives, review its details and choose <b>Approve / Reject</b>.
-</td>
-<td width="50%">
-<b>② Lower key · Changed file list</b><br>
-<a href="docs/screenshots/en-files.png"><img src="docs/screenshots/en-files.png" alt="Changed file names and full paths" width="640"></a><br>
-Check file names and paths first. Select a file to move your <b>Mac editor</b> to its recorded changed line.
-</td>
-</tr>
-</table>
+### ① Upper key · Read the reply and review each request
 
-**The connected Codex conversation's working folder is used automatically.** No extra folder registration is needed to open its files. Zed, VS Code, Cursor and VSCodium are supported.
+Read your question and Codex's reply. When an approval request arrives, review the details and choose **Approve / Reject** yourself. Your decision applies **only to the request currently displayed**.
 
-The lower key opens **file names, full paths and recorded changed lines for this question**. **Your Mac editor opens when you select a file from the list.** Review code in that editor. Mac file events fetch only changed paths. Incomplete records show **Check file records**; a confirmed empty list shows **No file changes**. [File checks, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
+![Read the question, reply and approval details before making a decision](docs/screenshots/en-response.png)
 
-Tap outside a dialog or **Close** to dismiss it without making a decision. Language, conversation assignments and sound settings are saved for the next launch.
+Tap outside the dialog or **Close** to dismiss it without sending an approval or rejection.
 
-<sub>Screenshots show 0.1.28 with simulated data. Click to enlarge. <a href="docs/SCREENSHOTS.md">Screenshot details</a></sub>
+### ② Lower key · Check the file list, then choose what to open
+
+**Lower key → file names and full paths → select a file → Mac editor**
+
+![Changed file names, full paths and recorded line numbers for this question](docs/screenshots/en-files.png)
+
+The lower key opens **only the changed file list for this question**. **Selecting a file in the list** opens your Mac editor at its recorded changed line. Review code in that editor. If no line is recorded, the file opens at the first line.
+
+**The connected Codex conversation supplies the working folder automatically.** No extra folder registration is needed. Zed, VS Code, Cursor and VSCodium are supported. File events capture changed paths without scanning the whole project again.
+
+A confirmed empty edit record shows **No file changes**. [File lists, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
+
+All screenshots use **simulated data**. Click a screenshot to enlarge it. [Screenshot details](docs/SCREENSHOTS.md).
 
 ## How the two devices connect
 
@@ -76,15 +74,13 @@ On both devices, use **Download ZIP** above and extract it. Git and SSH keys are
 
 **These three files run on the Mac.** In the extracted folder, double-click them in order.
 
-| Order | File | Purpose and window lifetime |
-| --- | --- | --- |
-| **①** | **Setup OrangeDeck.command** | Installs Connector and asks for your work folder and editor. After setup finishes, press Enter when prompted and close it. |
-| **②** | **Start OrangeDeck Connector.command** | Connects the Mac and Ally. **Keep this window open while using OrangeDeck.** |
-| **③** | **Enable Codex Notifications.command** | Connects completion alerts and approval requests. After configuration finishes, press Enter and close it. |
+1. **Setup OrangeDeck.command** — install Connector and choose your work folder and editor. When setup finishes, press Enter as prompted and close the window.
+2. **Start OrangeDeck Connector.command** — connect the Mac and Ally. **Keep this window open while using OrangeDeck.**
+3. **Enable Codex Notifications.command** — connect completion alerts and approval requests. When configuration finishes, press Enter and close the window.
 
-After step ③, open **`/hooks` in your usual Mac Codex session → review and trust OrangeDeck**. The only OrangeDeck window you need to keep open is **② Connector**.
+Finally, open **`/hooks` in your usual Mac Codex session → review and trust OrangeDeck**. The only OrangeDeck window you need to keep open is **step 2, Connector**.
 
-Choose your Mac work folder and editor when Setup asks. If a developer-tool installer appears, finish it and run Setup again. [Mac setup help](docs/INSTALL.en.md#mac-command-file-will-not-open).
+If a developer-tool installer appears, finish it and run Setup again. [Mac setup help](docs/INSTALL.en.md#mac-command-file-will-not-open).
 
 ### 2. Transfer the Mac's connection file to the Ally
 
@@ -121,6 +117,8 @@ Keep Codex and Tailscale running. If you launch the app from a terminal, keep th
 
 <a id="my-settings"></a>
 
-**Updates keep your settings.** First setup creates each device's settings and your personal connection file. Updating the same devices reuses your work folder, editor and connection. Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Update steps](docs/INSTALL.en.md#update) · [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
+### Updates keep your settings
+
+First setup creates each device's settings and your personal connection file. Updating the same devices keeps your **work folder, editor, connection, language, conversation assignments and sound setting**. Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Update steps](docs/INSTALL.en.md#update) · [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
 
 [Controls and everyday use](docs/CONTROLS.md) · [Setup and connection help](docs/INSTALL.en.md) · [한국어 안내](README.md) · [Changelog](docs/CHANGELOG.md)
