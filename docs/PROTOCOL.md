@@ -103,8 +103,22 @@ Project focus is a local UI selection keyed by the Mac's recorded absolute folde
 
 ## Paired conversations and changed files (0.1.24, protocol 1)
 
-`CodexWatchThreads` accepts up to five listed conversation IDs. `OpenCodexChange` carries a navigation UUID, conversation ID, turn ID and recorded file path. The Connector requires an exact current observation and registered project, rejects deleted/non-recorded targets, and resolves the canonical file inside that folder before calling a fixed editor adapter. No shell interpolation is used. Editor completions and approval completions are correlated independently.
+`CodexWatchThreads` accepts up to five listed conversation IDs. `OpenCodexChange` carries a navigation UUID, conversation ID, turn ID and recorded file path. The Connector requires an exact current observation, takes the working folder from that known conversation automatically, rejects deleted/non-recorded targets, and resolves the canonical file inside that folder before calling a fixed editor adapter. No shell interpolation is used. Editor completions and approval completions are correlated independently.
 
 `ThreadObservationDto.changes` defaults to absent for older Connectors. When present it contains up to 64 recorded files: kind, current/previous path, first changed line and diff. Diffs are bounded to 16 KiB per file and 64 KiB total, including repeated edits, with truncation flags. Only completed `fileChange` items from that turn are included. Missing/partial history differs from a confirmed empty list. Replies are bounded to 32,000 Unicode characters; private reasoning is excluded.
 
-The capabilities are `paired_conversations` and `turn_file_changes`. Update both devices for the new file keys. Older snapshots remain readable; missing data disables file opening and does not imply no edits. Conversation assignments and editor configuration remain private local settings.
+The capabilities are `paired_conversations` and `turn_file_changes`. Update both devices for the new file keys. Older snapshots remain readable; missing data does not establish a file target or imply no edits. Conversation assignments and editor configuration remain private local settings.
+
+## Automatic conversation folder (0.1.26, protocol 1)
+
+The `conversation_editor_root` capability indicates automatic cwd selection for `OpenCodexChange`. The root comes from the Connector's known Codex conversation, not an arbitrary path supplied by the client. No folder-registration step or saved editor registry is required. Relative files resolve from that cwd; canonical files and symlinks must remain inside it. The general command project allow-list is unchanged.
+
+For compatibility with 0.1.25 clients, `RegisterCodexProject` still accepts a navigation UUID, listed conversation ID, exact turn ID, `expected_cwd` and recorded file path. Current Connectors verify the additional cwd match and perform the same file open without saving a registration. New UIs send `OpenCodexChange` directly.
+
+All file operations retain navigation correlation. Disconnected requests return a failure for their exact navigation UUID and are never replayed automatically. If an older Connector returns `editor_project_not_registered` or its earlier registered-project error, the UI shows an update instruction instead of requesting folder registration.
+
+## Complete file-history reads and recovery (0.1.27, protocol 1)
+
+Connector reads the latest user-bearing turn through full paginated history, with a legacy full-thread fallback for stores without pagination. Matching successful `apply_patch` calls from the same turn's trusted local session log can supplement empty app-server file records. The same recorded-file limits and automatic cwd checks apply to recovered changes. This extends the 0.1.24 collection path without changing the wire schema.
+
+An absent `changes` value means unavailable history. An empty list with `truncated: true` means incomplete records, including tool execution without verifiable file records. Only a complete empty list can produce the inert **No file changes** key. Both unavailable and loading states can open the file dialog and send `CodexReadThread`; a fresh matching observation completes the request, while a changed turn, timeout or closed dialog prevents delayed editor navigation. The UI displays recovery and errors prominently.

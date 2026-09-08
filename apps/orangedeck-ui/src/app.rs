@@ -8,8 +8,7 @@ use std::{process::Command, time::Duration};
 use eframe::egui::{self, Align, Color32, Layout, RichText, Stroke, Vec2};
 use orangedeck_infra::{AuthToken, UiConfig};
 use orangedeck_protocol::{
-    ApprovalDecisionDto, ApprovalDto, ClientCommand, CodexThreadDto, CodexThreadStatusDto,
-    SnapshotDto,
+    ApprovalDecisionDto, ClientCommand, CodexThreadDto, CodexThreadStatusDto, SnapshotDto,
 };
 
 use crate::{
@@ -25,49 +24,39 @@ use crate::{
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Page {
     Dashboard,
-    Shortcuts,
+    Agents,
     Projects,
     Codex,
-    Notifications,
 }
 
 impl Page {
-    const ALL: [Self; 5] = [
-        Self::Dashboard,
-        Self::Shortcuts,
-        Self::Projects,
-        Self::Codex,
-        Self::Notifications,
-    ];
+    const ALL: [Self; 4] = [Self::Dashboard, Self::Agents, Self::Projects, Self::Codex];
 
     #[cfg(test)]
     const fn label(self) -> &'static str {
         match self {
             Self::Dashboard => "LIVE",
-            Self::Shortcuts => "단축키",
+            Self::Agents => "에이전트들",
             Self::Projects => "프로젝트들",
             Self::Codex => "대화",
-            Self::Notifications => "알림",
         }
     }
 
     const fn translated(self, lang: Language) -> &'static str {
         match self {
             Self::Dashboard => "LIVE",
-            Self::Shortcuts => lang.text("단축키", "Shortcuts"),
+            Self::Agents => lang.text("에이전트들", "Agents"),
             Self::Projects => lang.text("프로젝트들", "Projects"),
             Self::Codex => lang.text("대화", "Conversations"),
-            Self::Notifications => lang.text("알림", "Notifications"),
         }
     }
 
     const fn short(self) -> &'static str {
         match self {
             Self::Dashboard => "01",
-            Self::Shortcuts => "02",
+            Self::Agents => "02",
             Self::Projects => "03",
             Self::Codex => "04",
-            Self::Notifications => "05",
         }
     }
 }
@@ -152,8 +141,8 @@ impl OrangeDeckApp {
         })
     }
 
-    pub fn open_notifications(&mut self) {
-        self.page = Page::Notifications;
+    pub fn open_agents(&mut self) {
+        self.page = Page::Agents;
         self.focus_index = 0;
         self.displayed_approval = None;
     }
@@ -182,35 +171,9 @@ impl OrangeDeckApp {
             self.handle_modal_input(action);
             return;
         }
-        if self.page == Page::Shortcuts && self.deck_editing && action == ControlAction::Back {
+        if self.page == Page::Agents && self.deck_editing && action == ControlAction::Back {
             self.deck_editing = false;
             return;
-        }
-        if let Some(approval_id) = self.current_approval_id() {
-            let decision = match action {
-                ControlAction::Activate if self.page == Page::Shortcuts => match self.focus_index {
-                    0 => Some(ApprovalDecisionDto::Approve),
-                    1 => Some(ApprovalDecisionDto::Reject),
-                    _ => None,
-                },
-                ControlAction::Activate => Some(ApprovalDecisionDto::Approve),
-                ControlAction::Back => Some(ApprovalDecisionDto::Reject),
-                _ => None,
-            };
-            if let Some(decision) = decision {
-                // Never apply an A/B press to an approval that has not been rendered yet.
-                if self.displayed_approval == Some(approval_id) {
-                    self.submit_approval(approval_id, decision);
-                }
-                return;
-            }
-            if matches!(
-                action,
-                ControlAction::PreviousThread | ControlAction::NextThread
-            ) {
-                self.cycle_approval(action == ControlAction::PreviousThread);
-                return;
-            }
         }
         match action {
             ControlAction::PreviousPage => self.change_page(-1),
@@ -221,17 +184,14 @@ impl OrangeDeckApp {
                 self.displayed_approval = None;
             }
             ControlAction::Context => self.refresh_current(),
-            ControlAction::Detail => self.open_notifications(),
+            ControlAction::Detail => self.open_agents(),
             ControlAction::PreviousThread | ControlAction::NextThread => {
                 let delta = if action == ControlAction::PreviousThread {
                     -1
                 } else {
                     1
                 };
-                if matches!(
-                    self.page,
-                    Page::Dashboard | Page::Shortcuts | Page::Projects
-                ) {
+                if matches!(self.page, Page::Dashboard | Page::Agents | Page::Projects) {
                     self.change_project(delta);
                 } else {
                     self.change_thread(delta);
@@ -331,7 +291,7 @@ impl OrangeDeckApp {
     }
 
     fn navigate(&mut self, horizontal: isize, vertical: isize) {
-        if self.page == Page::Shortcuts {
+        if self.page == Page::Agents {
             let column = (self.focus_index % 5)
                 .saturating_add_signed(horizontal)
                 .min(4);
@@ -356,8 +316,8 @@ impl OrangeDeckApp {
 
     fn focus_count(&self) -> usize {
         match self.page {
-            Page::Dashboard | Page::Notifications => 1,
-            Page::Shortcuts => 10,
+            Page::Dashboard => 1,
+            Page::Agents => 10,
             Page::Projects => self.model.snapshot.as_ref().map_or(0, |snapshot| {
                 selection::projects(
                     snapshot,
@@ -375,7 +335,7 @@ impl OrangeDeckApp {
     }
 
     fn activate_focus(&mut self) {
-        if self.page == Page::Shortcuts {
+        if self.page == Page::Agents {
             self.activate_pair(self.focus_index);
             return;
         }
@@ -383,14 +343,9 @@ impl OrangeDeckApp {
             return;
         };
         match self.page {
-            Page::Dashboard => self.open_notifications(),
+            Page::Dashboard => self.open_agents(),
             // Approval keys are handled above, with the displayed-request guard.
-            Page::Shortcuts => {}
-            Page::Notifications => {
-                if let Some(thread) = self.selection.selected(snapshot) {
-                    self.model.alerts.mark_current_read(thread);
-                }
-            }
+            Page::Agents => {}
             Page::Projects => {
                 let projects = selection::projects(
                     snapshot,
@@ -591,18 +546,16 @@ impl OrangeDeckApp {
             .frame(egui::Frame::new().fill(theme::BG).inner_margin(8.0))
             .show(root, |ui| {
                 ui.add_space(4.0);
-                let height = ((ui.available_height() - 40.0) / 5.0).clamp(48.0, 78.0);
+                let height = ((ui.available_height() - 40.0) / 4.0).clamp(48.0, 90.0);
                 for page in Page::ALL {
                     let selected = self.page == page;
-                    let attention = match page {
-                        Page::Notifications => self.attention_color(),
-                        Page::Shortcuts
-                            if !self.pending_for_selection().is_empty()
-                                && self.model.approval_ready() =>
-                        {
-                            Some(theme::YELLOW)
-                        }
-                        _ => None,
+                    let attention = if page == Page::Agents {
+                        let has_attention = self.model.snapshot.as_ref().is_some_and(|snapshot| {
+                            self.pair_views(snapshot).iter().any(|pair| pair.attention)
+                        });
+                        has_attention.then_some(theme::YELLOW)
+                    } else {
+                        None
                     };
                     let color = attention.unwrap_or(if selected {
                         theme::ORANGE
@@ -628,15 +581,13 @@ impl OrangeDeckApp {
                     }
                     let icon = match page {
                         Page::Dashboard => orangedeck_domain::Shortcut::Live,
-                        Page::Shortcuts => orangedeck_domain::Shortcut::OpenTerminal,
+                        Page::Agents => orangedeck_domain::Shortcut::OpenTerminal,
                         Page::Projects => orangedeck_domain::Shortcut::Projects,
                         Page::Codex => orangedeck_domain::Shortcut::Conversations,
-                        Page::Notifications => orangedeck_domain::Shortcut::Notifications,
                     };
                     let label = match page {
                         Page::Codex => lang.text("대화", "Chats"),
-                        Page::Notifications => lang.text("알림", "Alerts"),
-                        Page::Shortcuts => lang.text("단축키", "Deck"),
+                        Page::Agents => lang.text("에이전트들", "Agents"),
                         _ => page.translated(lang),
                     };
                     if height >= 62.0 {
@@ -672,76 +623,14 @@ impl OrangeDeckApp {
             });
     }
 
-    fn pending_for_selection(&self) -> Vec<&ApprovalDto> {
-        let Some(snapshot) = &self.model.snapshot else {
-            return Vec::new();
-        };
-        let Some(thread) = self.selection.selected(snapshot) else {
-            return Vec::new();
-        };
-        snapshot
-            .codex
-            .pending_approvals
-            .iter()
-            .filter(|approval| {
-                approval.thread_id.as_deref() == Some(&thread.id)
-                    && approval
-                        .turn_id
-                        .as_deref()
-                        .is_none_or(|id| selection::turn_id(thread).is_none_or(|turn| id == turn))
-            })
-            .collect()
-    }
-
     fn current_approval_id(&self) -> Option<uuid::Uuid> {
         if self.editor.is_some() {
             return None;
         }
-        let pending = if self.deck_modal.is_some() {
-            self.pending_for_modal()
-        } else if self.page == Page::Notifications {
-            self.pending_for_selection()
-        } else {
-            return None;
-        };
+        let pending = self.pending_for_modal();
         self.selected_approval
             .filter(|id| pending.iter().any(|approval| approval.id == *id))
             .or_else(|| pending.first().map(|approval| approval.id))
-    }
-
-    fn cycle_approval(&mut self, previous: bool) {
-        let Some(snapshot) = &self.model.snapshot else {
-            return;
-        };
-        let Some(thread) = self.selection.selected(snapshot) else {
-            return;
-        };
-        let pending: Vec<_> = snapshot
-            .codex
-            .pending_approvals
-            .iter()
-            .filter(|approval| {
-                approval.thread_id.as_deref() == Some(&thread.id)
-                    && approval
-                        .turn_id
-                        .as_deref()
-                        .is_none_or(|id| selection::turn_id(thread).is_none_or(|turn| id == turn))
-            })
-            .collect();
-        if pending.is_empty() {
-            return;
-        }
-        let index = pending
-            .iter()
-            .position(|approval| Some(approval.id) == self.current_approval_id())
-            .unwrap_or(0);
-        let next = if previous {
-            (index + pending.len() - 1) % pending.len()
-        } else {
-            (index + 1) % pending.len()
-        };
-        self.selected_approval = Some(pending[next].id);
-        self.displayed_approval = None;
     }
 
     fn submit_approval(&mut self, id: uuid::Uuid, decision: ApprovalDecisionDto) {
@@ -761,94 +650,6 @@ impl OrangeDeckApp {
                 self.model.approval_error = Some((id, error.clone()));
                 self.model.command_message = Some(error);
             }
-        }
-    }
-
-    fn render_approval(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
-        let lang = self.preferences.language;
-        let Some(id) = self.current_approval_id() else {
-            self.displayed_approval = None;
-            return;
-        };
-        let Some(approval) = snapshot
-            .codex
-            .pending_approvals
-            .iter()
-            .find(|approval| approval.id == id)
-        else {
-            return;
-        };
-        self.selected_approval = Some(id);
-        let pending_count = snapshot
-            .codex
-            .pending_approvals
-            .iter()
-            .filter(|request| {
-                request.thread_id == approval.thread_id && request.turn_id == approval.turn_id
-            })
-            .count();
-        ui.horizontal(|ui| {
-            ui.label(
-                RichText::new(if lang == Language::English {
-                    format!("{pending_count} approval(s) pending")
-                } else {
-                    format!("승인 대기 {pending_count}건")
-                })
-                .color(theme::YELLOW),
-            );
-            if let Some(thread) = snapshot
-                .codex
-                .threads
-                .iter()
-                .find(|thread| Some(&thread.id) == approval.thread_id.as_ref())
-            {
-                ui.add(
-                    egui::Label::new(RichText::new(&thread.cwd).size(12.0).color(theme::CYAN))
-                        .truncate(),
-                );
-            }
-        });
-        if pending_count > 1 {
-            ui.horizontal(|ui| {
-                if ui
-                    .button(lang.text("‹ 이전 요청 · LT", "‹ Previous · LT"))
-                    .clicked()
-                {
-                    self.cycle_approval(true);
-                }
-                if ui
-                    .button(lang.text("다음 요청 · RT ›", "Next · RT ›"))
-                    .clicked()
-                {
-                    self.cycle_approval(false);
-                }
-            });
-        }
-        if let Some(decision) = notifications::approval_panel(
-            ui,
-            approval,
-            self.model.approval_ready(),
-            self.model.approvals_in_flight.contains(&id),
-            self.page == Page::Notifications,
-        ) {
-            self.submit_approval(id, decision);
-        }
-        // The visible request, rather than the queue's first entry, owns the physical buttons.
-        self.displayed_approval = Some(id);
-        ui.add_space(8.0);
-    }
-
-    fn render_notifications(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
-        self.render_approval(ui, snapshot);
-        notifications::render(
-            ui,
-            snapshot,
-            self.selection.selected(snapshot),
-            &mut self.model.alerts,
-            self.model.connected,
-        );
-        if let Some(message) = &self.model.command_message {
-            ui.label(RichText::new(message).size(12.0).color(theme::YELLOW));
         }
     }
 
@@ -911,7 +712,7 @@ impl OrangeDeckApp {
                     self.selection.follow_latest = true;
                 }
                 if action.detail {
-                    self.open_notifications();
+                    self.open_agents();
                 }
             });
     }
@@ -1149,22 +950,15 @@ impl eframe::App for OrangeDeckApp {
                     });
                     return;
                 };
-                if self.page != Page::Shortcuts {
+                if self.page != Page::Agents {
                     self.render_project_picker(ui, &snapshot);
                 }
-                if self.deck_modal.is_none()
-                    && !matches!(self.page, Page::Notifications | Page::Shortcuts)
-                {
+                if self.deck_modal.is_none() {
                     self.displayed_approval = None;
                 }
                 match self.page {
                     Page::Dashboard => self.render_dashboard(ui, &snapshot),
-                    Page::Shortcuts => self.render_shortcuts(ui, &snapshot),
-                    Page::Notifications => {
-                        egui::ScrollArea::vertical()
-                            .id_salt("notifications_content")
-                            .show(ui, |ui| self.render_notifications(ui, &snapshot));
-                    }
+                    Page::Agents => self.render_agents(ui, &snapshot),
                     Page::Projects => {
                         egui::ScrollArea::vertical()
                             .id_salt("projects_content")

@@ -1,4 +1,5 @@
 use super::*;
+use orangedeck_protocol::ApprovalDto;
 
 fn test_app(
     snapshot: &SnapshotDto,
@@ -148,10 +149,10 @@ fn live_recent_auto_click_returns_from_a_pinned_thread_and_follows_only_its_proj
 }
 
 #[test]
-fn shortcuts_are_second_and_notifications_are_fifth() {
+fn navigation_has_four_tabs_with_agents_second() {
     assert_eq!(
         Page::ALL.map(Page::label),
-        ["LIVE", "단축키", "프로젝트들", "대화", "알림"]
+        ["LIVE", "에이전트들", "프로젝트들", "대화"]
     );
 }
 
@@ -238,14 +239,20 @@ impl Painted {
 }
 
 fn frame(app: &mut OrangeDeckApp, ctx: &egui::Context, events: Vec<egui::Event>) -> Painted {
+    frame_with_size(app, ctx, events, egui::vec2(960.0, 600.0))
+}
+
+fn frame_with_size(
+    app: &mut OrangeDeckApp,
+    ctx: &egui::Context,
+    events: Vec<egui::Event>,
+    size: egui::Vec2,
+) -> Painted {
     let snapshot = app.model.snapshot.as_ref().unwrap().clone();
     let mut keys = [egui::Rect::NOTHING; 10];
     let output = ctx.run_ui(
         egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(
-                egui::Pos2::ZERO,
-                egui::vec2(960.0, 600.0),
-            )),
+            screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
             events,
             time: Some(f64::from(u32::try_from(ctx.cumulative_frame_nr()).unwrap_or(0)) / 10.0),
             ..Default::default()
@@ -262,7 +269,7 @@ fn frame(app: &mut OrangeDeckApp, ctx: &egui::Context, events: Vec<egui::Event>)
                 .frame(egui::Frame::NONE)
                 .show(root, |ui| {
                     keys = crate::paired::key_rects(ui.available_rect_before_wrap());
-                    app.render_shortcuts(ui, &snapshot);
+                    app.render_agents(ui, &snapshot);
                 });
             app.render_deck_modal(ctx);
             app.render_key_editor(ctx);
@@ -308,7 +315,7 @@ fn context() -> egui::Context {
 }
 
 #[test]
-fn no_edits_is_inert_for_touch_and_controller_and_not_confused_with_loading() {
+fn confirmed_no_edits_is_inert_but_loading_opens_a_recovery_modal() {
     let mut snapshot = files_snapshot();
     snapshot.codex.threads[0]
         .observation
@@ -321,7 +328,7 @@ fn no_edits_is_inert_for_touch_and_controller_and_not_confused_with_loading() {
         .clear();
     let (mut app, mut commands) = test_app(&snapshot);
     bind(&mut app, 0, "a");
-    app.page = Page::Shortcuts;
+    app.page = Page::Agents;
     let ctx = context();
     frame(&mut app, &ctx, vec![]);
     let painted = frame(&mut app, &ctx, vec![]);
@@ -348,7 +355,10 @@ fn no_edits_is_inert_for_touch_and_controller_and_not_confused_with_loading() {
         crate::paired::FileState::Loading
     );
     app.activate_pair(5);
-    assert!(app.deck_modal.is_none());
+    assert!(app.deck_modal.is_some());
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::CodexReadThread { thread_id } if thread_id == "a")
+    );
 }
 
 #[test]
@@ -506,6 +516,175 @@ fn file_clicks_keep_the_latest_selection_in_order_and_ignore_late_results_after_
 }
 
 #[test]
+fn files_open_directly_and_editor_failures_offer_retry_without_folder_registration() {
+    let snapshot = files_snapshot();
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    app.activate_pair(5);
+    let ClientCommand::OpenCodexChange {
+        navigation_id,
+        thread_id,
+        turn_id,
+        path,
+    } = commands.try_recv().unwrap()
+    else {
+        panic!("direct file open expected")
+    };
+    assert_eq!(
+        (thread_id.as_str(), turn_id.as_str(), path.as_str()),
+        ("a", "new", "src/first.rs")
+    );
+    event(
+        &mut app,
+        crate::model::NetworkEvent::FileOpenCompleted {
+            navigation_id,
+            result: Err("editor_unavailable: 편집기 확인 / Check editor".into()),
+        },
+    );
+    assert!(
+        commands.try_recv().is_err(),
+        "no automatic registration or retries"
+    );
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    assert!(painted.label("편집기 확인").y < painted.label("src/first.rs").y);
+    assert!(
+        !painted
+            .labels
+            .iter()
+            .any(|(text, _)| text.contains("폴더 등록"))
+    );
+    // The retry remains bound to the displayed conversation and turn.
+    app.model.snapshot.as_mut().unwrap().codex.threads[0].cwd = "/other/project".into();
+    click(&mut app, &ctx, painted.label("다시 시도"));
+    let ClientCommand::OpenCodexChange {
+        navigation_id: retried,
+        thread_id,
+        turn_id,
+        path,
+    } = commands.try_recv().unwrap()
+    else {
+        panic!("file retry expected")
+    };
+    assert_eq!(
+        (thread_id.as_str(), turn_id.as_str(), path.as_str()),
+        ("a", "new", "src/first.rs")
+    );
+    event(
+        &mut app,
+        crate::model::NetworkEvent::FileOpenCompleted {
+            navigation_id: retried,
+            result: Ok(outcome(true)),
+        },
+    );
+    frame(&mut app, &ctx, vec![]);
+    frame(&mut app, &ctx, vec![]).label("Mac 편집기로 파일 열기를 보냈습니다.");
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn folder_errors_and_close_controls_remain_visible_on_small_korean_and_english_screens() {
+    for size in [egui::vec2(820.0, 480.0), egui::vec2(1038.0, 584.0)] {
+        for language in [Language::Korean, Language::English] {
+            let mut snapshot = files_snapshot();
+            snapshot.codex.threads[0].cwd =
+                format!("/mock/{}/project", "long-folder-name/".repeat(12));
+            let (mut app, mut commands) = test_app(&snapshot);
+            app.preferences.language = language;
+            bind(&mut app, 0, "a");
+            app.activate_pair(5);
+            let ClientCommand::OpenCodexChange { navigation_id, .. } = commands.try_recv().unwrap()
+            else {
+                panic!("open expected")
+            };
+            event(
+                &mut app,
+                crate::model::NetworkEvent::FileOpenCompleted {
+                    navigation_id,
+                    result: Err(format!(
+                        "editor_workspace_unavailable: 작업 폴더를 찾을 수 없습니다: {} / Working folder is unavailable: {}",
+                        snapshot.codex.threads[0].cwd, snapshot.codex.threads[0].cwd
+                    )),
+                },
+            );
+            let ctx = context();
+            for _ in 0..3 {
+                frame_with_size(&mut app, &ctx, vec![], size);
+            }
+            let painted = frame_with_size(&mut app, &ctx, vec![], size);
+            let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, size);
+            for label in [
+                language.text("파일을 열지 못했습니다", "Could not open the file"),
+                language.text("다시 시도", "Try again"),
+                language.text("닫기 ×", "Close ×"),
+            ] {
+                let (_, rect) = painted
+                    .labels
+                    .iter()
+                    .find(|(text, _)| text == label)
+                    .unwrap();
+                assert!(
+                    screen.contains_rect(*rect),
+                    "{label} outside {screen:?}: {rect:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn old_connector_explains_the_update_and_missing_approvals_do_not_create_choices() {
+    let snapshot = files_snapshot();
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    let ctx = context();
+    for message in [
+        "file_not_allowed: Mac에 등록한 프로젝트의 수정 파일만 열 수 있습니다 / Register this project on your Mac first",
+        "editor_project_not_registered: This folder is not registered",
+    ] {
+        app.activate_pair(5);
+        let ClientCommand::OpenCodexChange { navigation_id, .. } = commands.try_recv().unwrap()
+        else {
+            panic!("open expected")
+        };
+        event(
+            &mut app,
+            crate::model::NetworkEvent::FileOpenCompleted {
+                navigation_id,
+                result: Err(message.into()),
+            },
+        );
+        frame(&mut app, &ctx, vec![]);
+        let painted = frame(&mut app, &ctx, vec![]);
+        painted.label("0.1.26 이상으로 업데이트");
+        assert!(
+            !painted
+                .labels
+                .iter()
+                .any(|(text, _)| text == "이 폴더 등록하고 파일 열기")
+        );
+        assert!(commands.try_recv().is_err());
+        app.close_deck_modal();
+    }
+    app.activate_pair(0);
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    painted.label("이 질의에 전달된 승인 요청이 없습니다.");
+    assert!(!painted.labels.iter().any(|(text, _)| text == "A  승인"));
+    app.model
+        .snapshot
+        .as_mut()
+        .unwrap()
+        .codex
+        .pending_approvals
+        .push(request("a", "new"));
+    frame(&mut app, &ctx, vec![]);
+    frame(&mut app, &ctx, vec![]).label("A  승인");
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
 fn modal_approval_requires_a_rendered_request_locks_duplicates_and_closes_only_on_delivery() {
     for decision in [ApprovalDecisionDto::Approve, ApprovalDecisionDto::Reject] {
         let mut snapshot = files_snapshot();
@@ -655,4 +834,174 @@ fn notices_light_only_the_assigned_pair_without_opening_any_modal_or_changing_pa
     );
     app.activate_pair(3);
     assert!(!app.pair_views(app.model.snapshot.as_ref().unwrap())[3].attention);
+}
+
+#[test]
+fn lower_key_click_opens_files_and_sends_the_exact_recorded_path() {
+    let snapshot = files_snapshot();
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    click(&mut app, &ctx, painted.keys[5].center());
+    assert_eq!(
+        app.deck_modal.as_ref().unwrap().kind,
+        paired_deck::ModalKind::Files
+    );
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { thread_id, turn_id, path, .. } if thread_id == "a" && turn_id == "new" && path == "src/first.rs")
+    );
+    frame(&mut app, &ctx, vec![]).label("src/first.rs");
+}
+
+#[test]
+fn missing_records_are_clickable_and_fresh_matching_records_open_the_file() {
+    let mut snapshot = files_snapshot();
+    let fresh = snapshot.codex.threads[0].clone();
+    snapshot.codex.threads[0]
+        .observation
+        .as_mut()
+        .unwrap()
+        .changes = None;
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    click(&mut app, &ctx, painted.keys[5].center());
+    assert!(app.deck_modal.is_some());
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::CodexReadThread { thread_id } if thread_id == "a")
+    );
+    frame(&mut app, &ctx, vec![]).label("파일 정보 확인");
+    let mut updated = fresh;
+    updated.observation.as_mut().unwrap().observed_at += chrono::Duration::seconds(1);
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(updated),
+        )),
+    );
+    frame(&mut app, &ctx, vec![]);
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { thread_id, turn_id, path, .. } if thread_id == "a" && turn_id == "new" && path == "src/first.rs")
+    );
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn cached_file_modal_still_opens_with_codex_or_transport_disconnected() {
+    for transport in [true, false] {
+        let mut snapshot = files_snapshot();
+        snapshot.codex.connection.state = orangedeck_protocol::CodexConnectionStateDto::Error;
+        let (mut app, mut commands) = test_app(&snapshot);
+        bind(&mut app, 0, "a");
+        if !transport {
+            event(
+                &mut app,
+                crate::model::NetworkEvent::Disconnected {
+                    message: "fixture".into(),
+                    retry_ms: 1000,
+                },
+            );
+        }
+        app.activate_pair(5);
+        assert!(app.deck_modal.is_some());
+        if transport {
+            assert!(matches!(
+                commands.try_recv().unwrap(),
+                ClientCommand::OpenCodexChange { .. }
+            ));
+        } else {
+            assert!(commands.try_recv().is_err());
+            assert!(app.deck_modal.as_ref().unwrap().file_error);
+        }
+    }
+}
+
+#[test]
+fn old_notification_entry_points_open_agents_without_any_approval() {
+    let snapshot = files_snapshot();
+    let (mut app, mut commands) = test_app(&snapshot);
+    app.handle_action(ControlAction::Detail);
+    assert_eq!(app.page, Page::Agents);
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
+fn file_refresh_cannot_open_a_later_turn_or_a_closed_modal() {
+    for close in [false, true] {
+        let mut snapshot = files_snapshot();
+        let mut fresh = snapshot.codex.threads[0].clone();
+        snapshot.codex.threads[0]
+            .observation
+            .as_mut()
+            .unwrap()
+            .changes = None;
+        let (mut app, mut commands) = test_app(&snapshot);
+        bind(&mut app, 0, "a");
+        app.activate_pair(5);
+        assert!(matches!(
+            commands.try_recv().unwrap(),
+            ClientCommand::CodexReadThread { .. }
+        ));
+        if close {
+            app.handle_action(ControlAction::Back);
+        } else {
+            fresh.observation.as_mut().unwrap().turn_id = Some("later".into());
+        }
+        fresh.observation.as_mut().unwrap().observed_at += chrono::Duration::seconds(1);
+        event(
+            &mut app,
+            crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+                orangedeck_protocol::ServerEvent::CodexThreadUpdated(fresh),
+            )),
+        );
+        frame(&mut app, &context(), vec![]);
+        assert!(commands.try_recv().is_err());
+        if close {
+            assert!(app.deck_modal.is_none());
+        } else {
+            assert!(app.deck_modal.as_ref().unwrap().file_error);
+        }
+    }
+}
+
+#[test]
+fn recovered_deletions_show_their_diff_without_claiming_no_edits_or_opening_editor() {
+    let mut snapshot = files_snapshot();
+    let mut fresh = snapshot.codex.threads[0].clone();
+    let observation = fresh.observation.as_mut().unwrap();
+    observation.observed_at += chrono::Duration::seconds(1);
+    for file in &mut observation.changes.as_mut().unwrap().files {
+        file.kind = orangedeck_protocol::CodeChangeKindDto::Deleted;
+    }
+    snapshot.codex.threads[0]
+        .observation
+        .as_mut()
+        .unwrap()
+        .changes = None;
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    app.activate_pair(5);
+    assert!(matches!(
+        commands.try_recv().unwrap(),
+        ClientCommand::CodexReadThread { .. }
+    ));
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(fresh),
+        )),
+    );
+    frame(&mut app, &context(), vec![]);
+    let modal = app.deck_modal.as_ref().unwrap();
+    assert_eq!(
+        paired_deck::file_state(&modal.thread),
+        crate::paired::FileState::Changes(2)
+    );
+    assert!(modal.file_message.is_none());
+    assert!(!modal.file_error);
+    assert!(commands.try_recv().is_err());
 }

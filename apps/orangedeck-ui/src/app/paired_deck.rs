@@ -26,6 +26,9 @@ pub(super) struct DeckModal {
     pub just_opened: bool,
     pub file_request: Option<uuid::Uuid>,
     pub file_message: Option<String>,
+    pub file_error: bool,
+    pub connector_update_needed: bool,
+    pub file_refresh: Option<std::time::Instant>,
 }
 
 pub(super) fn file_state(thread: &CodexThreadDto) -> FileState {
@@ -120,7 +123,7 @@ impl OrangeDeckApp {
         })
     }
 
-    pub(super) fn render_shortcuts(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
+    pub(super) fn render_agents(&mut self, ui: &mut egui::Ui, snapshot: &SnapshotDto) {
         let pairs = self.pair_views(snapshot);
         let action = paired::render(
             ui,
@@ -179,10 +182,7 @@ impl OrangeDeckApp {
             ModalKind::Files
         };
         // A no-edits key is inert for touch, mouse, keyboard and controller alike.
-        if kind == ModalKind::Files
-            && (!self.model.approval_ready()
-                || !matches!(file_state(&thread), FileState::Changes(count) if count > 0))
-        {
+        if kind == ModalKind::Files && file_state(&thread) == FileState::None {
             return;
         }
         let label = if slot.label.is_empty() {
@@ -204,6 +204,9 @@ impl OrangeDeckApp {
             just_opened: true,
             file_request: None,
             file_message: None,
+            file_error: false,
+            connector_update_needed: false,
+            file_refresh: None,
         });
         if kind == ModalKind::Files {
             let first = self
@@ -219,6 +222,13 @@ impl OrangeDeckApp {
                 });
             if let Some(index) = first {
                 self.open_modal_file(index);
+            } else if !matches!(
+                self.deck_modal
+                    .as_ref()
+                    .map(|modal| file_state(&modal.thread)),
+                Some(FileState::Changes(_))
+            ) {
+                self.refresh_modal_files();
             }
         }
     }
@@ -382,8 +392,149 @@ impl OrangeDeckApp {
         self.displayed_approval = None;
     }
 
+    fn refresh_modal_files(&mut self) {
+        let Some(modal) = self
+            .deck_modal
+            .as_mut()
+            .filter(|modal| modal.kind == ModalKind::Files)
+        else {
+            return;
+        };
+        if modal.file_refresh.is_some() {
+            return;
+        }
+        modal.file_error = !self.model.file_navigation_ready();
+        modal.file_message = Some(
+            self.preferences
+                .language
+                .text(
+                    if modal.file_error {
+                        "Mac 연결이 끊겼습니다. 다시 연결한 뒤 확인하세요."
+                    } else {
+                        "Mac에서 이 질의의 파일 기록을 다시 가져오는 중…"
+                    },
+                    if modal.file_error {
+                        "Mac disconnected. Reconnect, then check again."
+                    } else {
+                        "Reading this turn's file records from the Mac…"
+                    },
+                )
+                .to_owned(),
+        );
+        if modal.file_error {
+            return;
+        }
+        modal.file_refresh = Some(std::time::Instant::now());
+        if let Err(error) = self.network.send(ClientCommand::CodexReadThread {
+            thread_id: modal.thread.id.clone(),
+        }) {
+            modal.file_refresh = None;
+            modal.file_error = true;
+            modal.file_message = Some(error);
+        }
+    }
+
+    fn sync_file_modal(&mut self) {
+        let Some(modal) = self
+            .deck_modal
+            .as_mut()
+            .filter(|modal| modal.kind == ModalKind::Files && modal.file_refresh.is_some())
+        else {
+            return;
+        };
+        let current = self.model.snapshot.as_ref().and_then(|snapshot| {
+            snapshot
+                .codex
+                .threads
+                .iter()
+                .find(|thread| thread.id == modal.thread.id)
+        });
+        let fresh = current.filter(|thread| {
+            thread.observation.as_ref().is_some_and(|observation| {
+                modal
+                    .thread
+                    .observation
+                    .as_ref()
+                    .is_none_or(|old| observation.observed_at > old.observed_at)
+            })
+        });
+        let lang = self.preferences.language;
+        if let Some(thread) = fresh {
+            if let Some(expected) = modal.turn_id.as_deref()
+                && (selection::turn_id(thread) != Some(expected)
+                    || thread
+                        .observation
+                        .as_ref()
+                        .and_then(|observation| observation.turn_id.as_deref())
+                        != Some(expected))
+            {
+                modal.file_refresh = None;
+                modal.file_error = true;
+                modal.file_message = Some(lang.text("대화가 새 질의로 바뀌었습니다. 창을 닫고 다시 확인하세요.", "The conversation moved to another question. Close this window and reopen it.").to_owned());
+                return;
+            }
+            modal.thread = thread.clone();
+            modal.turn_id = selection::turn_id(thread).map(str::to_owned);
+            let state = file_state(thread);
+            if state != FileState::Loading {
+                modal.file_refresh = None;
+                modal.file_error = state == FileState::Unavailable;
+                modal.file_message = match state {
+                    FileState::Unavailable => Some(lang.text(
+                        "이 질의의 파일 편집 기록을 모두 확인하지 못했습니다. Mac 통신 모듈을 최신 버전으로 업데이트한 뒤 다시 확인하세요.",
+                        "File-edit records for this turn are incomplete. Update the Mac Connector, then check again.",
+                    ).to_owned()),
+                    FileState::None => Some(lang.text(
+                        "이 질의에 기록된 파일 수정이 없습니다.",
+                        "No recorded file edits in this turn.",
+                    ).to_owned()),
+                    _ => None,
+                };
+                if let Some(index) = thread
+                    .observation
+                    .as_ref()
+                    .and_then(|o| o.changes.as_ref())
+                    .and_then(|c| {
+                        c.files
+                            .iter()
+                            .position(|f| f.kind != CodeChangeKindDto::Deleted)
+                    })
+                {
+                    self.open_modal_file(index);
+                }
+                return;
+            }
+        }
+        if modal
+            .file_refresh
+            .is_some_and(|started| started.elapsed() > std::time::Duration::from_secs(12))
+        {
+            modal.file_refresh = None;
+            modal.file_error = true;
+            modal.file_message = Some(
+                lang.text(
+                    "Mac에서 파일 기록을 받지 못했습니다. 연결 상태를 확인하고 다시 시도하세요.",
+                    "No file records received from the Mac. Check the connection and try again.",
+                )
+                .to_owned(),
+            );
+        }
+    }
+
     fn open_modal_file(&mut self, index: usize) {
-        if !self.model.approval_ready() {
+        if self
+            .deck_modal
+            .as_ref()
+            .is_some_and(|modal| !matches!(file_state(&modal.thread), FileState::Changes(_)))
+        {
+            self.refresh_modal_files();
+            return;
+        }
+        if !self.model.file_navigation_ready() {
+            if let Some(modal) = &mut self.deck_modal {
+                modal.file_error = true;
+                modal.file_message = Some(self.preferences.language.text("Mac 연결이 끊겼습니다. 파일 목록은 볼 수 있으며, 다시 연결한 뒤 열어 주세요.", "Mac disconnected. You can review the file list and retry after reconnecting.").to_owned());
+            }
             return;
         }
         let Some(modal) = self
@@ -404,6 +555,9 @@ impl OrangeDeckApp {
         };
         modal.selected_file = index;
         if file.kind == CodeChangeKindDto::Deleted {
+            modal.file_message = None;
+            modal.file_error = false;
+            modal.connector_update_needed = false;
             return;
         }
         let Some(turn_id) = modal.turn_id.clone() else {
@@ -415,6 +569,8 @@ impl OrangeDeckApp {
                 .text("Mac 편집기에서 여는 중…", "Opening in your Mac editor…")
                 .to_owned(),
         );
+        modal.file_error = false;
+        modal.connector_update_needed = false;
         // Keep the most recent selection queued while a previous editor navigation is in flight.
         if self.file_request.is_some() {
             return;
@@ -433,6 +589,7 @@ impl OrangeDeckApp {
             self.file_request = None;
             if let Some(modal) = &mut self.deck_modal {
                 modal.file_message = Some(error);
+                modal.file_error = true;
                 modal.file_request = None;
             }
         }
@@ -462,14 +619,32 @@ impl OrangeDeckApp {
                 let same_request = modal.file_request == Some(*navigation_id);
                 if same_request {
                     modal.file_request = None;
+                    modal.file_error = !result.as_ref().is_ok_and(|response| response.accepted);
+                    modal.connector_update_needed = result.as_ref().err().is_some_and(|message| {
+                        message.starts_with("editor_project_not_registered:")
+                            || message.starts_with(
+                                "file_not_allowed: Mac에 등록한 프로젝트의 수정 파일만",
+                            )
+                    });
                     modal.file_message = Some(match result {
                         Ok(response) if response.accepted => self
                             .preferences
                             .language
-                            .text("Mac 편집기에 열었습니다.", "Opened in your Mac editor.")
+                            .text(
+                                "Mac 편집기로 파일 열기를 보냈습니다.",
+                                "File sent to your Mac editor.",
+                            )
                             .to_owned(),
                         Ok(response) => response.message.clone(),
-                        Err(message) => message.clone(),
+                        Err(message) => {
+                            let text = message
+                                .split_once(": ")
+                                .map_or(message.as_str(), |(_, text)| text);
+                            text.split_once(" / ").map_or_else(
+                                || text.to_owned(),
+                                |(ko, en)| self.preferences.language.text(ko, en).to_owned(),
+                            )
+                        }
                     });
                 }
                 if let Some(file) = modal
@@ -491,6 +666,19 @@ impl OrangeDeckApp {
             self.file_request = None;
             if let Some(modal) = &mut self.deck_modal {
                 modal.file_request = None;
+                modal.file_refresh = None;
+                if modal.kind == ModalKind::Files {
+                    modal.file_error = true;
+                    modal.file_message = Some(
+                        self.preferences
+                            .language
+                            .text(
+                                "연결이 끊겼습니다. 다시 연결한 뒤 재시도하세요.",
+                                "Disconnected. Reconnect, then try again.",
+                            )
+                            .to_owned(),
+                    );
+                }
             }
         }
         let Some(id) = self.deck_modal.as_ref().and_then(|modal| modal.submitted) else {
@@ -549,6 +737,7 @@ impl OrangeDeckApp {
     }
 
     pub(super) fn render_deck_modal(&mut self, ctx: &egui::Context) {
+        self.sync_file_modal();
         let Some(modal) = self.deck_modal.clone() else {
             return;
         };
@@ -695,6 +884,15 @@ impl OrangeDeckApp {
                     {
                         ui.colored_label(theme::RED, message);
                     }
+                } else {
+                    ui.separator();
+                    ui.label(
+                        RichText::new(lang.text(
+                            "이 질의에 전달된 승인 요청이 없습니다.",
+                            "No approval request has been received for this question.",
+                        ))
+                        .color(theme::MUTED),
+                    );
                 }
             } else {
                 self.render_changed_files(
@@ -738,24 +936,85 @@ impl OrangeDeckApp {
         screen_height: f32,
     ) {
         let lang = self.preferences.language;
-        let Some(changes) = modal
+        let changes = modal
             .thread
             .observation
             .as_ref()
-            .and_then(|observation| observation.changes.as_ref())
-        else {
+            .and_then(|observation| observation.changes.as_ref());
+        if changes.is_none_or(|changes| changes.files.is_empty()) {
+            theme::accent_panel(theme::YELLOW).show(ui, |ui| {
+                ui.label(
+                    RichText::new(lang.text("파일 정보 확인", "File records"))
+                        .size(22.0)
+                        .strong(),
+                );
+                ui.add(
+                    egui::Label::new(modal.file_message.as_deref().unwrap_or(lang.text(
+                        "파일 기록을 기다리고 있습니다.",
+                        "Waiting for file records.",
+                    )))
+                    .wrap(),
+                );
+                if modal.file_refresh.is_some() {
+                    ui.spinner();
+                }
+                if ui
+                    .add_enabled(
+                        modal.file_refresh.is_none() && self.model.file_navigation_ready(),
+                        egui::Button::new(lang.text("다시 확인", "Check again"))
+                            .min_size(egui::vec2(130.0, 42.0)),
+                    )
+                    .clicked()
+                {
+                    *clicked = Some(0);
+                }
+            });
             return;
-        };
+        }
+        let changes = changes.unwrap();
         if changes.truncated {
             ui.colored_label(
                 theme::YELLOW,
                 lang.text(
-                    "큰 변경은 일부만 표시합니다. 전체 내용은 Mac에서 확인하세요.",
-                    "Large changes are shortened here. View the full files on your Mac.",
+                    "일부 파일 기록이나 변경 내용이 빠져 있을 수 있습니다. 전체 내용은 Mac에서 확인하세요.",
+                    "Some file records or change details may be missing. Review the full files on your Mac.",
                 ),
             );
         }
-        let height = (screen_height - 230.0).clamp(120.0, 470.0);
+        let status_start = ui.cursor().top();
+        if modal.file_message.is_some() || !self.model.connected {
+            let error = modal.file_error || !self.model.connected;
+            let color = if error { theme::YELLOW } else { theme::CYAN };
+            egui::Frame::new().fill(color.gamma_multiply(0.08))
+                .stroke(egui::Stroke::new(1.0, color)).inner_margin(10.0).show(ui, |ui| {
+                    ui.set_min_width(ui.available_width());
+                    ui.label(RichText::new(lang.text(
+                        if modal.connector_update_needed { "Mac 통신 모듈 업데이트 필요" } else if error { "파일을 열지 못했습니다" } else { "Mac 편집기" },
+                        if modal.connector_update_needed { "Update your Mac Connector" } else if error { "Could not open the file" } else { "Mac editor" }
+                    )).size(18.0).strong().color(color));
+                    egui::ScrollArea::vertical().id_salt("editor_result_notice").max_height(80.0).show(ui, |ui| {
+                        let message = if self.model.connected {
+                            if modal.connector_update_needed {
+                            lang.text(
+                                "Mac 통신 모듈을 0.1.26 이상으로 업데이트하세요. 대화의 작업 폴더를 자동으로 사용하므로 폴더를 따로 등록할 필요가 없습니다.",
+                                "Update the Mac Connector to 0.1.26 or later. It uses the conversation's working folder automatically; no folder registration is needed.")
+                            } else {
+                                modal.file_message.as_deref().unwrap_or("")
+                            }
+                        } else {
+                            lang.text("연결이 끊겼습니다. 다시 연결한 뒤 재시도하세요.", "Disconnected. Reconnect, then try again.")
+                        };
+                        ui.add(egui::Label::new(RichText::new(message).size(16.0)).wrap());
+                    });
+                    if error && ui.add_enabled(self.model.file_navigation_ready() && self.file_request.is_none(),
+                        egui::Button::new(lang.text("다시 시도", "Try again")).min_size(egui::vec2(120.0, 38.0))).clicked() {
+                        *clicked = Some(modal.selected_file);
+                    }
+                });
+            ui.add_space(8.0);
+        }
+        let status_height = ui.cursor().top() - status_start;
+        let height = (screen_height - 230.0 - status_height).clamp(60.0, 430.0);
         ui.columns(2, |columns| {
             egui::ScrollArea::vertical()
                 .id_salt("changed_file_list")
@@ -809,17 +1068,6 @@ impl OrangeDeckApp {
                     }
                 });
         });
-        if !self.model.connected {
-            ui.colored_label(
-                theme::YELLOW,
-                lang.text(
-                    "연결 끊김 · 파일 이동은 다시 연결한 뒤 가능합니다",
-                    "Disconnected · reconnect to open files",
-                ),
-            );
-        } else if let Some(message) = &modal.file_message {
-            ui.add(egui::Label::new(RichText::new(message).small()).wrap());
-        }
     }
 }
 

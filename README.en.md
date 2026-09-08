@@ -1,184 +1,126 @@
-<h3 align="center"><a href="README.md">🇰🇷 한국어</a>　|　🌐 English · current page</h3>
+<h3 align="center"><a href="README.md">🇰🇷 한국어</a>　|　🌐 English · Current page</h3>
 
 # OrangeDeck
 
-**Follow Codex on your Mac and control it from your ROG Ally.**
+**Your Mac's Codex, at a glance on your Ally.**
 
-**OrangeDeck is a communication and remote-control app.** Codex on your Mac does the AI work. You do not need Codex on the Ally.
+Follow current work in **LIVE**. Check replies and changed files from multiple Codex conversations in **Agents**. Respond to approval requests and tap a changed file to open it in your Mac editor.
 
-![A macOS Mac runs Codex and Connector. A ROG Ally running CachyOS Handheld runs the remote. Tailscale connects them. Steam Deck and SteamOS are untested.](docs/diagrams/device-roles-en.svg)
+[⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Controls](docs/CONTROLS.md)
 
-[⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#install) · [See the app](#see-the-app) · [Setup help](docs/INSTALL.en.md)
+## LIVE · See what's happening now
 
-## Which devices?
+![LIVE: the current question, work status, token records and remaining quota](docs/screenshots/en-live.png)
 
-**This guide is written for this specific pair of devices.**
+**See the current question, work status, token usage and remaining quota together.**
 
-| Device | Operating system | What to install |
-| --- | --- | --- |
-| **Work Mac** — developed around a Mac Studio | **macOS** | Codex CLI + **OrangeDeck Connector**. It sends Codex status and receives button actions from the Ally. |
-| **ROG Ally remote** | **CachyOS Handheld · desktop mode** | **OrangeDeck UI**. The app displays work status and sends your button choices. |
+- **Current work:** follow the question and its progress.
+- **Usage records:** see input and output tokens as new records arrive.
+- **Remaining quota:** check the five-hour and weekly percentages. They decrease as you use them.
 
-**Steam Deck and SteamOS installation and operation have not been tested.** Other Linux distributions are outside this installation guide. Windows is not supported.
+Pin one conversation, or turn **Auto ON** to follow the most recent conversation in the selected project.
 
-Current version: **0.1.24**.
+## Agents · Five conversations, replies and changed files
 
-## Install
+![Agents: five Codex conversations with paired response and changed-file keys](docs/screenshots/en-shortcuts.png)
 
-Follow this order: **set up the Mac → transfer the connection file → set up the Ally**.
+**One column, one conversation. Replies above. Changed files below.**
 
-<a id="my-settings"></a>
+A new reply or approval request makes both keys in that column pulse, with a notification sound. Tap an **upper + key** to connect a Codex conversation from your Mac terminal once.
 
-**How are my settings created?**
+<table>
+<tr>
+<td width="50%">
+<b>① Upper key · Read and approve</b><br>
+<a href="docs/screenshots/en-response.png"><img src="docs/screenshots/en-response.png" alt="Reading the selected question, reply and approval request" width="640"></a><br>
+Read the question and reply. When an approval request arrives, review its details and choose <b>Approve / Reject</b>.
+</td>
+<td width="50%">
+<b>② Lower key · Open changed files</b><br>
+<a href="docs/screenshots/en-files.png"><img src="docs/screenshots/en-files.png" alt="Changed files and diffs with navigation to the Mac editor" width="640"></a><br>
+Review changes on the Ally. Select a file to move your <b>Mac editor</b> to that file.
+</td>
+</tr>
+</table>
 
-| Situation | What happens to your settings? |
+**The connected Codex conversation's working folder is used automatically.** No extra folder registration is needed to open its files. Zed, VS Code, Cursor and VSCodium are supported.
+
+The list shows **edits recorded for this question**. Incomplete records show **Check file records**; a confirmed empty list shows **No file changes**. [File checks, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
+
+Tap outside a dialog or **Close** to dismiss it without making a decision. Language, conversation assignments and sound settings are saved for the next launch.
+
+<sub>Screenshots show 0.1.28 with simulated data. Click to enlarge. <a href="docs/SCREENSHOTS.md">Screenshot details</a></sub>
+
+## How the two devices connect
+
+![Codex and Connector on the Mac send activity to LIVE and Agents on the Ally; approvals and file-open requests return to the Mac.](docs/diagrams/device-roles-en.svg)
+
+**Codex does the AI work on the Mac. OrangeDeck connects the devices.** You do not need to install Codex on the Ally.
+
+| Device | Install |
 | --- | --- |
-| **First installation** | Choose your Mac's project folder and editor. Setup **detects your Mac's address and generates a new connection credential.** Register the resulting connection file on your Ally. |
-| **Update on the same device** | Setup reuses the settings saved on that device. **It is normal not to be asked for your project, editor or connection file again.** |
+| **macOS work Mac** · developed around Mac Studio | Codex CLI + OrangeDeck **Connector** |
+| **ROG Ally running CachyOS Handheld** · desktop mode | OrangeDeck **remote UI** |
 
-Personal settings are stored separately in **`~/.config/orangedeck/`** on each device and are not included in the GitHub download. Downloading the app does not give someone access to your Mac. Connecting requires **both Tailscale access to your Mac and your connection credential**. [Why setup skips these questions](docs/INSTALL.en.md#saved-settings).
+This guide covers that configuration. Steam Deck and SteamOS installation and operation are unverified; other Linux distributions and Windows are outside this guide.
 
-Before you start:
+## Installation
 
-- **Both devices:** install [Tailscale](https://tailscale.com/download) and sign in with **the same account**. It connects the two machines.
-- **Mac:** install [Codex CLI](https://learn.chatgpt.com/docs/cli) and sign in. You need the terminal version of Codex.
-- **Both devices:** Python 3.9 or later is required. [Check or install it](docs/INSTALL.en.md#prerequisites).
-- **Both devices:** use **Download ZIP** above, then extract it. Git and SSH keys are not required.
+**Set up the Mac → transfer the connection file → set up the Ally.** Current version: **0.1.28**.
+
+Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
+
+On both devices, use **Download ZIP** above and extract it. Git and SSH keys are not needed.
 
 ### 1. Install Connector on the Mac
 
-**The three `.command` files below run on the Mac.** For a first installation, double-click them in the extracted folder in order: **1 → 2 → 3**.
+**These three files run on the Mac.** In the extracted folder, double-click them in order.
 
-| File to run on the Mac | Why run it? | What to do with its window |
+| Order | File | Purpose and window lifetime |
 | --- | --- | --- |
-| **1. Setup OrangeDeck.command** | Installs or updates Connector and prepares your project and connection settings. | **After setup completes**, press Enter when prompted and close the window. |
-| **2. Start OrangeDeck Connector.command** | Sends Mac Codex status to the Ally and receives your button actions. | **Keep it open while using OrangeDeck.** |
-| **3. Enable Codex Notifications.command** | Connects Codex completion alerts and approval requests to OrangeDeck. | **After configuration completes**, press Enter when prompted and close the window. |
+| **①** | **Setup OrangeDeck.command** | Installs Connector and asks for your work folder and editor. After setup finishes, press Enter when prompted and close it. |
+| **②** | **Start OrangeDeck Connector.command** | Connects the Mac and Ally. **Keep this window open while using OrangeDeck.** |
+| **③** | **Enable Codex Notifications.command** | Connects completion alerts and approval requests. After configuration finishes, press Enter and close it. |
 
-After step 3, open your **usual Mac Codex terminal**, enter **`/hooks`**, and **review and trust the OrangeDeck entry** to finish connecting notifications.
+After step ③, open **`/hooks` in your usual Mac Codex session → review and trust OrangeDeck**. The only OrangeDeck window you need to keep open is **② Connector**.
 
-**Only the Connector window from step 2 needs to stay open for OrangeDeck on the Mac. For everyday use, run Start only.** Keep Codex and Tailscale running as usual. Setup and notification configuration are not daily steps. [Update instructions](docs/INSTALL.en.md#update).
-
-When Setup asks for a project folder, choose **the folder you work on with Codex on this Mac**. Press Enter to use the suggested device and project names. Choose `zed`, `vs_code`, `cursor` or `vscodium` for the editor, or Enter for automatic detection.
-
-When setup offers required tools, review the prompt and enter `y` to install them. The first build can take several minutes. If the Mac opens a developer-tools installer, finish it and reopen Setup. [If the command file will not open](docs/INSTALL.en.md#mac-command-file-will-not-open).
+Choose your Mac work folder and editor when Setup asks. If a developer-tool installer appears, finish it and run Setup again. [Mac setup help](docs/INSTALL.en.md#mac-command-file-will-not-open).
 
 ### 2. Transfer the Mac's connection file to the Ally
 
-In Mac **Finder → Go → Go to Folder…**, paste:
+In Mac **Finder → Go → Go to Folder…**, open `~/.config/orangedeck`.
 
-```text
-~/.config/orangedeck
-```
+Copy **`orangedeck-pairing.toml`** to **your Ally's Downloads folder** using USB or another private transfer. This **personal connection file** contains your Mac's address and secret connection credential. Do not post it on GitHub or in a chat.
 
-Copy **`orangedeck-pairing.toml`** from that folder to **your Ally's Downloads folder**, for example using a USB drive. It contains **your Mac's address and secret connection credential**. **Do not upload it to GitHub or chat.**
+### 3. Install the remote UI on the Ally
 
-### 3. Install the remote on the Ally
-
-**The Linux Ally running CachyOS Handheld uses its own commands, not the three Mac files above.** One command installs the remote; another starts it.
-
-**1. To install or update:** use desktop mode, right-click an empty area inside the extracted folder, and choose **Open Terminal Here**. Run the following in the folder containing `install.sh`. It installs the remote and registers the Mac connection file.
+In the Ally's **desktop mode**, open the extracted folder, right-click an empty area and select **Open Terminal Here**. Use this command on the Ally:
 
 ```sh
 sh install.sh --role ui
 ```
 
-When asked for the connection file, drag the transferred **`orangedeck-pairing.toml`** into the terminal and press Enter. There is no need to type an IP address or password.
+When asked for a connection file, drag **`orangedeck-pairing.toml`** into the terminal and press Enter. You do not need to type an IP address or credential.
 
-**2. To start the app:** after installation, run this command in the same terminal. Use it for everyday launches too.
+After installation, start the app:
 
 ```sh
 sh "$HOME/.config/orangedeck/start-ui.sh"
 ```
 
-When launching this way, leave that terminal open while using the app. You do not need to rerun installation for everyday use.
+When it shows **CONNECTED**, open **Agents → an upper + key** and assign a conversation. Use Codex on the Mac to check new LIVE records, replies and changed files on the Ally.
 
-When the Ally shows **연결됨 / CONNECTED**, open **Deck → an upper + key** and assign each terminal's Codex conversation. Then do some Codex work on the Mac. Check that the Ally receives new numbers and completion alerts. When an approval request appears, read it and make a deliberate choice; check that the Mac receives that choice.
+## Next time, just start the apps
 
-If you chose a custom settings folder, use the paths printed by setup. [Setup help, extra settings and updates](docs/INSTALL.en.md).
-
-## See the app
-
-These are app screenshots using **example data**, not personal work. Click a diagram or screenshot to enlarge it. [Screenshot details](docs/SCREENSHOTS.md).
-
-### LIVE — your current work at a glance
-
-![LIVE shows tokens for the current work and the remaining quota](docs/screenshots/en-live.png)
-
-See tokens for the current work and your **remaining five-hour and weekly quota**. Numbers update when new usage records arrive. The remaining percentage goes down as you use it.
-
-<table>
-<tr>
-<td width="50%">
-<b>Shortcuts — responses and changed files</b><br>
-<a href="docs/screenshots/en-shortcuts.png"><img src="docs/screenshots/en-shortcuts.png" alt="Five pairs of response and changed-file keys" width="640"></a><br>
-Each upper key opens a response; the key directly below opens its changed files. Both keys light together.
-</td>
-<td width="50%">
-<b>Projects — choose a work folder</b><br>
-<a href="docs/screenshots/en-projects.png"><img src="docs/screenshots/en-projects.png" alt="Choosing a project folder to follow" width="640"></a><br>
-Pick a folder to show its work across all tabs.
-</td>
-</tr>
-<tr>
-<td width="50%">
-<b>Conversations — choose a conversation</b><br>
-<a href="docs/screenshots/en-conversations.png"><img src="docs/screenshots/en-conversations.png" alt="Conversations in the selected project" width="640"></a><br>
-Keep one conversation in view, or follow the most recent one automatically.
-</td>
-<td width="50%">
-<b>Notifications — questions, replies and completion</b><br>
-<a href="docs/screenshots/en-notifications.png"><img src="docs/screenshots/en-notifications.png" alt="Reading the current question, reply and approval details" width="640"></a><br>
-For a long approval request, open Details and scroll through the inner area to read it all.
-</td>
-</tr>
-</table>
-
-## Connect five conversations
-
-Open **Deck → an upper + key → choose the Codex conversation from your terminal**. Give each column a name. Use **Assign chats** to change or clear a connection. These connections stay fixed when you select another project elsewhere.
-
-| | Terminal 1 | Terminal 2 | Terminal 3 | Terminal 4 | Terminal 5 |
-| --- | --- | --- | --- | --- | --- |
-| **Upper key** | Response 1 | Response 2 | Response 3 | Response 4 | Response 5 |
-| **Key below** | Changed files 1 | Changed files 2 | Changed files 3 | Changed files 4 | Changed files 5 |
-
-- **New response or approval:** both keys in that column pulse, with a notification sound. Use **Sound on/off** to mute it.
-- **Upper key:** opens the question and response. If approval is required, review the details and tap **Approve / Reject**. The dialog closes when delivery is confirmed.
-- **Lower key:** opens the changed code in your Mac editor and a file list with diffs on the Ally. Tap another file to move the Mac editor to that file.
-- **No files changed for that question:** the lower key says **No file changes** and does nothing when pressed.
-- **Close a dialog:** tap outside it or **Close**. Dismissing it never approves or rejects anything.
-
-The list contains **file edits Codex recorded for this specific turn**. Changes made through terminal commands or external tools may not appear. Deleted files show their diff without opening an editor. Unavailable or loading data is distinguished from confirmed no changes.
-
-Install **Zed, VS Code, Cursor or VSCodium** on the Mac. Choose your editor during setup, or change your [editor and registered folders](docs/INSTALL.en.md#host-shortcuts) later. File opening is limited to registered Mac project folders.
-
-<table><tr>
-<td width="50%"><b>Upper key · response and approval</b><br><a href="docs/screenshots/en-response.png"><img src="docs/screenshots/en-response.png" alt="The selected turn’s response and approval dialog" width="640"></a></td>
-<td width="50%"><b>Lower key · changed files and diffs</b><br><a href="docs/screenshots/en-files.png"><img src="docs/screenshots/en-files.png" alt="Changed-file list and diff with Mac editor navigation" width="640"></a></td>
-</tr></table>
-
-![English conversation assignment dialog](docs/screenshots/en-key-editor.png)
-
-Use **한국어 / EN** at the top right to switch languages. Language, conversation assignments and sound settings are saved for the next launch.
-
-## Start and stop
-
-**For everyday use: Start on the Mac → launch the app on the Ally.**
-
-| Device | Start each time | Stop |
+| Device | Start | Stop |
 | --- | --- | --- |
-| **Mac** | Double-click **Start OrangeDeck Connector.command** and leave its terminal open. | Press Ctrl+C in the **Connector terminal**. |
-| **Ally** | In a terminal, run `sh "$HOME/.config/orangedeck/start-ui.sh"`. | Close the OrangeDeck app window. |
+| **Mac** | Double-click **Start OrangeDeck Connector.command** | Press Ctrl+C in the Connector terminal |
+| **Ally** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | Close the OrangeDeck window |
 
-Keep Tailscale running on both devices and Codex on the Mac. Everyday launches do not require Setup, Enable, `install.sh` or another connection-file transfer.
+Keep Codex and Tailscale running. If you launch the app from a terminal, keep that terminal open too. Setup, Enable and installation are not daily steps.
 
-[Launch commands](docs/INSTALL.en.md#start-again) · [Connection or alert problems](docs/INSTALL.en.md#connection-or-alert-problems) · [Update](docs/INSTALL.en.md#update) · [Controls](docs/CONTROLS.md)
+<a id="my-settings"></a>
 
-## About
+**Updates keep your settings.** First setup creates each device's settings and your personal connection file. Updating the same devices reuses your work folder, editor and connection. Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Update steps](docs/INSTALL.en.md#update) · [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
 
-Mac work information is sent to your connected Ally. Codex sign-in credentials stay on the Mac. OrangeDeck does not upload your work to GitHub. Keep your connection file and personal settings private.
-
-[Architecture](docs/ARCHITECTURE.md) · [Changelog](docs/CHANGELOG.md) · [Development and publication checks](docs/PUBLICATION.md)
-
-An independent personal project, not an official OpenAI, ASUS or Elgato product. [MIT license](LICENSE).
+[Controls and everyday use](docs/CONTROLS.md) · [Setup and connection help](docs/INSTALL.en.md) · [한국어 안내](README.md) · [Changelog](docs/CHANGELOG.md)

@@ -1,5 +1,7 @@
 mod changes;
+mod history;
 mod parser;
+mod recorded_edits;
 
 use std::{
     collections::{HashMap, HashSet},
@@ -208,7 +210,7 @@ impl CodexClient {
                 "version": env!("CARGO_PKG_VERSION")
             },
             "capabilities": {
-                "experimentalApi": false
+                "experimentalApi": true
             }
         });
         if let Err(error) = client.request("initialize", Some(initialize)).await {
@@ -329,17 +331,8 @@ impl CodexClient {
 
     /// Read persisted history without loading/resuming or subscribing to the thread.
     pub async fn read_thread(&self, thread_id: &str) -> Result<CodexThread, CodexError> {
-        let response = self
-            .request(
-                "thread/read",
-                Some(serde_json::json!({
-                    "threadId": thread_id, "includeTurns": true
-                })),
-            )
-            .await?;
-        let value = response
-            .get("thread")
-            .ok_or_else(|| CodexError::Protocol("thread/read has no thread".to_owned()))?;
+        let history = self.read_history(thread_id).await?;
+        let value = &history;
         let owned = self.owned_threads.read().await;
         let mut thread = parse_thread(value, &owned, &self.projects)?;
         thread.observation = Some(parse_observation(value)?);
@@ -349,6 +342,24 @@ impl CodexClient {
             .await;
         thread.live_usage = usage.remove(&thread.id).map(Box::new);
         thread.activity = activity.remove(&thread.id).map(Box::new);
+        if let Some(observation) = &mut thread.observation
+            && let Some(turn_id) = observation.turn_id.as_deref()
+            && observation
+                .changes
+                .as_ref()
+                .is_none_or(|changes| changes.files.is_empty())
+            && let Some(mut changes) = self
+                .usage_reader
+                .lock()
+                .ok()
+                .and_then(|reader| reader.changes(&thread.id, turn_id))
+        {
+            changes.truncated |= observation
+                .changes
+                .as_ref()
+                .is_some_and(|value| value.truncated);
+            observation.changes = Some(changes);
+        }
         let _ = self.events.send(CodexEvent::ThreadUpdated(thread.clone()));
         Ok(thread)
     }

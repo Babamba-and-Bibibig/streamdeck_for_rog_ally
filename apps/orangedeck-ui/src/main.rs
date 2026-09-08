@@ -51,12 +51,14 @@ enum Command {
     Run {
         #[arg(long, default_value_os_t = default_ui_config_path())]
         config: PathBuf,
-        #[arg(long)]
+        /// Open the Agents tab (the old --notifications flag remains an alias).
+        #[arg(long = "agents", alias = "notifications")]
         notifications: bool,
     },
     /// Connect to a loopback Mock Connector.
     Demo {
-        #[arg(long)]
+        /// Open the Agents tab (the old --notifications flag remains an alias).
+        #[arg(long = "agents", alias = "notifications")]
         notifications: bool,
         /// Initial UI language for this temporary demo session.
         #[arg(long, value_parser = ["ko", "en"], default_value = "ko")]
@@ -217,7 +219,7 @@ fn run_ui(
                         app.change_language(&context.egui_ctx, language);
                     }
                     if notifications {
-                        app.open_notifications();
+                        app.open_agents();
                     }
                     Box::new(app) as Box<dyn eframe::App>
                 })

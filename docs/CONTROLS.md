@@ -8,11 +8,11 @@ OrangeDeck accepts touch, mouse, controller and keyboard input. Controller input
 | A | Open the focused key; inside a response dialog, approve the displayed request once |
 | B | Back; inside a response dialog with an approval, reject the displayed request once |
 | X | Refresh; close an open dialog without deciding |
-| Y | Open the current selected question in Notifications |
+| Y | Open Agents |
 | LB / RB | Previous / next tab, while no dialog is open |
 | LT / RT | Switch project/conversation; inside a response dialog, cycle pending requests |
 
-The five tabs are LIVE, Shortcuts, Projects, Conversations and Notifications. Each deck column is pinned to a stable conversation independently of the other tabs' selected project.
+The four tabs are LIVE, Agents, Projects and Conversations. Agents contains responses, approvals and changed files. Each deck column is pinned to a stable conversation independently of the other tabs' selected project.
 
 ## Five pairs of keys
 
@@ -21,13 +21,14 @@ Tap an upper **+** key to choose a conversation and label. **Assign chats** or r
 Both keys in a column pulse for a new current-turn response or approval. **Sound on/off** enables or mutes the notification sound. Notices do not automatically switch tabs or open dialogs.
 
 - **Upper key:** shows the question, response and pending decisions for that same conversation and turn.
-- **Lower key:** opens the first available changed file in the Mac editor and a list/diff dialog on the Ally. Selecting another file moves the editor to its changed line. Deleted files show their diff only.
-- **No file changes:** disables the lower key for every input method. Loading or unavailable data is shown separately.
+- **Lower key:** opens the first available changed file in the Mac editor and a list/diff dialog on the Ally. Selecting another file moves the editor to its changed line, or the first line when no location is recorded. Deleted files show their diff only.
+- **No file changes:** disables the lower key only after a complete, empty edit record is confirmed.
+- **Check file records / Loading:** opens a recovery dialog and reads the same conversation again. Fresh records open a file only for the same turn while that dialog remains open; errors remain visible with retry. Cached lists remain viewable after disconnection.
 - **Outside tap / Close / X / Escape:** dismisses without deciding. Input does not pass through to a background key.
 
 A response dialog closes after approval/rejection delivery is acknowledged. During sending, both decisions are locked. Failures keep the dialog open for review and explicit retry. A new turn or replacement request cannot receive input intended for an older request, including a pointer press started before replacement.
 
-The file dialog contains no approval controls. A opens the focused file, up/down chooses, and B closes. Editor requests are serialized; the latest selection is dispatched after the previous handoff completes. Closing discards unsent navigation.
+The file dialog uses the selected Codex conversation’s working folder automatically. Opening a recorded edit requires no folder registration. Errors and **Try again** remain above the file list. If an older Mac Connector requires registration, the dialog explains how to update it. The file dialog contains no Codex approval controls. Without a received approval, the response dialog says that no approval request has been received. A opens the focused file, up/down chooses, and B closes. Editor requests are serialized; the latest selection is dispatched after the previous handoff completes. Closing discards unsent navigation.
 
 Long command, permission and file-change approval details remain complete inside the scrollable details area. Keyboard Enter/Escape/Space never decide, including on a focused approval button. Use a deliberate touch/click or fresh controller A/B press. Ordinary Codex questions are answered on the Mac.
 

@@ -458,6 +458,12 @@ impl ConnectorBackend for MockBackend {
                 turn_id,
                 path,
                 ..
+            }
+            | ClientCommand::RegisterCodexProject {
+                thread_id,
+                turn_id,
+                path,
+                ..
             } => {
                 let state = self.inner.state.read().await;
                 let found = state
@@ -866,6 +872,7 @@ fn demo_snapshot() -> SnapshotDto {
                 "read_only_monitor".to_owned(),
                 "paired_conversations".to_owned(),
                 "turn_file_changes".to_owned(),
+                "conversation_editor_root".to_owned(),
                 "session_log_usage".to_owned(),
             ],
         },

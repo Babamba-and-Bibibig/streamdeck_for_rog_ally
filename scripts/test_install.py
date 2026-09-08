@@ -250,6 +250,10 @@ class NativeInstallerTests(unittest.TestCase):
             self.assertIn(b'editor = "vs_code"', config_before)
             token_before = (connector_dir / "connector.token").read_bytes()
             self.assertGreaterEqual(len(token_before), 32)
+            editor_registrations = connector_dir / "editor-projects.toml"
+            editor_registrations.write_text('schema_version = 1\npaths = ["/mock/registered-editor-project"]\n')
+            editor_registrations.chmod(0o600)
+            registrations_before = editor_registrations.read_bytes()
             received = root / "received.toml"
             received.write_bytes((connector_dir / "orangedeck-pairing.toml").read_bytes())
             received.chmod(0o644)
@@ -264,6 +268,7 @@ class NativeInstallerTests(unittest.TestCase):
                 setup(["--role", "connector", "--config-dir", str(connector_dir)])
             self.assertEqual((connector_dir / "connector.toml").read_bytes(), config_before)
             self.assertEqual((connector_dir / "connector.token").read_bytes(), token_before)
+            self.assertEqual(editor_registrations.read_bytes(), registrations_before)
             self.assertEqual(observed_profiles, [str(profile), str(profile)])
             for folder, launcher in [(connector_dir, "start-connector.command"), (ui_dir, "start-ui.sh"),
                                      (connector_dir, "check-connector.command"), (ui_dir, "check-ui.sh")]:

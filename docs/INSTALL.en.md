@@ -2,7 +2,7 @@
 
 # Setup help
 
-For a first installation, follow [the three README steps](../README.en.md#install). Use this page when setup gets stuck or you want to change a setting.
+For a first installation, follow [the three README steps](../README.en.md#installation). Use this page when setup gets stuck or you want to change a setting.
 
 This guide targets **macOS on the work Mac, developed around a Mac Studio, and CachyOS Handheld in desktop mode on a ROG Ally remote**. Steam Deck, SteamOS and other Linux distributions have not been validated for this guide. Windows is not supported.
 
@@ -18,7 +18,7 @@ This guide targets **macOS on the work Mac, developed around a Mac Studio, and C
 
 After step 3, enter **`/hooks` in your usual Mac Codex session**, then **review and trust OrangeDeck**. **Only window 2 stays open for OrangeDeck on the Mac. For everyday use, run Start only.** Keep Codex and Tailscale running too.
 
-**The Linux Ally running CachyOS Handheld uses its own commands.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First Ally setup](../README.en.md#3-install-the-remote-on-the-ally).
+**The Linux Ally running CachyOS Handheld uses its own commands.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First Ally setup](../README.en.md#3-install-the-remote-ui-on-the-ally).
 
 ## Prerequisites
 
@@ -146,7 +146,7 @@ For an older source-folder installation, run Setup on the Mac once during this u
 
 <a id="host-shortcuts"></a>
 
-## Mac editor and project folders
+## Mac editor and opening files
 
 **The lower row opens changed code in your Mac editor.** Choose the editor during first setup. Press Enter for automatic detection in this order: Zed → VS Code → Cursor → VSCodium.
 
@@ -158,16 +158,13 @@ editor = "zed"
 
 Choose `auto`, `zed`, `vs_code`, `cursor` or `vscodium`. Install that app in `/Applications` or `~/Applications` on the Mac, then restart Connector after saving. Existing installations default to automatic detection; rerunning setup preserves your private settings.
 
-Only changed files **inside registered project folders** can be opened. To add a project, append this block to the same file. Use an unused `id` and the exact working folder shown for the Codex conversation:
+Open **Agents → the conversation’s lower key** to open its recorded edits in your Mac editor. **The Codex conversation’s working folder is used automatically, without separate registration or a configuration entry.** Newly created files and files in subfolders open the same way.
 
-```toml
-[[projects]]
-id = "another-project"
-name = "My Website"
-path = "/Users/YOU/Code/my-website"
-```
+Relative file paths resolve from that conversation’s working folder. Files must be recorded in the displayed turn and remain inside that folder. Deleted files show their changes only. When no changed line is recorded, the editor opens at the first line.
 
-Save and restart Connector. No new connection-file transfer is needed. Appearing in Codex history does not authorize opening files from an unregistered project.
+If opening fails, the reason and **Try again** appear above the file list. Automatic working-folder selection requires version 0.1.26 or later. If an older Mac Connector returns a folder-registration error, the Ally displays an update instruction.
+
+**Version 0.1.27 improves file-record collection.** Update both devices if edited files keep appearing as “No file changes.” Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and fetch the records again. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
 
 ## Where settings are stored
 

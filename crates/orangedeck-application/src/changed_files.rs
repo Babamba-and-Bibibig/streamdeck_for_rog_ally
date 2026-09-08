@@ -1,21 +1,18 @@
 //! Authorize editor navigation from a recorded change, never a client-provided arbitrary file.
-use orangedeck_domain::{CodeChange, CodeChangeKind, DashboardState, Project, ProjectRegistry};
+use orangedeck_domain::{CodeChange, CodeChangeKind, CodexThread, DashboardState};
 
 pub fn recorded_change<'a>(
     state: &'a DashboardState,
-    registry: &'a ProjectRegistry,
     thread_id: &str,
     turn_id: &str,
     path: &str,
-) -> Result<(&'a Project, &'a CodeChange), &'static str> {
+) -> Result<(&'a CodexThread, &'a CodeChange), &'static str> {
     let thread = state
         .codex
         .threads
         .iter()
         .find(|thread| thread.id == thread_id)
         .ok_or("대화를 찾을 수 없습니다 / Conversation is unavailable")?;
-    let project = registry.projects().find(|project| project.path == std::path::Path::new(&thread.cwd))
-        .ok_or("Mac에 등록한 프로젝트의 수정 파일만 열 수 있습니다 / Register this project on your Mac first")?;
     let observation = thread.observation.as_ref().filter(|observation| observation.turn_id.as_deref() == Some(turn_id))
         .ok_or("대화가 갱신되었습니다. 버튼을 다시 열어 주세요 / Conversation changed; reopen the button")?;
     let change = observation
@@ -30,25 +27,25 @@ pub fn recorded_change<'a>(
             "삭제한 파일은 목록에서 변경 내용을 확인하세요 / Deleted files can be reviewed in the change list",
         );
     }
-    Ok((project, change))
+    // Filesystem containment is checked separately against this conversation's canonical cwd.
+    Ok((thread, change))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use orangedeck_domain::{
-        CodexThread, CodexThreadStatus, ProjectId, ThreadObservation, ThreadOwnership, TurnChanges,
+        CodexThreadStatus, Project, ProjectId, ThreadObservation, ThreadOwnership, TurnChanges,
     };
 
     #[test]
-    fn navigation_requires_this_registered_project_thread_turn_and_recorded_file() {
+    fn navigation_requires_the_exact_thread_turn_and_recorded_file() {
         let project = Project {
             id: ProjectId::new("demo").unwrap(),
             name: "Demo".to_owned(),
             path: "/demo/project".into(),
             browser_url: None,
         };
-        let registry = ProjectRegistry::new([project.clone()]).unwrap();
         let mut state = DashboardState::new("Demo", vec![project]);
         state.codex.threads.push(CodexThread {
             id: "terminal-a".to_owned(),
@@ -84,7 +81,7 @@ mod tests {
             }),
         });
         assert_eq!(
-            recorded_change(&state, &registry, "terminal-a", "turn-now", "src/main.rs")
+            recorded_change(&state, "terminal-a", "turn-now", "src/main.rs")
                 .unwrap()
                 .1
                 .first_line,
@@ -96,13 +93,8 @@ mod tests {
             ("terminal-a", "turn-now", "../private.txt"),
             ("terminal-a", "turn-now", "src/other.rs"),
         ] {
-            assert!(recorded_change(&state, &registry, thread, turn, path).is_err());
+            assert!(recorded_change(&state, thread, turn, path).is_err());
         }
-        "/unregistered/project".clone_into(&mut state.codex.threads[0].cwd);
-        assert!(
-            recorded_change(&state, &registry, "terminal-a", "turn-now", "src/main.rs").is_err()
-        );
-        "/demo/project".clone_into(&mut state.codex.threads[0].cwd);
         state.codex.threads[0]
             .observation
             .as_mut()
@@ -112,8 +104,6 @@ mod tests {
             .unwrap()
             .files[0]
             .kind = CodeChangeKind::Deleted;
-        assert!(
-            recorded_change(&state, &registry, "terminal-a", "turn-now", "src/main.rs").is_err()
-        );
+        assert!(recorded_change(&state, "terminal-a", "turn-now", "src/main.rs").is_err());
     }
 }

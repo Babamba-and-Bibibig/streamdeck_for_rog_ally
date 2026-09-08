@@ -6,7 +6,7 @@ import os
 import shutil
 
 import check_public
-from release_policy import REVIEWED_DIAGRAMS, REVIEWED_SCREENSHOTS, public_path
+from release_policy import REVIEWED_DIAGRAMS, CURRENT_SCREENSHOTS, public_path
 
 
 class PublicSourceTests(unittest.TestCase):
@@ -18,8 +18,8 @@ class PublicSourceTests(unittest.TestCase):
             shutil.copy(workspace / ".gitignore", root / ".gitignore")
             public = ["README.md", "Cargo.lock", "apps/orangedeck-connector/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
                       "config/connector.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
-                      "docs/SCREENSHOTS.md", "docs/INSTALL.en.md", *REVIEWED_SCREENSHOTS, *REVIEWED_DIAGRAMS]
-            private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "connector.toml", "ui-preferences.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
+                      "docs/SCREENSHOTS.md", "docs/INSTALL.en.md", *CURRENT_SCREENSHOTS, *REVIEWED_DIAGRAMS]
+            private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "connector.toml", "ui-preferences.toml", "editor-projects.toml", "apps/example/editor-projects.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
                        "config/local/github-ssh/id_ed25519", "download-page/config.local.toml", "scripts/start-ui.sh",
                        "apps/example/local/private.rs", "crates/example/.codex/private.rs", "scripts/credentials.json",
                        "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt",
@@ -51,7 +51,7 @@ class PublicSourceTests(unittest.TestCase):
 
     def test_only_reviewed_screenshot_bytes_at_the_reviewed_path_are_allowed(self):
         workspace = Path(__file__).resolve().parents[1]
-        for path in REVIEWED_SCREENSHOTS:
+        for path in CURRENT_SCREENSHOTS:
             with self.subTest(path=path):
                 data = (workspace / path).read_bytes()
                 self.assertEqual(check_public.inspect_content(path, data), [])
@@ -118,7 +118,7 @@ class PublicSourceTests(unittest.TestCase):
             git("config", "user.name", "Test")
             git("config", "user.email", "test@example.com")
             shutil.copy(workspace / ".gitattributes", root / ".gitattributes")
-            for relative in REVIEWED_SCREENSHOTS:
+            for relative in CURRENT_SCREENSHOTS:
                 image = root / relative
                 image.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy(workspace / relative, image)
@@ -128,7 +128,7 @@ class PublicSourceTests(unittest.TestCase):
             with tarfile.open(fileobj=io.BytesIO(git("archive", "HEAD"))) as archive:
                 members = archive.getnames()
                 self.assertNotIn("private.png", members)
-                for relative in REVIEWED_SCREENSHOTS:
+                for relative in CURRENT_SCREENSHOTS:
                     self.assertEqual(archive.extractfile(relative).read(), (workspace / relative).read_bytes())
 
     def test_device_addresses_allow_only_named_examples_and_range_notation(self):

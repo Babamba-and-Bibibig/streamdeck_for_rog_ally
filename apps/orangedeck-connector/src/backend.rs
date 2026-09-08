@@ -569,6 +569,7 @@ impl RealBackend {
                             "completion_notifications".to_owned(),
                             "paired_conversations".to_owned(),
                             "turn_file_changes".to_owned(),
+                            "conversation_editor_root".to_owned(),
                         ]));
                     })
                     .await;
@@ -725,6 +726,75 @@ impl RealBackend {
             .cloned()
             .map_err(|error| BackendError::bad_request("project_not_allowed", error.to_string()))
     }
+
+    async fn open_codex_change(
+        &self,
+        thread_id: &str,
+        turn_id: &str,
+        path: &str,
+        expected_cwd: Option<&str>,
+    ) -> Result<BackendResult, BackendError> {
+        let (workspace, change) = self
+            .inner
+            .state
+            .read(|state| {
+                prepare_editor_navigation(
+                    state,
+                    &EditorNavigation {
+                        thread_id,
+                        turn_id,
+                        path,
+                        expected_cwd,
+                    },
+                )
+            })
+            .await?;
+        orangedeck_infra::open_changed_file(
+            &workspace,
+            &change.path,
+            change.first_line,
+            self.inner.config.editor,
+        )
+        .await
+        .map_err(|message| BackendError::bad_request("editor_unavailable", message))?;
+        Ok(BackendResult::accepted(
+            "Mac 편집기에 파일 열기를 요청했습니다 / File sent to your Mac editor",
+        ))
+    }
+}
+
+struct EditorNavigation<'a> {
+    thread_id: &'a str,
+    turn_id: &'a str,
+    path: &'a str,
+    expected_cwd: Option<&'a str>,
+}
+
+fn prepare_editor_navigation(
+    state: &DashboardState,
+    request: &EditorNavigation<'_>,
+) -> Result<(PathBuf, orangedeck_domain::CodeChange), BackendError> {
+    let (thread, change) = orangedeck_application::recorded_change(
+        state,
+        request.thread_id,
+        request.turn_id,
+        request.path,
+    )
+    .map_err(|message| BackendError::bad_request("file_not_allowed", message))?;
+    if request
+        .expected_cwd
+        .is_some_and(|expected| expected != thread.cwd)
+    {
+        return Err(BackendError::bad_request(
+            "file_not_allowed",
+            "대화의 폴더가 바뀌었습니다. 파일 창을 다시 열어 주세요 / Conversation folder changed; reopen the files window",
+        ));
+    }
+    let workspace = orangedeck_infra::conversation_editor_workspace(&thread.cwd)
+        .map_err(|message| BackendError::bad_request("editor_workspace_unavailable", message))?;
+    orangedeck_infra::resolve_editor_file(&workspace, &change.path)
+        .map_err(|message| BackendError::bad_request("file_not_allowed", message))?;
+    Ok((workspace, change.clone()))
 }
 
 #[async_trait]
@@ -875,32 +945,18 @@ impl ConnectorBackend for RealBackend {
                 turn_id,
                 path,
             } => {
-                let (project, change) = self
-                    .inner
-                    .state
-                    .read(|state| {
-                        orangedeck_application::recorded_change(
-                            state,
-                            &self.inner.registry,
-                            &thread_id,
-                            &turn_id,
-                            &path,
-                        )
-                        .map(|(project, change)| (project.clone(), change.clone()))
-                    })
+                self.open_codex_change(&thread_id, &turn_id, &path, None)
                     .await
-                    .map_err(|message| BackendError::bad_request("file_not_allowed", message))?;
-                orangedeck_infra::open_changed_file(
-                    &project,
-                    &change.path,
-                    change.first_line,
-                    self.inner.config.editor,
-                )
-                .await
-                .map_err(|message| BackendError::bad_request("editor_unavailable", message))?;
-                Ok(BackendResult::accepted(
-                    "Mac 편집기에 파일 열기를 요청했습니다 / File sent to your Mac editor",
-                ))
+            }
+            ValidatedCommand::RegisterCodexProject {
+                thread_id,
+                turn_id,
+                expected_cwd,
+                path,
+            } => {
+                // Compatibility with 0.1.25 clients; no registration is needed or saved.
+                self.open_codex_change(&thread_id, &turn_id, &path, Some(&expected_cwd))
+                    .await
             }
             ValidatedCommand::CodexSendPrompt { thread_id, prompt } => {
                 let client = self.connect_codex().await?;
@@ -996,4 +1052,133 @@ fn job_error(error: JobError) -> BackendError {
 #[allow(clippy::needless_pass_by_value)]
 fn system_error(error: orangedeck_infra::SystemError) -> BackendError {
     BackendError::internal("host_action_failed", error.to_string())
+}
+
+#[cfg(test)]
+mod editor_navigation_tests {
+    use super::*;
+
+    #[test]
+    fn recorded_edits_open_from_the_conversation_cwd_without_registration() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let workspace = root.join("actual project/subfolder");
+        std::fs::create_dir_all(&workspace).unwrap();
+        std::fs::write(workspace.join("new.rs"), "created file fixture").unwrap();
+        std::fs::write(workspace.join("unrecorded.rs"), "unrecorded fixture").unwrap();
+        std::fs::write(root.join("outside.rs"), "outside fixture").unwrap();
+        let cwd = workspace.to_str().unwrap();
+        let registry = ProjectRegistry::default();
+        let mut state = DashboardState::new("Fixture Mac", Vec::new());
+        state.codex.threads.push(serde_json::from_value(serde_json::json!({
+            "id": "terminal", "cwd": cwd, "title": "Fixture", "preview": "",
+            "status": "completed", "ownership": "external_read_only", "updated_at": 1,
+            "observation": {"turn_id":"turn", "last_turn_status":"completed", "observed_at": Utc::now(),
+                "changes":{"files":[{"path":"new.rs", "previous_path":null, "kind":"added", "first_line":33, "diff":"+fixture", "truncated":false}], "truncated":false}}
+        })).unwrap());
+        let request = EditorNavigation {
+            thread_id: "terminal",
+            turn_id: "turn",
+            path: "new.rs",
+            expected_cwd: None,
+        };
+        let (resolved, change) = prepare_editor_navigation(&state, &request).unwrap();
+        assert_eq!(resolved, workspace);
+        assert_eq!(change.first_line, 33);
+        assert_eq!(
+            orangedeck_infra::resolve_editor_file(&resolved, &change.path).unwrap(),
+            workspace.join("new.rs")
+        );
+        assert!(!root.join("editor-projects.toml").exists());
+        assert!(registry.is_empty());
+        assert!(
+            validate_command(
+                &orangedeck_protocol::ClientCommand::OpenTerminal {
+                    project_id: "terminal".into()
+                },
+                &registry
+            )
+            .is_err()
+        );
+        // A 0.1.25 client can still open the exact recorded file, without saving grants.
+        assert!(
+            prepare_editor_navigation(
+                &state,
+                &EditorNavigation {
+                    expected_cwd: Some(cwd),
+                    ..request
+                }
+            )
+            .is_ok()
+        );
+        for (thread_id, turn_id, path, expected_cwd) in [
+            ("unknown", "turn", "new.rs", None),
+            ("terminal", "old-turn", "new.rs", None),
+            ("terminal", "turn", "unrecorded.rs", None),
+            ("terminal", "turn", "new.rs", Some("/other/project")),
+        ] {
+            let invalid = EditorNavigation {
+                thread_id,
+                turn_id,
+                path,
+                expected_cwd,
+            };
+            assert!(prepare_editor_navigation(&state, &invalid).is_err());
+        }
+        // Even a recorded change cannot escape its conversation's working folder.
+        let mut outside_paths = vec![
+            "../../outside.rs".to_owned(),
+            root.join("outside.rs").to_str().unwrap().to_owned(),
+        ];
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(root.join("outside.rs"), workspace.join("link.rs")).unwrap();
+            outside_paths.push("link.rs".to_owned());
+        }
+        for path in &outside_paths {
+            state.codex.threads[0]
+                .observation
+                .as_mut()
+                .unwrap()
+                .changes
+                .as_mut()
+                .unwrap()
+                .files[0]
+                .path = path.clone();
+            assert!(
+                prepare_editor_navigation(&state, &EditorNavigation { path, ..request }).is_err()
+            );
+        }
+        let absolute_file = workspace.join("new.rs").to_str().unwrap().to_owned();
+        state.codex.threads[0]
+            .observation
+            .as_mut()
+            .unwrap()
+            .changes
+            .as_mut()
+            .unwrap()
+            .files[0]
+            .path = absolute_file.clone();
+        assert!(
+            prepare_editor_navigation(
+                &state,
+                &EditorNavigation {
+                    path: &absolute_file,
+                    ..request
+                }
+            )
+            .is_ok()
+        );
+        std::fs::remove_file(workspace.join("new.rs")).unwrap();
+        assert!(
+            prepare_editor_navigation(
+                &state,
+                &EditorNavigation {
+                    path: &absolute_file,
+                    ..request
+                }
+            )
+            .is_err()
+        );
+    }
 }

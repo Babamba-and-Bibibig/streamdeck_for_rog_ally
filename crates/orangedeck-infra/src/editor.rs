@@ -1,5 +1,4 @@
-//! Editor adapters for recorded files inside a registered project.
-use orangedeck_domain::Project;
+//! Editor adapters for recorded files inside their Codex conversation's working folder.
 use serde::{Deserialize, Serialize};
 use std::{
     path::{Component, Path, PathBuf},
@@ -65,7 +64,28 @@ impl EditorKind {
     }
 }
 
-pub fn resolve_editor_file(project: &Project, recorded_path: &str) -> Result<PathBuf, String> {
+pub fn conversation_editor_workspace(cwd: &str) -> Result<PathBuf, String> {
+    let path = Path::new(cwd);
+    if !path.is_absolute()
+        || path.parent().is_none()
+        || cwd.len() > 4096
+        || cwd.chars().any(char::is_control)
+        || path
+            .components()
+            .any(|part| matches!(part, Component::ParentDir))
+    {
+        return Err("Codex 대화의 작업 폴더 경로가 올바르지 않습니다 / This Codex conversation has an invalid working folder".to_owned());
+    }
+    let workspace = path.canonicalize().map_err(|_| {
+        format!("이 대화의 작업 폴더를 Mac에서 찾을 수 없습니다: {cwd} / This conversation's working folder is unavailable on the Mac: {cwd}")
+    })?;
+    if !workspace.is_dir() || workspace.parent().is_none() {
+        return Err("Codex 대화의 작업 폴더가 유효한 폴더가 아닙니다 / This Codex conversation's working folder is not a valid directory".to_owned());
+    }
+    Ok(workspace)
+}
+
+pub fn resolve_editor_file(workspace: &Path, recorded_path: &str) -> Result<PathBuf, String> {
     let path = Path::new(recorded_path);
     if recorded_path.chars().any(char::is_control)
         || path
@@ -74,10 +94,9 @@ pub fn resolve_editor_file(project: &Project, recorded_path: &str) -> Result<Pat
     {
         return Err("수정 파일 경로가 올바르지 않습니다 / Invalid changed-file path".to_owned());
     }
-    let root = project
-        .path
-        .canonicalize()
-        .map_err(|_| "등록한 프로젝트 폴더를 찾을 수 없습니다 / Project folder is unavailable")?;
+    // The caller supplies this conversation's canonical cwd. Do not follow a
+    // replacement root symlink and silently switch to a different directory.
+    let root = workspace;
     let target = if path.is_absolute() {
         path.to_owned()
     } else {
@@ -86,8 +105,8 @@ pub fn resolve_editor_file(project: &Project, recorded_path: &str) -> Result<Pat
     let target = target
         .canonicalize()
         .map_err(|_| "파일이 삭제되었거나 이동했습니다 / File was removed or moved")?;
-    if !target.starts_with(&root) || !target.is_file() {
-        return Err("등록한 프로젝트 안의 수정 파일만 열 수 있습니다 / Only changed files inside the registered project can be opened".to_owned());
+    if !target.starts_with(root) || !target.is_file() {
+        return Err("이 대화의 작업 폴더 안에 있는 수정 파일만 열 수 있습니다 / Only changed files inside this conversation's working folder can be opened".to_owned());
     }
     Ok(target)
 }
@@ -102,12 +121,12 @@ fn editor_arguments(editor: EditorKind, path: &Path, line: u32) -> Vec<String> {
 }
 
 pub async fn open_changed_file(
-    project: &Project,
+    workspace: &Path,
     path: &str,
     line: u32,
     editor: EditorKind,
 ) -> Result<(), String> {
-    let target = resolve_editor_file(project, path)?;
+    let target = resolve_editor_file(workspace, path)?;
     for &candidate in editor.candidates() {
         #[cfg(target_os = "macos")]
         let programs = {
@@ -128,7 +147,7 @@ pub async fn open_changed_file(
             command
                 .kill_on_drop(true)
                 .args(editor_arguments(candidate, &target, line))
-                .current_dir(&project.path)
+                .current_dir(workspace)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null());
@@ -148,24 +167,15 @@ pub async fn open_changed_file(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use orangedeck_domain::ProjectId;
-    fn project(path: PathBuf) -> Project {
-        Project {
-            id: ProjectId::new("demo").unwrap(),
-            name: "Demo".to_owned(),
-            path,
-            browser_url: None,
-        }
-    }
 
     #[test]
-    fn file_open_is_bounded_to_a_real_file_in_the_registered_project() {
+    fn file_open_is_bounded_to_a_real_file_in_the_conversation_folder() {
         let directory = tempfile::tempdir().unwrap();
         let root = directory.path().join("project");
         std::fs::create_dir(&root).unwrap();
         std::fs::write(root.join("file with spaces.rs"), "example").unwrap();
         std::fs::write(directory.path().join("private.txt"), "private fixture").unwrap();
-        let project = project(root.clone());
+        let project = root.canonicalize().unwrap();
         assert!(resolve_editor_file(&project, "file with spaces.rs").is_ok());
         assert!(resolve_editor_file(&project, "../private.txt").is_err());
         assert!(
@@ -182,6 +192,40 @@ mod tests {
             std::os::unix::fs::symlink(directory.path().join("private.txt"), root.join("link.rs"))
                 .unwrap();
             assert!(resolve_editor_file(&project, "link.rs").is_err());
+        }
+    }
+
+    #[test]
+    fn conversation_folder_is_resolved_without_saved_registration() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        let nested = root.join("project with spaces/subfolder");
+        std::fs::create_dir_all(&nested).unwrap();
+        std::fs::write(nested.join("new.rs"), "created file fixture").unwrap();
+        let workspace = conversation_editor_workspace(nested.to_str().unwrap()).unwrap();
+        assert_eq!(
+            resolve_editor_file(&workspace, "new.rs").unwrap(),
+            nested.join("new.rs")
+        );
+        let missing = root.join("missing");
+        let file = nested.join("new.rs");
+        for invalid in [
+            "/",
+            "relative",
+            "",
+            missing.to_str().unwrap(),
+            file.to_str().unwrap(),
+        ] {
+            assert!(conversation_editor_workspace(invalid).is_err());
+        }
+        #[cfg(unix)]
+        {
+            let alias = root.join("alias");
+            std::os::unix::fs::symlink(&nested, &alias).unwrap();
+            assert_eq!(
+                conversation_editor_workspace(alias.to_str().unwrap()).unwrap(),
+                nested
+            );
         }
     }
 

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.28 — Focused file-review fixes and current guides
+
+- Use complete turn-item arrays directly instead of fetching them twice. Fetch omitted items before deciding whether a turn contains edits.
+- Show recovered deletions as file changes without attempting to open a deleted file or claiming there were no edits. Explain when file records or change details may be incomplete.
+- Rework the Korean and English READMEs around LIVE and Agents with fourteen current demo captures and updated device diagrams. Remove the obsolete Notifications screenshots and align the everyday-use guide with the four tabs.
+
+## 0.1.27 — File history recovery and a single Agents view
+
+- Remove the separate Notifications tab. Keep response and approval dialogs in Agents; Y and the former notification entry points now open Agents.
+- Read full, paginated turn items and retain a legacy read fallback. Recover omitted edits from successful `apply_patch` call/output pairs in the same conversation and turn's trusted local log.
+- Distinguish incomplete tool/file records from confirmed no edits. Make loading and unavailable keys open a visible recovery dialog with retry; open recovered files only for the displayed turn while its dialog stays open.
+- Keep cached file lists viewable after disconnection, and allow recorded-file navigation while Codex itself is disconnected but the Mac Connector is reachable. Preserve automatic conversation cwd selection and exact file/turn validation.
+
+## 0.1.26 — Automatic Codex working folder
+
+- Open recorded edits directly from the selected Codex conversation’s working folder, including new files and files in subfolders. Remove the separate folder-registration step and editor registry requirement.
+- Keep exact conversation/turn/file checks, canonical path containment and the general command allow-list. Accept the 0.1.25 registration command as a compatible file open without saving grants.
+- Retain prominent errors and retry controls. Explain the required Mac Connector update when an older version returns a registration error.
+
+## 0.1.25 — Agents and recoverable Mac editor navigation
+
+- Rename the conversation tab to **에이전트들 / Agents**.
+- Let users review and register a conversation’s Mac folder from the file dialog, then open its recorded changed file. Save editor-only registrations separately from the general command allow-list.
+- Accept real subfolders of registered projects and resolve relative files from the conversation cwd; keep exact turn/file checks and canonical path containment.
+- Show file-opening errors and registration/retry actions above the file list. Complete disconnected file requests by navigation ID so they cannot remain stuck waiting.
+- Explicitly show when no approval request has been received for the displayed question; preserve deliberate decisions for actual requests.
+
 ## 0.1.24 — Five paired Codex conversations
 
 - Replace the individual action keys with five stable conversation columns: response/approval above, this turn's changed files below. Both keys pulse for new notices; a saved sound toggle controls a local chime.

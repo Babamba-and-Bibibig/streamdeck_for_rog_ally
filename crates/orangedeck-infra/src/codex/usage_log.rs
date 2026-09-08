@@ -1,6 +1,6 @@
 //! A small read-only adapter for Codex's local rollout format (not a stable API).
 //! Only app-server-listed IDs/paths below the local sessions directory are accepted.
-//! Only token counters, lifecycle metadata and explicit decision questions are exported.
+//! Exports bounded counters, lifecycle/questions and successful, turn-bound file edits.
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
@@ -47,6 +47,18 @@ impl UsageLogReader {
     }
     pub(super) fn activity(&self, id: &str, now: DateTime<Utc>) -> Option<ThreadActivity> {
         self.cursors.get(id)?.activity(now)
+    }
+
+    pub(super) fn changes(
+        &self,
+        id: &str,
+        turn_id: &str,
+    ) -> Option<orangedeck_domain::TurnChanges> {
+        let cursor = self.cursors.get(id)?;
+        if cursor.turn_id.as_deref() != Some(turn_id) {
+            return None;
+        }
+        cursor.edits.changes()
     }
 
     pub(super) fn drain_events(&mut self) -> impl Iterator<Item = CodexEvent> + '_ {
@@ -247,6 +259,7 @@ struct Cursor {
     user_input: Option<String>,
     latest_user_prompt: Option<String>,
     last_read_at: Option<DateTime<Utc>>,
+    edits: super::recorded_edits::RecordedEdits,
 }
 
 impl Cursor {
@@ -273,6 +286,9 @@ impl Cursor {
         }
         self.activity_at = Some(at);
         if record.get("type").and_then(Value::as_str) == Some("response_item") {
+            if self.turn_id.is_some() {
+                self.edits.consume(payload);
+            }
             self.consume_input(payload);
             return;
         }
@@ -287,6 +303,7 @@ impl Cursor {
                 self.boundary_at = Some(at);
                 self.started_at = Some(at);
                 self.latest_user_prompt = None;
+                self.edits = super::recorded_edits::RecordedEdits::default();
                 self.user_input = None;
                 self.input_call_id = None;
                 self.baseline.clone_from(&self.total);
@@ -858,5 +875,54 @@ mod tests {
         let directory = dir.path().join(format!("rollout-directory-{ID}.jsonl"));
         std::fs::create_dir(&directory).unwrap();
         assert!(reader.read_one(ID, &directory, Utc::now()).is_err());
+    }
+    #[test]
+    fn successful_patch_fallback_is_bound_to_the_observed_thread_and_turn() {
+        let (_directory, mut reader, path) = setup();
+        append(
+            &path,
+            &event(
+                &serde_json::json!({"type":"task_started","turn_id":"edit-turn"}),
+                10,
+            ),
+        );
+        for (at, payload) in [
+            (
+                11,
+                serde_json::json!({"type":"custom_tool_call","name":"apply_patch","call_id":"patch","input":"*** Begin Patch\n*** Add File: new.rs\n+created\n*** End Patch"}),
+            ),
+            (
+                12,
+                serde_json::json!({"type":"custom_tool_call_output","call_id":"patch","output":"{\"output\":\"Success. Updated the following files:\\nA new.rs\"}"}),
+            ),
+        ] {
+            append(
+                &path,
+                &format!(
+                    "{}\n",
+                    serde_json::json!({"timestamp":DateTime::from_timestamp(at,0).unwrap(),"type":"response_item","payload":payload})
+                ),
+            );
+        }
+        reader
+            .read_one(ID, &path, DateTime::from_timestamp(20, 0).unwrap())
+            .unwrap();
+        assert_eq!(
+            reader.changes(ID, "edit-turn").unwrap().files[0].path,
+            "new.rs"
+        );
+        assert!(reader.changes(ID, "other-turn").is_none());
+        append(
+            &path,
+            &event(
+                &serde_json::json!({"type":"task_started","turn_id":"next-turn"}),
+                21,
+            ),
+        );
+        reader
+            .read_one(ID, &path, DateTime::from_timestamp(30, 0).unwrap())
+            .unwrap();
+        assert!(reader.changes(ID, "edit-turn").is_none());
+        assert!(reader.changes(ID, "next-turn").is_none());
     }
 }

@@ -25,6 +25,12 @@ pub enum ValidatedCommand {
         turn_id: String,
         path: String,
     },
+    RegisterCodexProject {
+        thread_id: String,
+        turn_id: String,
+        expected_cwd: String,
+        path: String,
+    },
     CodexStartThread(ProjectId),
     CodexSendPrompt {
         thread_id: String,
@@ -130,6 +136,30 @@ pub fn validate_command(
             Ok(ValidatedCommand::OpenCodexChange {
                 thread_id: thread_id.clone(),
                 turn_id: turn_id.clone(),
+                path: path.clone(),
+            })
+        }
+        ClientCommand::RegisterCodexProject {
+            thread_id,
+            turn_id,
+            expected_cwd,
+            path,
+            ..
+        } => {
+            validate_identifier("thread id", thread_id)?;
+            validate_identifier("turn id", turn_id)?;
+            for value in [expected_cwd, path] {
+                if value.is_empty() || value.len() > 4096 || value.chars().any(char::is_control) {
+                    return Err(CommandValidationError::InvalidIdentifier("editor project"));
+                }
+            }
+            if !std::path::Path::new(expected_cwd).is_absolute() {
+                return Err(CommandValidationError::InvalidIdentifier("editor project"));
+            }
+            Ok(ValidatedCommand::RegisterCodexProject {
+                thread_id: thread_id.clone(),
+                turn_id: turn_id.clone(),
+                expected_cwd: expected_cwd.clone(),
                 path: path.clone(),
             })
         }

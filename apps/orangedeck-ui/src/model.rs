@@ -385,6 +385,12 @@ impl UiModel {
         started
     }
 
+    pub fn file_navigation_ready(&self) -> bool {
+        self.connected
+            && self.snapshot_state == SnapshotState::Current
+            && self.protocol_error.is_none()
+    }
+
     pub fn approval_ready(&self) -> bool {
         self.connected
             && self.snapshot_state == SnapshotState::Current

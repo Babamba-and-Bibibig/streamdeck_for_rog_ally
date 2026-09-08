@@ -143,7 +143,6 @@ authorized_keys
 !/docs/screenshots/shortcuts.png
 !/docs/screenshots/projects.png
 !/docs/screenshots/conversations.png
-!/docs/screenshots/notifications.png
 
 ui-preferences.toml
 
@@ -153,7 +152,6 @@ ui-preferences.toml
 !/docs/screenshots/en-shortcuts.png
 !/docs/screenshots/en-projects.png
 !/docs/screenshots/en-conversations.png
-!/docs/screenshots/en-notifications.png
 !/docs/screenshots/en-key-editor.png
 
 # Only the two reviewed device-role diagrams are public.
@@ -166,3 +164,4 @@ ui-preferences.toml
 !/docs/screenshots/files.png
 !/docs/screenshots/en-response.png
 !/docs/screenshots/en-files.png
+**/editor-projects.toml

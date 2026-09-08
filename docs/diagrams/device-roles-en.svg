@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="632" viewBox="0 0 1280 632" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="568" viewBox="0 0 1280 568" role="img" aria-labelledby="title description">
   <title id="title">Mac runs Codex. Ally is the remote.</title>
-  <desc id="description">Left: Codex and OrangeDeck Connector on a macOS Mac. Right: the OrangeDeck remote on a ROG Ally running CachyOS Handheld. Tailscale carries status and explicit decisions between them. Steam Deck and SteamOS are untested.</desc>
-  <rect x="0" y="0" width="1280" height="632" rx="24" fill="#0c1220" />
+  <desc id="description">Left: Codex and OrangeDeck Connector on a macOS Mac. Right: the OrangeDeck remote on a ROG Ally running CachyOS Handheld. Tailscale carries activity, replies and file records to the Ally, and approval decisions and file-open requests to the Mac.</desc>
+  <rect x="0" y="0" width="1280" height="568" rx="24" fill="#0c1220" />
   <rect x="24" y="24" width="440" height="424" rx="20" fill="#151e30" stroke="#2b3750" />
   <rect x="44" y="46" width="4" height="51" rx="2" fill="#70e4c0" />
   <rect x="816" y="24" width="440" height="424" rx="20" fill="#151e30" stroke="#2b3750" />
@@ -27,14 +27,14 @@
   <rect x="835" y="153" width="402" height="182" rx="48" fill="#c9d3e2" />
   <rect x="902" y="167" width="268" height="151" rx="11" fill="#313d52" />
   <rect x="910" y="175" width="252" height="135" rx="6" fill="#0c1220" />
-  <text x="925" y="198" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16" fill="#edf2fa" font-weight="700" text-anchor="start">OrangeDeck</text>
+  <text x="925" y="198" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16" fill="#edf2fa" font-weight="700" text-anchor="start">LIVE · Agents</text>
   <rect x="925" y="214" width="36" height="34" rx="7" fill="#70e4c0" />
   <rect x="970" y="214" width="36" height="34" rx="7" fill="#ff9b83" />
   <rect x="1015" y="214" width="36" height="34" rx="7" fill="#2e3c56" />
   <rect x="1060" y="214" width="36" height="34" rx="7" fill="#2e3c56" />
   <rect x="1105" y="214" width="36" height="34" rx="7" fill="#2e3c56" />
-  <rect x="925" y="257" width="36" height="34" rx="7" fill="#2e3c56" />
-  <rect x="970" y="257" width="36" height="34" rx="7" fill="#2e3c56" />
+  <rect x="925" y="257" width="36" height="34" rx="7" fill="#70e4c0" />
+  <rect x="970" y="257" width="36" height="34" rx="7" fill="#ff9b83" />
   <rect x="1015" y="257" width="36" height="34" rx="7" fill="#2e3c56" />
   <rect x="1060" y="257" width="36" height="34" rx="7" fill="#2e3c56" />
   <rect x="1105" y="257" width="36" height="34" rx="7" fill="#2e3c56" />
@@ -51,15 +51,15 @@
   <text x="244" y="389" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="23" fill="#70e4c0" font-weight="700" text-anchor="middle">WORK MAC · Connector</text>
   <text x="244" y="421" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16" fill="#bac6d9" font-weight="400" text-anchor="middle">Codex does AI work · Connector links devices</text>
   <text x="1036" y="389" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="23" fill="#ff9b83" font-weight="700" text-anchor="middle">REMOTE · UI</text>
-  <text x="1036" y="421" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18" fill="#bac6d9" font-weight="400" text-anchor="middle">Shows status · approve / reject</text>
-  <text x="640" y="144" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="20" fill="#70e4c0" font-weight="600" text-anchor="middle">Work status · alerts</text>
+  <text x="1036" y="421" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="18" fill="#bac6d9" font-weight="400" text-anchor="middle">See work in LIVE · act in Agents</text>
+  <text x="640" y="144" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="20" fill="#70e4c0" font-weight="600" text-anchor="middle">Status · replies · files</text>
   <line x1="488" y1="171" x2="784" y2="171" stroke="#70e4c0" stroke-width="3" stroke-linecap="round" />
   <path d="M774 163 L786 171 L774 179" fill="none" stroke="#70e4c0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
   <rect x="543" y="200" width="194" height="48" rx="24" fill="#223049" />
   <text x="640" y="232" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="23" fill="#edf2fa" font-weight="700" text-anchor="middle">Tailscale</text>
   <line x1="786" y1="276" x2="490" y2="276" stroke="#ff9b83" stroke-width="3" stroke-linecap="round" />
   <path d="M500 268 L488 276 L500 284" fill="none" stroke="#ff9b83" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-  <text x="640" y="310" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="20" fill="#ff9b83" font-weight="600" text-anchor="middle">Approve · reject</text>
+  <text x="640" y="310" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="20" fill="#ff9b83" font-weight="600" text-anchor="middle">Approve · reject · open files</text>
   <text x="640" y="354" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16" fill="#a7b6ce" font-weight="400" text-anchor="middle">Sign in on both devices</text>
   <text x="640" y="376" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16" fill="#a7b6ce" font-weight="400" text-anchor="middle">with the same Tailscale account</text>
   <rect x="24" y="465" width="368" height="89" rx="14" fill="#172338" stroke="#3b4963" />
@@ -73,6 +73,4 @@
   <text x="1072" y="529" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="16" fill="#bac6d9" text-anchor="middle">sh install.sh --role ui</text>
   <path d="M409 509 L429 509 M421 501 L429 509 L421 517" fill="none" stroke="#ff9b83" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
   <path d="M849 509 L869 509 M861 501 L869 509 L861 517" fill="none" stroke="#ff9b83" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-  <rect x="24" y="574" width="1232" height="43" rx="11" fill="#151b29" stroke="#3b4558" stroke-dasharray="5 5" />
-  <text x="640" y="602" font-family="Noto Sans CJK KR, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="19" fill="#b1bacb" font-weight="400" text-anchor="middle">Steam Deck / SteamOS — installation and operation have NOT been tested</text>
 </svg>

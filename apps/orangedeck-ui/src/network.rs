@@ -148,7 +148,8 @@ async fn connection_loop(
                                         _ => None,
                                     };
                                     let navigation_id = match &command {
-                                        ClientCommand::OpenCodexChange { navigation_id, .. } => Some(*navigation_id),
+                                        ClientCommand::OpenCodexChange { navigation_id, .. }
+                                        | ClientCommand::RegisterCodexProject { navigation_id, .. } => Some(*navigation_id),
                                         _ => None,
                                     };
                                     let result = execute(
@@ -197,7 +198,7 @@ async fn connection_loop(
                     tokio::select! {
                         () = &mut retry_sleep => break,
                         command = commands.recv() => match command {
-                            Some(_) => emit_command_rejected(&events, &repaint),
+                            Some(command) => emit_command_rejected(&events, &repaint, &command),
                             None => return,
                         }
                     }
@@ -214,21 +215,36 @@ fn reject_pending_commands(
 ) -> bool {
     loop {
         match commands.try_recv() {
-            Ok(_) => emit_command_rejected(events, repaint),
+            Ok(command) => emit_command_rejected(events, repaint, &command),
             Err(tokio_mpsc::error::TryRecvError::Empty) => return true,
             Err(tokio_mpsc::error::TryRecvError::Disconnected) => return false,
         }
     }
 }
 
-fn emit_command_rejected(events: &mpsc::Sender<NetworkEvent>, repaint: &egui::Context) {
-    emit(
-        events,
-        repaint,
-        NetworkEvent::CommandCompleted(Err(
-            "Connector is disconnected; command was not sent".to_owned()
-        )),
-    );
+fn emit_command_rejected(
+    events: &mpsc::Sender<NetworkEvent>,
+    repaint: &egui::Context,
+    command: &ClientCommand,
+) {
+    let result = Err("통신이 끊겨 요청을 보내지 못했습니다. 다시 연결한 뒤 재시도하세요 / Connector is disconnected; command was not sent".to_owned());
+    let event = match command {
+        ClientCommand::OpenCodexChange { navigation_id, .. }
+        | ClientCommand::RegisterCodexProject { navigation_id, .. } => {
+            NetworkEvent::FileOpenCompleted {
+                navigation_id: *navigation_id,
+                result,
+            }
+        }
+        ClientCommand::CodexApprovalResponse { approval_id, .. } => {
+            NetworkEvent::ApprovalCompleted {
+                approval_id: *approval_id,
+                result,
+            }
+        }
+        _ => NetworkEvent::CommandCompleted(result),
+    };
+    emit(events, repaint, event);
 }
 
 pub(crate) fn http_client() -> Result<reqwest::Client, reqwest::Error> {
@@ -406,5 +422,40 @@ mod tests {
             command_rx.try_recv(),
             Err(tokio_mpsc::error::TryRecvError::Empty)
         ));
+    }
+
+    #[test]
+    fn disconnected_editor_requests_complete_the_exact_request_instead_of_leaving_it_busy() {
+        for register in [false, true] {
+            let id = uuid::Uuid::new_v4();
+            let command = if register {
+                ClientCommand::RegisterCodexProject {
+                    navigation_id: id,
+                    thread_id: "thread".into(),
+                    turn_id: "turn".into(),
+                    expected_cwd: "/project".into(),
+                    path: "new.rs".into(),
+                }
+            } else {
+                ClientCommand::OpenCodexChange {
+                    navigation_id: id,
+                    thread_id: "thread".into(),
+                    turn_id: "turn".into(),
+                    path: "new.rs".into(),
+                }
+            };
+            let (tx, mut rx) = tokio_mpsc::unbounded_channel();
+            let (events, received) = mpsc::channel();
+            tx.send(command).unwrap();
+            assert!(reject_pending_commands(
+                &mut rx,
+                &events,
+                &egui::Context::default()
+            ));
+            assert!(
+                matches!(received.recv().unwrap(), NetworkEvent::FileOpenCompleted { navigation_id, result: Err(_) } if navigation_id == id)
+            );
+            assert!(rx.try_recv().is_err());
+        }
     }
 }

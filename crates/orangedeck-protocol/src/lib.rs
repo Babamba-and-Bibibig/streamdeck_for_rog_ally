@@ -79,6 +79,14 @@ pub enum ClientCommand {
         turn_id: String,
         path: String,
     },
+    /// Legacy 0.1.25 file-open request. Current Connectors check cwd but save no registration.
+    RegisterCodexProject {
+        navigation_id: Uuid,
+        thread_id: String,
+        turn_id: String,
+        expected_cwd: String,
+        path: String,
+    },
     CodexStartThread {
         project_id: String,
     },

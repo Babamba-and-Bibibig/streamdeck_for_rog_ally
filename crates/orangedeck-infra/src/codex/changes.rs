@@ -14,10 +14,24 @@ pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
     let mut result = TurnChanges::default();
     let mut remaining = 65_536;
     for item in items {
-        if item.get("type").and_then(Value::as_str) != Some("fileChange")
-            || item.get("status").and_then(Value::as_str) != Some("completed")
-        {
+        // A tool can change files without producing a fileChange item. Missing
+        // records are not evidence of no edits; never disable the UI as "none".
+        if matches!(
+            item.get("type").and_then(Value::as_str),
+            Some("commandExecution" | "mcpToolCall" | "dynamicToolCall" | "functionCallOutput")
+        ) {
+            result.truncated = true;
+        }
+        if item.get("type").and_then(Value::as_str) != Some("fileChange") {
             continue;
+        }
+        match item.get("status").and_then(Value::as_str) {
+            Some("completed") => {}
+            Some("failed" | "declined" | "inProgress") => continue,
+            _ => {
+                result.truncated = true;
+                continue;
+            }
         }
         let Some(changes) = item.get("changes").and_then(Value::as_array) else {
             result.truncated = true;
@@ -208,5 +222,14 @@ mod tests {
                 .sum::<usize>()
                 <= 65_536
         );
+    }
+    #[test]
+    fn tool_execution_without_file_records_is_unknown_not_no_edits() {
+        for kind in ["commandExecution", "mcpToolCall", "dynamicToolCall"] {
+            let changes =
+                parse_changes(&json!({"items":[{"type":kind,"status":"completed"}]})).unwrap();
+            assert!(changes.files.is_empty());
+            assert!(changes.truncated);
+        }
     }
 }

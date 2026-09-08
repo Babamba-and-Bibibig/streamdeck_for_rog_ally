@@ -191,9 +191,7 @@ pub fn render(ui: &mut egui::Ui, view: &DeckView<'_>) -> DeckAction {
         } else if top {
             !pair.assigned || pair.available
         } else {
-            pair.available
-                && view.connected
-                && matches!(pair.files, FileState::Changes(count) if count > 0)
+            pair.available && pair.files != FileState::None
         };
         let response = ui.interact(
             key,
@@ -284,7 +282,9 @@ pub fn render(ui: &mut egui::Ui, view: &DeckView<'_>) -> DeckAction {
             match pair.files {
                 FileState::Loading => lang.text("확인 중", "Checking files").to_owned(),
                 FileState::None => lang.text("파일 수정 없음", "No file changes").to_owned(),
-                FileState::Unavailable => lang.text("변경 정보 없음", "No change data").to_owned(),
+                FileState::Unavailable => {
+                    lang.text("파일 정보 확인", "Check file records").to_owned()
+                }
                 FileState::Changes(count) => {
                     if lang == Language::Korean {
                         format!("수정 파일 {count}개")
@@ -308,8 +308,12 @@ pub fn render(ui: &mut egui::Ui, view: &DeckView<'_>) -> DeckAction {
             pair.status.as_str()
         } else if !pair.assigned {
             lang.text("위 버튼과 연결", "Paired with top key")
+        } else if !view.connected {
+            lang.text("마지막 기록 보기", "Review cached files")
         } else if matches!(pair.files, FileState::Changes(_)) {
             lang.text("Mac 편집기에서 보기", "Open in Mac editor")
+        } else if matches!(pair.files, FileState::Loading | FileState::Unavailable) {
+            lang.text("눌러서 다시 확인", "Tap to check again")
         } else {
             ""
         };
