@@ -79,7 +79,14 @@ fn merge(
         .or_insert_with(|| json!({}))
         .as_object_mut()
         .ok_or_else(|| io::Error::other("existing hooks table is invalid"))?;
-    for event in ["UserPromptSubmit", "Stop", "Interrupt", "PermissionRequest"] {
+    for event in [
+        "UserPromptSubmit",
+        "Stop",
+        "Interrupt",
+        "PermissionRequest",
+        "PreToolUse",
+        "PostToolUse",
+    ] {
         let supported = event != "Interrupt" || include_interrupt;
         if !supported && !hooks.contains_key(event) {
             continue;
@@ -114,7 +121,11 @@ fn merge(
                 "Interrupt" => 3,
                 _ => 5,
             };
-            groups.push(json!({"hooks":[definition(executable, socket, timeout)?]}));
+            let mut group = json!({"hooks":[definition(executable, socket, timeout)?]});
+            if matches!(event, "PreToolUse" | "PostToolUse") {
+                group["matcher"] = "^(Bash|apply_patch|mcp__.*)$".into();
+            }
+            groups.push(group);
         } else if groups.is_empty() {
             // Remove the event key too: older Codex does not know Interrupt.
             // User-owned handlers in this event are still preserved.
@@ -270,6 +281,13 @@ mod tests {
             125
         );
         assert_eq!(merged["hooks"]["Interrupt"][0]["hooks"][0]["timeout"], 3);
+        for event in ["PreToolUse", "PostToolUse"] {
+            assert_eq!(
+                merged["hooks"][event][0]["matcher"],
+                "^(Bash|apply_patch|mcp__.*)$"
+            );
+            assert!(merged["hooks"][event][0]["hooks"][0].get("async").is_none());
+        }
     }
 
     #[test]

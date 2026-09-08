@@ -164,7 +164,9 @@ Relative file paths resolve from that conversation’s working folder. Files mus
 
 If opening fails, the reason and **Try again** appear above the file list. Automatic working-folder selection requires version 0.1.26 or later. If an older Mac Connector returns a folder-registration error, the Ally displays an update instruction.
 
-**Version 0.1.27 improves file-record collection.** Update both devices if edited files keep appearing as “No file changes.” Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and fetch the records again. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
+**Version 0.1.29 also captures changes before and after tools run on the Mac.** File edits and shell-created files can appear with their changed text for that question. After updating, rerun **Enable Codex Notifications.command** on the Mac and **review/trust the new hooks in Codex `/hooks`**. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes.
+
+Capture stays inside the conversation's Mac working folder. Links, credential files, `.env` and common build/dependency directories are excluded; large files may show names only. Overlapping work from different conversations or collection limits leaves an incomplete record. Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and retry. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
 
 ## Where settings are stored
 

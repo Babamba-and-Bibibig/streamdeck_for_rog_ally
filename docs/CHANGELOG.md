@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.29 — Capture files when Codex tools run
+
+- Install and receive `PreToolUse`/`PostToolUse` hooks so local file edits and shell-generated files reach the existing Agents file dialog, even when persisted Codex history omits them.
+- Compare bounded before/after file states, correlate exact conversation/turn/tool IDs, and retain changed text across history refresh and Connector restart. Unchanged user edits are excluded; ambiguous or incomplete captures remain visible as incomplete.
+- Update an already-open file dialog when that same turn's changes arrive, keeping the selected file stable without repeatedly opening the editor.
+- Keep reads inside the conversation folder, reject symlinks, skip common credentials/build artifacts, and bound time, memory and retained diffs. No new remote command or automatic approval is added.
+- After updating, rerun the Mac notification installer and review/trust the new hooks in Codex `/hooks`. Captures apply to subsequent work.
+
 ## 0.1.28 — Focused file-review fixes and current guides
 
 - Use complete turn-item arrays directly instead of fetching them twice. Fetch omitted items before deciding whether a turn contains edits.

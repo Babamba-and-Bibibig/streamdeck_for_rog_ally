@@ -1,5 +1,6 @@
 mod backend;
 mod doctor;
+mod file_hooks;
 mod hook_setup;
 mod hooks;
 mod mock;

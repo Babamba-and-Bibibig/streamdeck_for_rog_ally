@@ -111,7 +111,12 @@ impl RealBackend {
             .await;
         let backend = self.clone();
         tokio::spawn(async move {
-            while let Ok(event) = events.recv().await {
+            loop {
+                let event = match events.recv().await {
+                    Ok(event) => event,
+                    Err(broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(broadcast::error::RecvError::Closed) => break,
+                };
                 backend
                     .inner
                     .state
@@ -154,6 +159,58 @@ impl RealBackend {
                         backend
                             .forward_codex_event(CodexEvent::ApprovalResolved(id))
                             .await;
+                    }
+                    crate::hooks::HookEvent::FilesChanged {
+                        thread_id,
+                        turn_id,
+                        cwd,
+                        starting,
+                    } => {
+                        backend.ensure_hook_thread(&thread_id, &cwd).await;
+                        let new_turn = starting
+                            && backend
+                                .inner
+                                .state
+                                .read(|state| {
+                                    state
+                                        .codex
+                                        .threads
+                                        .iter()
+                                        .find(|thread| thread.id == thread_id)
+                                        .is_some_and(|thread| {
+                                            thread.active_turn_id.as_deref().or_else(|| {
+                                                thread
+                                                    .activity
+                                                    .as_ref()
+                                                    .map(|value| value.turn_id.as_str())
+                                            }) != Some(&turn_id)
+                                        })
+                                })
+                                .await;
+                        if new_turn {
+                            backend
+                                .forward_codex_event(CodexEvent::TurnStarted {
+                                    thread_id: thread_id.clone(),
+                                    turn_id,
+                                })
+                                .await;
+                        }
+                        let updated = backend
+                            .inner
+                            .state
+                            .update(|state| {
+                                let thread = state
+                                    .codex
+                                    .threads
+                                    .iter_mut()
+                                    .find(|thread| thread.id == thread_id)?;
+                                hub.enrich_files(thread);
+                                Some(codex_thread_to_dto(thread))
+                            })
+                            .await;
+                        if let Some(thread) = updated {
+                            backend.publish(ServerEvent::CodexThreadUpdated(thread));
+                        }
                     }
                 }
             }
@@ -351,6 +408,23 @@ impl RealBackend {
             }
         }
         self.inner.state.apply_codex_event(&event).await;
+        if matches!(
+            event,
+            CodexEvent::ThreadsReplaced(_)
+                | CodexEvent::ThreadUpdated(_)
+                | CodexEvent::TurnStarted { .. }
+                | CodexEvent::TurnCompleted { .. }
+        ) && let Some(hub) = self.inner.hooks.read().await.as_ref()
+        {
+            self.inner
+                .state
+                .update(|state| {
+                    for thread in &mut state.codex.threads {
+                        hub.enrich_files(thread);
+                    }
+                })
+                .await;
+        }
         let notification = if let CodexEvent::TurnCompleted {
             thread_id,
             turn_id,
@@ -1057,6 +1131,133 @@ fn system_error(error: orangedeck_infra::SystemError) -> BackendError {
 #[cfg(test)]
 mod editor_navigation_tests {
     use super::*;
+
+    #[tokio::test]
+    async fn real_tool_hooks_deliver_file_contents_to_snapshot_and_editor_navigation() {
+        use tokio::{
+            io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+            net::UnixStream,
+        };
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("project");
+        std::fs::create_dir(&root).unwrap();
+        let cwd = root.to_str().unwrap();
+        let target = root.join("codex_approval_test.py");
+        std::fs::write(&target, "# test\nprint('before')\n").unwrap();
+        std::fs::write(root.join("dirty.txt"), "unrelated user work").unwrap();
+        let config = ConnectorConfig::default();
+        let (events, _) = broadcast::channel(512);
+        // Exercise the real hook forwarder and reducer without starting a Codex process.
+        let backend = RealBackend {
+            inner: Arc::new(RealBackendInner {
+                jobs: CargoJobRunner::new(config.cargo_binary.clone()),
+                config,
+                registry: ProjectRegistry::default(),
+                state: SharedDashboard::new(DashboardState::new("Fixture", Vec::new())),
+                events,
+                git: GitInspector,
+                codex: RwLock::new(None),
+                codex_connect_lock: Mutex::new(()),
+                owned_threads_path: directory.path().join("owned.json"),
+                watched_thread: RwLock::new(None),
+                watched_deck: RwLock::new(Vec::new()),
+                thread_refresh_lock: Mutex::new(()),
+                hooks: RwLock::new(None),
+                notifications: std::sync::Mutex::new(VecDeque::new()),
+                completed_turns: Mutex::new(VecDeque::new()),
+            }),
+        };
+        let socket = directory.path().join("private/codex.sock");
+        backend.enable_hooks(socket.clone()).await.unwrap();
+        let mut events = backend.subscribe();
+        for event in ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"] {
+            if event == "PostToolUse" {
+                // A shell command can edit a file and still exit nonzero. No fileChange item exists.
+                let status = tokio::process::Command::new("sh")
+                    .arg("-c")
+                    .arg("printf '# test\\nprint(\"after\")\\n' > codex_approval_test.py; exit 1")
+                    .current_dir(&root)
+                    .status()
+                    .await
+                    .unwrap();
+                assert_eq!(status.code(), Some(1));
+            }
+            let payload = serde_json::json!({"hook_event_name":event, "session_id":"fixture-session", "turn_id":"fixture-turn",
+                "cwd":cwd, "tool_name":"Bash", "tool_use_id":"call-edit",
+                "tool_input":{"command":"fixture command"}, "tool_response":{"exit_code":1},
+                "transcript_path":"/private/not-read", "last_assistant_message":"not forwarded by hook"});
+            let mut stream = UnixStream::connect(&socket).await.unwrap();
+            stream
+                .write_all(format!("{payload}\n").as_bytes())
+                .await
+                .unwrap();
+            let mut response = String::new();
+            BufReader::new(stream)
+                .read_line(&mut response)
+                .await
+                .unwrap();
+            assert_eq!(response, "{}\n");
+        }
+        // Wait for the actual forwarded completion, not a timing-based sleep.
+        tokio::time::timeout(Duration::from_secs(3), async {
+            loop {
+                if matches!(
+                    events.recv().await.unwrap().event,
+                    ServerEvent::Notification(_)
+                ) {
+                    break;
+                }
+            }
+        })
+        .await
+        .unwrap();
+        let snapshot = backend.snapshot().await;
+        let thread = &snapshot.codex.threads[0];
+        let changes = thread
+            .observation
+            .as_ref()
+            .unwrap()
+            .changes
+            .as_ref()
+            .unwrap();
+        assert_eq!(changes.files.len(), 1);
+        assert_eq!(changes.files[0].path, "codex_approval_test.py");
+        assert!(changes.files[0].diff.contains("+print(\"after\")"));
+        assert_eq!(changes.files[0].first_line, 2);
+        assert!(!changes.truncated);
+        assert!(snapshot.codex.pending_approvals.is_empty());
+        // A later app-server refresh with empty file records must retain this capture.
+        let refreshed = serde_json::from_value(serde_json::json!({"id":"fixture-session", "cwd":cwd,
+            "title":"Fixture", "preview":"", "status":"not_loaded", "ownership":"external_read_only", "updated_at":1,
+            "observation":{"turn_id":"fixture-turn", "last_turn_status":"completed", "observed_at":Utc::now(),
+                "latest_codex_reply":"Edit finished", "changes":{"files":[], "truncated":true}}})).unwrap();
+        backend
+            .forward_codex_event(CodexEvent::ThreadUpdated(refreshed))
+            .await;
+        let (workspace, change) = backend
+            .inner
+            .state
+            .read(|state| {
+                prepare_editor_navigation(
+                    state,
+                    &EditorNavigation {
+                        thread_id: "fixture-session",
+                        turn_id: "fixture-turn",
+                        path: "codex_approval_test.py",
+                        expected_cwd: None,
+                    },
+                )
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            orangedeck_infra::resolve_editor_file(&workspace, &change.path).unwrap(),
+            target.canonicalize().unwrap()
+        );
+        assert_eq!(change.first_line, 2);
+        assert!(!directory.path().join("editor-projects.toml").exists());
+        backend.shutdown().await;
+    }
 
     #[test]
     fn recorded_edits_open_from_the_conversation_cwd_without_registration() {

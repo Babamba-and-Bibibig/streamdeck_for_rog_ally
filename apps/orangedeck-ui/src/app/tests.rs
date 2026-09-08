@@ -969,6 +969,152 @@ fn file_refresh_cannot_open_a_later_turn_or_a_closed_modal() {
 }
 
 #[test]
+fn live_file_capture_updates_the_waiting_dialog_and_opens_the_recorded_file_once() {
+    let mut snapshot = files_snapshot();
+    let thread = &mut snapshot.codex.threads[0];
+    thread.status = CodexThreadStatusDto::Working;
+    thread.activity = None;
+    let observation = thread.observation.as_mut().unwrap();
+    observation.last_turn_status = CodexThreadStatusDto::Working;
+    thread.active_turn_id = observation.turn_id.clone();
+    let mut captured = thread.clone();
+    let changes = captured
+        .observation
+        .as_mut()
+        .unwrap()
+        .changes
+        .as_mut()
+        .unwrap();
+    changes.files.truncate(1);
+    changes.files[0].path = "codex_approval_test.py".to_owned();
+    changes.files[0].diff = "@@ -2 +2 @@\n-before\n+after\n".to_owned();
+    thread.observation.as_mut().unwrap().changes = Some(orangedeck_protocol::TurnChangesDto {
+        files: Vec::new(),
+        truncated: true,
+    });
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    app.activate_pair(5);
+    assert!(matches!(
+        commands.try_recv().unwrap(),
+        ClientCommand::CodexReadThread { .. }
+    ));
+    assert_eq!(
+        paired_deck::file_state(&app.deck_modal.as_ref().unwrap().thread),
+        crate::paired::FileState::Loading
+    );
+    // Tool changes can arrive without a new history-read timestamp.
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(captured.clone()),
+        )),
+    );
+    let ctx = context();
+    // egui places a new modal on its first frame and paints it on the next.
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    assert!(
+        painted
+            .labels
+            .iter()
+            .any(|(text, _)| text.contains("codex_approval_test.py")),
+        "painted labels: {:?}",
+        painted.labels
+    );
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, .. } if path == "codex_approval_test.py")
+    );
+    assert!(commands.try_recv().is_err());
+    assert!(app.deck_modal.as_ref().unwrap().file_refresh.is_none());
+
+    let changes = captured
+        .observation
+        .as_mut()
+        .unwrap()
+        .changes
+        .as_mut()
+        .unwrap();
+    let mut second = changes.files[0].clone();
+    second.path = "later-created.py".to_owned();
+    changes.files.insert(0, second);
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(captured),
+        )),
+    );
+    frame(&mut app, &ctx, vec![]);
+    let modal = app.deck_modal.as_ref().unwrap();
+    assert_eq!(
+        paired_deck::file_state(&modal.thread),
+        crate::paired::FileState::Changes(2)
+    );
+    assert_eq!(
+        modal.selected_file, 1,
+        "selection follows the same path after reordering"
+    );
+    assert!(
+        commands.try_recv().is_err(),
+        "new file data must not launch the editor again"
+    );
+}
+
+#[test]
+fn late_capture_recovers_an_open_incomplete_dialog_but_cannot_replace_it_with_another_turn() {
+    let mut snapshot = files_snapshot();
+    let mut captured = snapshot.codex.threads[0].clone();
+    snapshot.codex.threads[0]
+        .observation
+        .as_mut()
+        .unwrap()
+        .changes = None;
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    app.activate_pair(5);
+    assert!(matches!(
+        commands.try_recv().unwrap(),
+        ClientCommand::CodexReadThread { .. }
+    ));
+    let modal = app.deck_modal.as_mut().unwrap();
+    modal.file_refresh = None;
+    modal.file_error = true;
+    modal.file_message = Some("incomplete record".to_owned());
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(captured.clone()),
+        )),
+    );
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    assert!(!app.deck_modal.as_ref().unwrap().file_error);
+    assert!(app.deck_modal.as_ref().unwrap().file_message.is_none());
+    assert_eq!(
+        paired_deck::file_state(&app.deck_modal.as_ref().unwrap().thread),
+        crate::paired::FileState::Changes(2)
+    );
+    assert!(commands.try_recv().is_err());
+    captured.active_turn_id = Some("another-turn".to_owned());
+    let observation = captured.observation.as_mut().unwrap();
+    observation.turn_id = Some("another-turn".to_owned());
+    observation.observed_at += chrono::Duration::seconds(1);
+    observation.changes.as_mut().unwrap().files[0].path = "wrong-turn.py".to_owned();
+    event(
+        &mut app,
+        crate::model::NetworkEvent::Server(orangedeck_protocol::ServerEnvelope::new(
+            orangedeck_protocol::ServerEvent::CodexThreadUpdated(captured),
+        )),
+    );
+    frame(&mut app, &ctx, vec![]);
+    assert_ne!(
+        app.deck_modal.as_ref().unwrap().turn_id.as_deref(),
+        Some("another-turn")
+    );
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
 fn recovered_deletions_show_their_diff_without_claiming_no_edits_or_opening_editor() {
     let mut snapshot = files_snapshot();
     let mut fresh = snapshot.codex.threads[0].clone();

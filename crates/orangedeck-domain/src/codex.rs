@@ -91,7 +91,7 @@ pub struct LiveTokenUsage {
     pub observed_at: DateTime<Utc>,
 }
 
-/// Read-only, persisted turn history; not the runtime status of another Codex process.
+/// Read-only turn observations from history and local tool hooks.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ThreadObservation {
     #[serde(default)]

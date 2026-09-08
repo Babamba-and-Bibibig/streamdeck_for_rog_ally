@@ -1,4 +1,4 @@
-//! Codex's opt-in, human-operated PermissionRequest/Stop hooks.
+//! Codex's opt-in lifecycle, tool observation and human-operated approval hooks.
 //! A private local socket belongs to the existing Connector; no remote shell or new daemon.
 use std::{
     collections::HashMap,
@@ -21,7 +21,7 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
-const MAX_INPUT: u64 = 65_536;
+const MAX_INPUT: u64 = 1_048_576;
 const WAIT: Duration = Duration::from_mins(2);
 
 #[derive(Clone, Debug)]
@@ -34,6 +34,12 @@ pub enum HookEvent {
     },
     Approval(ApprovalRequest),
     Resolved(Uuid),
+    FilesChanged {
+        thread_id: String,
+        turn_id: String,
+        cwd: String,
+        starting: bool,
+    },
 }
 
 #[derive(Deserialize, Serialize)]
@@ -45,6 +51,8 @@ struct HookPayload {
     turn_id: Option<String>,
     #[serde(default)]
     tool_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tool_use_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     tool_input: Option<Value>,
 }
@@ -59,6 +67,7 @@ pub struct HookHub {
     events: broadcast::Sender<HookEvent>,
     shutdown: CancellationToken,
     socket: PathBuf,
+    files: Arc<crate::file_hooks::FileHooks>,
 }
 
 pub fn default_socket() -> PathBuf {
@@ -112,6 +121,9 @@ impl HookHub {
             pending: Arc::new(Mutex::new(HashMap::new())),
             events,
             shutdown: CancellationToken::new(),
+            files: Arc::new(crate::file_hooks::FileHooks::new(
+                parent.join("file-changes.json"),
+            )),
             socket,
         };
         let task_hub = hub.clone();
@@ -139,6 +151,10 @@ impl HookHub {
 
     pub fn subscribe(&self) -> broadcast::Receiver<HookEvent> {
         self.events.subscribe()
+    }
+
+    pub fn enrich_files(&self, thread: &mut orangedeck_domain::CodexThread) {
+        self.files.enrich(thread);
     }
 
     /// Removing under one lock makes two taps or two clients resolve at most once.
@@ -173,6 +189,32 @@ impl HookHub {
         let input: HookPayload = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         validate(&input)?;
         let mut stream = reader.into_inner();
+        if matches!(input.hook_event_name.as_str(), "PreToolUse" | "PostToolUse") {
+            let turn_id = input.turn_id.expect("validated turn");
+            let tool_id = input.tool_use_id.expect("validated tool id");
+            let starting = input.hook_event_name == "PreToolUse";
+            let files = self.files.clone();
+            let thread = input.session_id.clone();
+            let turn = turn_id.clone();
+            let cwd = input.cwd.clone();
+            tokio::task::spawn_blocking(move || {
+                if starting {
+                    files.before(&thread, &turn, &tool_id, &cwd);
+                } else {
+                    files.after(&thread, &turn, &tool_id, &cwd);
+                }
+            })
+            .await
+            .map_err(io::Error::other)?;
+            let _ = self.events.send(HookEvent::FilesChanged {
+                thread_id: input.session_id,
+                turn_id,
+                cwd: input.cwd,
+                starting,
+            });
+            stream.write_all(b"{}\n").await?;
+            return Ok(());
+        }
         if input.hook_event_name != "PermissionRequest" {
             let status = match input.hook_event_name.as_str() {
                 "UserPromptSubmit" => CodexThreadStatus::Working,
@@ -183,6 +225,15 @@ impl HookHub {
             let turn_id = input
                 .turn_id
                 .ok_or_else(|| io::Error::other("hook has no turn id"))?;
+            let files = self.files.clone();
+            let thread = input.session_id.clone();
+            let turn = turn_id.clone();
+            let cwd = input.cwd.clone();
+            tokio::task::spawn_blocking(move || {
+                files.lifecycle(&thread, &turn, &cwd, status == CodexThreadStatus::Working);
+            })
+            .await
+            .map_err(io::Error::other)?;
             let _ = self.events.send(HookEvent::Lifecycle {
                 thread_id: input.session_id,
                 turn_id,
@@ -228,6 +279,15 @@ fn validate(input: &HookPayload) -> io::Result<()> {
         || input.cwd.chars().any(char::is_control)
     {
         return Err(io::Error::other("invalid Codex hook identity"));
+    }
+    if matches!(input.hook_event_name.as_str(), "PreToolUse" | "PostToolUse")
+        && (!input.tool_use_id.as_deref().is_some_and(safe_id)
+            || !input.tool_name.as_deref().is_some_and(|name| {
+                safe_id(name)
+                    && (matches!(name, "Bash" | "apply_patch") || name.starts_with("mcp__"))
+            }))
+    {
+        return Err(io::Error::other("invalid tool hook identity"));
     }
     Ok(())
 }
@@ -288,10 +348,13 @@ pub fn run_hook(socket: &Path) {
         if bytes.len() > usize::try_from(MAX_INPUT).unwrap_or(0) {
             return Err(io::Error::other("oversized hook"));
         }
-        let input: HookPayload = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let mut input: HookPayload = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
         validate(&input)?;
         if input.hook_event_name == "PermissionRequest" {
             approval(&input)?;
+        } else {
+            // File observation needs identity, not commands, outputs or their secrets.
+            input.tool_input = None;
         }
         let mut stream = std::os::unix::net::UnixStream::connect(socket)?;
         stream.set_write_timeout(Some(Duration::from_secs(2)))?;

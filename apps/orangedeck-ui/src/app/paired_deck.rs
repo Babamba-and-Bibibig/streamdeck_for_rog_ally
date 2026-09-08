@@ -45,14 +45,13 @@ pub(super) fn file_state(thread: &CodexThreadDto) -> FileState {
     if !changes.files.is_empty() {
         return FileState::Changes(changes.files.len());
     }
-    if changes.truncated {
-        return FileState::Unavailable;
-    }
     if matches!(
         observation.last_turn_status,
         CodexThreadStatusDto::Working | CodexThreadStatusDto::WaitingApproval
     ) {
         FileState::Loading
+    } else if changes.truncated {
+        FileState::Unavailable
     } else {
         FileState::None
     }
@@ -438,10 +437,11 @@ impl OrangeDeckApp {
         let Some(modal) = self
             .deck_modal
             .as_mut()
-            .filter(|modal| modal.kind == ModalKind::Files && modal.file_refresh.is_some())
+            .filter(|modal| modal.kind == ModalKind::Files)
         else {
             return;
         };
+        let refreshing = modal.file_refresh.is_some();
         let current = self.model.snapshot.as_ref().and_then(|snapshot| {
             snapshot
                 .codex
@@ -451,11 +451,11 @@ impl OrangeDeckApp {
         });
         let fresh = current.filter(|thread| {
             thread.observation.as_ref().is_some_and(|observation| {
-                modal
-                    .thread
-                    .observation
-                    .as_ref()
-                    .is_none_or(|old| observation.observed_at > old.observed_at)
+                modal.thread.observation.as_ref().is_none_or(|old| {
+                    observation.observed_at >= old.observed_at
+                        && (observation.changes != old.changes
+                            || refreshing && observation.observed_at > old.observed_at)
+                })
             })
         });
         let lang = self.preferences.language;
@@ -468,21 +468,52 @@ impl OrangeDeckApp {
                         .and_then(|observation| observation.turn_id.as_deref())
                         != Some(expected))
             {
+                if !refreshing {
+                    return;
+                }
                 modal.file_refresh = None;
                 modal.file_error = true;
                 modal.file_message = Some(lang.text("대화가 새 질의로 바뀌었습니다. 창을 닫고 다시 확인하세요.", "The conversation moved to another question. Close this window and reopen it.").to_owned());
                 return;
             }
+            let old_changes = modal
+                .thread
+                .observation
+                .as_ref()
+                .and_then(|value| value.changes.as_ref());
+            let was_empty = old_changes.is_none_or(|changes| changes.files.is_empty());
+            let selected_path = old_changes
+                .and_then(|changes| changes.files.get(modal.selected_file))
+                .map(|file| file.path.clone());
             modal.thread = thread.clone();
             modal.turn_id = selection::turn_id(thread).map(str::to_owned);
+            modal.selected_file = thread
+                .observation
+                .as_ref()
+                .and_then(|value| value.changes.as_ref())
+                .and_then(|changes| {
+                    changes
+                        .files
+                        .iter()
+                        .position(|file| Some(&file.path) == selected_path.as_ref())
+                })
+                .unwrap_or(0);
             let state = file_state(thread);
+            if !refreshing {
+                // Live captures update the open list without repeated editor launches.
+                if was_empty && matches!(state, FileState::Changes(_)) {
+                    modal.file_error = false;
+                    modal.file_message = None;
+                }
+                return;
+            }
             if state != FileState::Loading {
                 modal.file_refresh = None;
                 modal.file_error = state == FileState::Unavailable;
                 modal.file_message = match state {
                     FileState::Unavailable => Some(lang.text(
-                        "이 질의의 파일 편집 기록을 모두 확인하지 못했습니다. Mac 통신 모듈을 최신 버전으로 업데이트한 뒤 다시 확인하세요.",
-                        "File-edit records for this turn are incomplete. Update the Mac Connector, then check again.",
+                        "이 질의의 파일 기록이 불완전합니다. Mac에서 업데이트 후 Enable Codex Notifications.command를 다시 실행하고 Codex /hooks에서 신뢰하세요. 이후 작업부터 수집하며, 이전에 없던 기록은 복원할 수 없습니다.",
+                        "This turn's file records are incomplete. After updating the Mac, rerun Enable Codex Notifications.command and trust it in Codex /hooks. Capture applies to subsequent work; missing earlier records cannot be reconstructed.",
                     ).to_owned()),
                     FileState::None => Some(lang.text(
                         "이 질의에 기록된 파일 수정이 없습니다.",

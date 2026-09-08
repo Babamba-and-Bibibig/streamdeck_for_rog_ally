@@ -4,6 +4,8 @@ pub mod codex;
 pub mod config;
 mod connector_migration;
 mod editor;
+#[cfg(unix)]
+pub mod file_capture;
 pub mod git;
 pub mod job;
 mod notification_sound;
