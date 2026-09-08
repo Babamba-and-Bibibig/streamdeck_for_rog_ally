@@ -1222,9 +1222,15 @@ mod editor_navigation_tests {
             .unwrap();
         assert_eq!(changes.files.len(), 1);
         assert_eq!(changes.files[0].path, "codex_approval_test.py");
-        assert!(changes.files[0].diff.contains("+print(\"after\")"));
-        assert_eq!(changes.files[0].first_line, 2);
-        assert!(!changes.truncated);
+        assert!(
+            changes.files[0]
+                .content
+                .as_deref()
+                .unwrap()
+                .contains("print(\"after\")")
+        );
+        assert_eq!(changes.files[0].first_line, 1);
+        assert_eq!(changes.truncated, !cfg!(target_os = "macos"));
         assert!(snapshot.codex.pending_approvals.is_empty());
         // A later app-server refresh with empty file records must retain this capture.
         let refreshed = serde_json::from_value(serde_json::json!({"id":"fixture-session", "cwd":cwd,
@@ -1254,7 +1260,7 @@ mod editor_navigation_tests {
             orangedeck_infra::resolve_editor_file(&workspace, &change.path).unwrap(),
             target.canonicalize().unwrap()
         );
-        assert_eq!(change.first_line, 2);
+        assert_eq!(change.first_line, 1);
         assert!(!directory.path().join("editor-projects.toml").exists());
         backend.shutdown().await;
     }

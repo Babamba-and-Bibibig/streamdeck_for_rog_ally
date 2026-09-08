@@ -441,6 +441,8 @@ pub struct CodeChangeDto {
     pub kind: CodeChangeKindDto,
     pub first_line: u32,
     pub diff: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
     pub truncated: bool,
 }
 

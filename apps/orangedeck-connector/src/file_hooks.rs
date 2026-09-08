@@ -1,4 +1,4 @@
-//! Correlate local before/after hooks; keep their turn records across history refreshes.
+//! Bind native file events to local tool hooks and retain their exact turn records.
 use std::{
     collections::{HashMap, VecDeque},
     fs,
@@ -10,7 +10,7 @@ use std::{
 
 use chrono::Utc;
 use orangedeck_domain::{CodexThread, CodexThreadStatus, ThreadObservation, TurnChanges};
-use orangedeck_infra::file_capture::FileSnapshot;
+use orangedeck_infra::file_capture::FileCapture;
 use serde::{Deserialize, Serialize};
 
 type Key = (String, String, String);
@@ -20,7 +20,7 @@ const MAX_CACHE: u64 = 3 * 1024 * 1024;
 struct Pending {
     cwd: String,
     root: PathBuf,
-    before: Option<FileSnapshot>,
+    before: Option<FileCapture>,
     ambiguous: bool,
 }
 
@@ -68,13 +68,7 @@ impl FileHooks {
                 || turns.len() > MAX_TURNS
                 || turns.iter().any(|turn| {
                     turn.changes.files.len() > 64
-                        || turn
-                            .changes
-                            .files
-                            .iter()
-                            .map(|file| file.diff.len())
-                            .sum::<usize>()
-                            > 65_536
+                        || turn.changes.files.iter().map(change_bytes).sum::<usize>() > 65_536
                 })
             {
                 return Err(io::Error::other("oversized file-change cache"));
@@ -148,7 +142,11 @@ impl FileHooks {
                 },
             );
         }
-        let before = FileSnapshot::before(cwd).ok();
+        let before = FileCapture::before(cwd)
+            .inspect_err(|error| {
+                tracing::warn!(%error, "Could not start file event observation");
+            })
+            .ok();
         let mut state = self.state.lock().expect("file hook lock");
         if before.is_none() {
             record(&mut state, thread, turn, cwd).changes.truncated = true;
@@ -168,7 +166,14 @@ impl FileHooks {
                 .filter(|pending| pending.cwd == cwd && !pending.ambiguous)
                 .and_then(|pending| pending.before.take())
         };
-        let changes = before.and_then(|snapshot| snapshot.finish().ok());
+        let changes = before.and_then(|capture| {
+            capture
+                .finish()
+                .inspect_err(|error| {
+                    tracing::warn!(%error, "Could not finish file event observation");
+                })
+                .ok()
+        });
         let mut state = self.state.lock().expect("file hook lock");
         let ambiguous = state
             .pending
@@ -237,7 +242,7 @@ impl FileHooks {
                 let path = std::path::Path::new(&old.path);
                 path.strip_prefix(&thread.cwd).unwrap_or(path) == std::path::Path::new(&file.path)
             }) {
-                if !file.diff.is_empty() || old.diff.is_empty() {
+                if old.diff.is_empty() {
                     *old = file.clone();
                 }
             } else if changes.files.len() < 64 {
@@ -249,13 +254,7 @@ impl FileHooks {
             || changes.files.iter().any(|file| file.truncated);
         let mut remaining = 65_536;
         for file in &mut changes.files {
-            let mut length = file.diff.len().min(remaining);
-            while !file.diff.is_char_boundary(length) {
-                length -= 1;
-            }
-            file.truncated |= length < file.diff.len();
-            file.diff.truncate(length);
-            remaining -= length;
+            bound_change(file, &mut remaining);
             changes.truncated |= file.truncated;
         }
         if let Some(activity) = &thread.activity {
@@ -309,48 +308,48 @@ fn record<'a>(state: &'a mut State, thread: &str, turn: &str, cwd: &str) -> &'a 
     state.turns.back_mut().expect("inserted turn")
 }
 
+fn change_bytes(change: &orangedeck_domain::CodeChange) -> usize {
+    change.diff.len() + change.content.as_ref().map_or(0, String::len)
+}
+
+fn bound_change(change: &mut orangedeck_domain::CodeChange, remaining: &mut usize) {
+    let mut budget = (*remaining).min(16_384);
+    for text in std::iter::once(&mut change.diff).chain(change.content.iter_mut()) {
+        let mut length = text.len().min(budget);
+        while !text.is_char_boundary(length) {
+            length -= 1;
+        }
+        change.truncated |= length < text.len();
+        text.truncate(length);
+        budget -= length;
+        *remaining -= length;
+    }
+}
+
 fn merge_changes(existing: &mut TurnChanges, incoming: &TurnChanges) {
     existing.truncated |= incoming.truncated;
-    let mut remaining =
-        65_536_usize.saturating_sub(existing.files.iter().map(|file| file.diff.len()).sum());
     for change in &incoming.files {
         if let Some(old) = existing
             .files
             .iter_mut()
             .find(|file| file.path == change.path)
         {
-            if old.diff != change.diff && !change.diff.is_empty() {
-                let budget = remaining.min(16_384_usize.saturating_sub(old.diff.len()));
-                let mut length = change.diff.len().min(budget);
-                while !change.diff.is_char_boundary(length) {
-                    length -= 1;
-                }
-                old.diff.push_str(&change.diff[..length]);
-                remaining -= length;
-                old.truncated |= length != change.diff.len();
+            // A later event replaces the current preview, not an invented diff.
+            let was_added = old.kind == orangedeck_domain::CodeChangeKind::Added;
+            *old = change.clone();
+            if was_added && old.kind == orangedeck_domain::CodeChangeKind::Modified {
+                old.kind = orangedeck_domain::CodeChangeKind::Added;
             }
-            if old.kind != orangedeck_domain::CodeChangeKind::Added
-                || change.kind != orangedeck_domain::CodeChangeKind::Modified
-            {
-                old.kind = change.kind;
-            }
-            old.first_line = change.first_line;
-            old.truncated |= change.truncated;
-            existing.truncated |= old.truncated;
         } else if existing.files.len() < 64 {
-            let mut change = change.clone();
-            let mut length = remaining.min(change.diff.len());
-            while !change.diff.is_char_boundary(length) {
-                length -= 1;
-            }
-            change.truncated |= length < change.diff.len();
-            change.diff.truncate(length);
-            remaining -= length;
-            existing.truncated |= change.truncated;
-            existing.files.push(change);
+            existing.files.push(change.clone());
         } else {
             existing.truncated = true;
         }
+    }
+    let mut remaining = 65_536;
+    for file in &mut existing.files {
+        bound_change(file, &mut remaining);
+        existing.truncated |= file.truncated;
     }
 }
 
@@ -388,8 +387,8 @@ mod tests {
                 source.enrich(&mut thread);
                 let changes = thread.observation.unwrap().changes.unwrap();
                 assert_eq!(changes.files[0].path, "codex_approval_test.py");
-                assert!(changes.files[0].diff.contains("+print('new')"));
-                assert!(!changes.truncated);
+                assert_eq!(changes.files[0].content.as_deref(), Some("print('new')\n"));
+                assert_eq!(changes.truncated, !cfg!(target_os = "macos"));
             }
             for (id, turn) in [("s", "later"), ("other", "t")] {
                 let mut thread = thread(cwd, id, turn);
@@ -409,6 +408,59 @@ mod tests {
             fs::metadata(path).unwrap().permissions().mode() & 0o777,
             0o600
         );
+    }
+
+    #[test]
+    fn latest_event_preview_survives_refresh_without_replacing_official_codex_diff() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("project");
+        fs::create_dir(&root).unwrap();
+        let cwd = root.to_str().unwrap();
+        let hooks = FileHooks::new(directory.path().join("file-changes.json"));
+        hooks.lifecycle("s", "t", cwd, true);
+        for (call, contents) in [("one", "first contents"), ("two", "latest contents")] {
+            hooks.before("s", "t", call, cwd);
+            fs::write(root.join("file.py"), contents).unwrap();
+            hooks.after("s", "t", call, cwd);
+        }
+        hooks.lifecycle("s", "t", cwd, false);
+        let mut captured = thread(cwd, "s", "t");
+        hooks.enrich(&mut captured);
+        let changes = captured
+            .observation
+            .as_ref()
+            .unwrap()
+            .changes
+            .as_ref()
+            .unwrap();
+        assert_eq!(changes.files.len(), 1);
+        assert_eq!(changes.files[0].content.as_deref(), Some("latest contents"));
+        assert!(changes.files[0].diff.is_empty());
+        let official = serde_json::from_value(serde_json::json!({
+            "path": root.join("file.py"), "previous_path":null, "kind":"modified",
+            "first_line":7, "diff":"@@ -7 +7 @@\n-old\n+new", "truncated":false
+        }))
+        .unwrap();
+        captured
+            .observation
+            .as_mut()
+            .unwrap()
+            .changes
+            .as_mut()
+            .unwrap()
+            .files = vec![official];
+        hooks.enrich(&mut captured);
+        let file = &captured
+            .observation
+            .as_ref()
+            .unwrap()
+            .changes
+            .as_ref()
+            .unwrap()
+            .files[0];
+        assert_eq!(file.first_line, 7);
+        assert!(file.diff.contains("-old\n+new"));
+        assert!(file.content.is_none());
     }
 
     #[test]
@@ -480,6 +532,7 @@ mod tests {
         let mut thread = thread(cwd, "s", "t");
         hooks.enrich(&mut thread);
         let changes = thread.observation.unwrap().changes.unwrap();
-        assert!(changes.files.is_empty() && !changes.truncated);
+        assert!(changes.files.is_empty());
+        assert_eq!(changes.truncated, !cfg!(target_os = "macos"));
     }
 }

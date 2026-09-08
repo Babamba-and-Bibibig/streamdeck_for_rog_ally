@@ -128,6 +128,9 @@ pub struct CodeChange {
     pub kind: CodeChangeKind,
     pub first_line: u32,
     pub diff: String,
+    /// Current file text when an OS event supplies no before-image or Codex diff.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
     pub truncated: bool,
 }
 

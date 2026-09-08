@@ -52,5 +52,6 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install 1.95.0 --profile minimal
-      - run: cargo test -p orangedeck-connector --locked
+      - name: Native file events and Connector hooks
+        run: cargo test -p orangedeck-infra -p orangedeck-connector --locked -- --test-threads=1
       - run: cargo build --release -p orangedeck-connector --locked

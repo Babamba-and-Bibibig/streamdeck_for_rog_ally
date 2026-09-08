@@ -74,6 +74,7 @@ mod tests {
                         kind: CodeChangeKind::Modified,
                         first_line: 42,
                         diff: String::new(),
+                        content: None,
                         truncated: false,
                     }],
                     truncated: false,

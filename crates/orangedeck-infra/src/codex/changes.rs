@@ -95,6 +95,7 @@ pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
                 kind: change_kind,
                 first_line: first_changed_line(diff),
                 diff: diff[..length].to_owned(),
+                content: None,
                 truncated,
             };
             if let Some(index) = existing {

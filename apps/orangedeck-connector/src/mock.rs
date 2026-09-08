@@ -972,9 +972,9 @@ fn prepare_paired_demo(snapshot: &mut SnapshotDto, english: bool) {
         let files = if index < 3 {
             vec![
             CodeChangeDto { path:"src/interface.rs".to_owned(), previous_path:None, kind:CodeChangeKindDto::Modified, first_line:24,
-                diff:"@@ -24,2 +24,3 @@\n-let columns = 2;\n+let columns = 5;\n+let paired_rows = 2;".to_owned(), truncated:false },
+                diff:"@@ -24,2 +24,3 @@\n-let columns = 2;\n+let columns = 5;\n+let paired_rows = 2;".to_owned(), content:None, truncated:false },
             CodeChangeDto { path:"src/notifications.rs".to_owned(), previous_path:None, kind:CodeChangeKindDto::Added, first_line:1,
-                diff:"@@ -0,0 +1,3 @@\n+fn on_response(column: usize) {\n+    flash_pair(column);\n+}".to_owned(), truncated:false },
+                diff:"@@ -0,0 +1,3 @@\n+fn on_response(column: usize) {\n+    flash_pair(column);\n+}".to_owned(), content:None, truncated:false },
         ]
         } else {
             Vec::new()

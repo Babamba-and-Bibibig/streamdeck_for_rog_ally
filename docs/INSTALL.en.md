@@ -160,13 +160,13 @@ Choose `auto`, `zed`, `vs_code`, `cursor` or `vscodium`. Install that app in `/A
 
 Open **Agents → the conversation’s lower key** to open its recorded edits in your Mac editor. **The Codex conversation’s working folder is used automatically, without separate registration or a configuration entry.** Newly created files and files in subfolders open the same way.
 
-Relative file paths resolve from that conversation’s working folder. Files must be recorded in the displayed turn and remain inside that folder. Deleted files show their changes only. When no changed line is recorded, the editor opens at the first line.
+Relative file paths resolve from that conversation’s working folder. Files must be recorded in the displayed turn and remain inside that folder. Deleted files show their names and any available change records. When no changed line is recorded, the editor opens at the first line.
 
 If opening fails, the reason and **Try again** appear above the file list. Automatic working-folder selection requires version 0.1.26 or later. If an older Mac Connector returns a folder-registration error, the Ally displays an update instruction.
 
-**Version 0.1.29 also captures changes before and after tools run on the Mac.** File edits and shell-created files can appear with their changed text for that question. After updating, rerun **Enable Codex Notifications.command** on the Mac and **review/trust the new hooks in Codex `/hooks`**. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes.
+**Version 0.1.30 uses Mac filesystem events to fetch only edited or created files.** It removes whole-project scans, fixing collection failures caused by large unrelated folders. Codex diffs are preserved; shell edits without earlier text show **Current file contents**. After updating, rerun **Enable Codex Notifications.command** on the Mac and **review/trust the new hooks in Codex `/hooks`**. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes.
 
-Capture stays inside the conversation's Mac working folder. Links, credential files, `.env` and common build/dependency directories are excluded; large files may show names only. Overlapping work from different conversations or collection limits leaves an incomplete record. Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and retry. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
+Capture stays inside the conversation's Mac working folder. Links, credential files, `.env` and common build/dependency directories are excluded; large previews may be shortened, and binary files may show names only. Overlapping work from different conversations, OS-reported event loss, or too many changed files leaves an incomplete record. Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and retry. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
 
 ## Where settings are stored
 

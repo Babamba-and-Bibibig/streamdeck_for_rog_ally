@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.30 — Receive changed paths from macOS file events
+
+- Replace whole-folder before/after scans with FSEvents. A small edit no longer disappears because an unrelated folder exceeds the old 8,192-entry limit.
+- Start observation before the tool runs and flush pending events when it finishes. Read only changed paths, including newly created files in subfolders; retain file, text and event-loss limits.
+- Preserve Codex diffs. Shell edits without previous contents show an explicitly labeled current preview and open at the first line in the configured Mac editor.
+- Keep exact conversation/turn/tool matching, private-path exclusions, explicit approvals and the existing hook installation flow.
+
 ## 0.1.29 — Capture files when Codex tools run
 
 - Install and receive `PreToolUse`/`PostToolUse` hooks so local file edits and shell-generated files reach the existing Agents file dialog, even when persisted Codex history omits them.

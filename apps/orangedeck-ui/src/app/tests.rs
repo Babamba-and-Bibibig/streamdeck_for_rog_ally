@@ -184,6 +184,7 @@ fn files_snapshot() -> SnapshotDto {
                 kind: orangedeck_protocol::CodeChangeKindDto::Modified,
                 first_line: u32::try_from(index + 10).unwrap(),
                 diff: "@@ -10 +10 @@\n-old\n+new".to_owned(),
+                content: None,
                 truncated: false,
             })
             .collect(),
@@ -379,6 +380,50 @@ fn columns_stay_bound_across_project_selection_and_most_recent_thread_changes() 
     app.update_deck_watches();
     assert!(commands.try_recv().is_err());
     assert_eq!(app.preferences.conversations[4].thread_id, "a");
+}
+
+#[test]
+fn event_only_file_modal_labels_current_contents_and_opens_the_recorded_file_once() {
+    let mut snapshot = files_snapshot();
+    let changes = snapshot
+        .codex
+        .threads
+        .iter_mut()
+        .find(|thread| thread.id == "a")
+        .unwrap()
+        .observation
+        .as_mut()
+        .unwrap()
+        .changes
+        .as_mut()
+        .unwrap();
+    changes.files.truncate(1);
+    changes.files[0].diff.clear();
+    changes.files[0].content = Some("print('event preview')\n".to_owned());
+    changes.files[0].first_line = 1;
+    let (mut app, mut commands) = test_app(&snapshot);
+    bind(&mut app, 0, "a");
+    app.activate_pair(5);
+    let ctx = context();
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    assert!(
+        painted
+            .labels
+            .iter()
+            .any(|(text, _)| text == "현재 파일 내용")
+    );
+    assert!(
+        painted
+            .labels
+            .iter()
+            .any(|(text, _)| text.contains("print('event preview')"))
+    );
+    assert!(
+        matches!(commands.try_recv().unwrap(), ClientCommand::OpenCodexChange { path, thread_id, turn_id, .. }
+        if path == "src/first.rs" && thread_id == "a" && turn_id == "new")
+    );
+    assert!(commands.try_recv().is_err());
 }
 
 #[test]

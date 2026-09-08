@@ -196,6 +196,7 @@ pub fn turn_changes_to_dto(changes: &domain::TurnChanges) -> dto::TurnChangesDto
                 },
                 first_line: file.first_line,
                 diff: file.diff.clone(),
+                content: file.content.clone(),
                 truncated: file.truncated,
             })
             .collect(),

@@ -1090,10 +1090,16 @@ impl OrangeDeckApp {
                             };
                             ui.label(RichText::new(line).monospace().size(12.0).color(color));
                         }
+                        if file.diff.is_empty()
+                            && let Some(content) = &file.content
+                        {
+                            ui.label(lang.text("현재 파일 내용", "Current file contents"));
+                            ui.label(RichText::new(content).monospace().size(12.0));
+                        }
                         if file.truncated {
                             ui.colored_label(
                                 theme::YELLOW,
-                                lang.text("… 변경 내용 일부 생략", "… diff shortened"),
+                                lang.text("… 파일 내용 일부 생략", "… file contents shortened"),
                             );
                         }
                     }
