@@ -6,6 +6,20 @@ For a first installation, follow [the three README steps](../README.en.md#instal
 
 This guide targets **macOS on the work Mac, developed around a Mac Studio, and CachyOS Handheld in desktop mode on a ROG Ally remote**. Steam Deck, SteamOS and other Linux distributions have not been validated for this guide. Windows is not supported.
 
+## Which files run on which device?
+
+**On the Mac only**, double-click the three files in the extracted folder in order: **1 → 2 → 3**.
+
+| Mac file | Purpose | Can I close its window? |
+| --- | --- | --- |
+| **1. Setup OrangeDeck.command** | Installs or updates Connector and prepares your settings. | After setup completes, press Enter when prompted and close it. |
+| **2. Start OrangeDeck Connector.command** | Runs the communication module that sends Codex status and receives Ally button actions. | **Keep it open while using OrangeDeck.** |
+| **3. Enable Codex Notifications.command** | Connects Codex completion alerts and approval requests. | After configuration completes, press Enter when prompted and close it. |
+
+After step 3, enter **`/hooks` in your usual Mac Codex session**, then **review and trust OrangeDeck**. **Only window 2 stays open for OrangeDeck on the Mac. For everyday use, run Start only.** Keep Codex and Tailscale running too.
+
+**The Linux Ally running CachyOS Handheld uses its own commands.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First Ally setup](../README.en.md#3-install-the-remote-on-the-ally).
+
 ## Prerequisites
 
 | Where? | What you need |
@@ -47,7 +61,7 @@ OrangeDeck setup asks before installing Rust and other required development tool
 sh install.sh --role connector
 ```
 
-Then continue from [Mac setup step 2](../README.en.md#1-install-connector-on-the-mac). There is no need to disable macOS security globally.
+Then continue from [step 2: Start Connector](../README.en.md#1-install-connector-on-the-mac). There is no need to disable macOS security globally.
 
 ## What to enter
 
@@ -63,13 +77,13 @@ You do not need to invent an IP address or credential. Transfer the connection f
 
 ## Start again
 
-On the Mac, start Connector first and leave this terminal open:
+**Everyday launches do not require Setup, Enable or reinstallation.** On the Mac, double-click Start or run the command below, then leave the Connector terminal open:
 
 ```sh
 sh "$HOME/.config/orangedeck/start-connector.command"
 ```
 
-On the Ally:
+On the Ally, run the following. When launching this way, leave that terminal open while using the app.
 
 ```sh
 sh "$HOME/.config/orangedeck/start-ui.sh"
@@ -100,11 +114,22 @@ Approval keys are active only when Codex has an actual approval request. Answer 
 
 ## Update
 
-1. Download the new ZIP on both devices and extract it into a **new folder**.
-2. **Mac:** run **Setup OrangeDeck.command** from the new folder. **Ally:** run `sh install.sh --role ui` from the new folder.
-3. Close the old OrangeDeck processes and restart them. Personal settings, pairing and language are preserved. The individual action keys from 0.1.23 and earlier are replaced by five conversation pairs; assign conversations with the upper + keys once.
+Download the new ZIP on both devices and extract it into a **new folder**. Then follow the steps for each device.
 
-**When updating from 0.1.21 or earlier:** the Mac program and settings files now use the Connector name. Setup imports existing projects and credentials into the new filenames and keeps the old files. You do not need to transfer the connection file again. Start the updated Connector, run **Enable Codex Notifications.command**, then review/trust OrangeDeck in Codex **`/hooks`** again.
+**On the Mac:**
+
+1. Double-click **Setup OrangeDeck.command** in the new folder. After setup completes, press Enter when prompted and close its window.
+2. Press Ctrl+C in the **old OrangeDeck Connector terminal**. Run **Start OrangeDeck Connector.command** from the new folder and leave that terminal open.
+3. Run **Enable Codex Notifications.command** from the new folder. After configuration completes, close its window and **review and trust OrangeDeck in `/hooks` in your usual Mac Codex session**.
+
+**On the Ally:**
+
+1. Run `sh install.sh --role ui` in the new folder to update.
+2. Close the old OrangeDeck app window and restart it with `sh "$HOME/.config/orangedeck/start-ui.sh"`.
+
+**Personal settings, pairing and language are preserved. No new connection-file transfer is needed.** The individual action keys from 0.1.23 and earlier are replaced by five conversation pairs; assign conversations with the upper + keys once. Everyday launches do not repeat installation or notification configuration.
+
+**When updating from 0.1.21 or earlier:** the Mac program and settings files now use the Connector name. Setup imports existing projects and credentials into the new filenames and keeps the old files. Complete the Enable → `/hooks` review and trust steps above.
 
 For an older source-folder installation, run Setup on the Mac once during this update. Then use `Start OrangeDeck Connector.command` from the new folder. The Ally's existing launcher is `./scripts/run-ally.zsh`, run from the project folder.
 

@@ -6,6 +6,20 @@
 
 설치 대상은 **macOS를 쓰는 Mac(작업용 통신 모듈) + ROG Ally의 CachyOS Handheld(리모컨)**입니다. Mac 쪽은 Mac Studio를 기준으로 개발했습니다. Steam Deck·SteamOS와 다른 Linux 배포판의 설치는 확인하지 않았습니다. Windows는 지원하지 않습니다.
 
+## 어떤 파일을 어디에서 실행하나요?
+
+**Mac에서만** 압축을 푼 폴더의 세 파일을 **① → ② → ③** 순서로 두 번 누릅니다.
+
+| Mac 파일 | 하는 일 | 창을 닫아도 되나요? |
+| --- | --- | --- |
+| **① Setup OrangeDeck.command** | 설치·업데이트와 개인 설정 준비 | 설치 완료 후 안내에 따라 Enter를 누르고 닫습니다. |
+| **② Start OrangeDeck Connector.command** | Codex 상태와 Ally의 버튼 입력을 주고받는 통신 모듈 실행 | **사용 중에는 켜 둡니다.** |
+| **③ Enable Codex Notifications.command** | Codex 완료 알림·승인 요청 연결 | 설정 완료 후 안내에 따라 Enter를 누르고 닫습니다. |
+
+③ 다음에는 **평소 사용하는 Mac Codex에서 `/hooks` → OrangeDeck 확인·신뢰**를 진행하세요. **Mac에서 계속 켜둘 OrangeDeck 창은 ② 하나이며, 평소에는 Start만 실행합니다.** Codex와 Tailscale도 켜 두세요.
+
+**Ally의 Linux(CachyOS Handheld)는 위의 Mac 파일을 쓰지 않습니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.md#3-ally에-리모컨-설치).
+
 ## 준비물
 
 | 어디에서? | 준비할 것 |
@@ -47,7 +61,7 @@ Rust와 나머지 개발 도구는 OrangeDeck 설치기가 설치 여부를 묻�
 sh install.sh --role connector
 ```
 
-설치가 끝나면 [README의 Mac 설치 2번](../README.md#1-mac에-통신-모듈-설치)부터 이어가세요. macOS의 보안 기능을 통째로 끌 필요는 없습니다.
+설치가 끝나면 [README의 ② Start 실행](../README.md#1-mac에-통신-모듈-설치)부터 이어가세요. macOS의 보안 기능을 통째로 끌 필요는 없습니다.
 
 ## 설치 중 무엇을 입력하나요?
 
@@ -63,13 +77,13 @@ IP 주소나 인증값을 직접 만들 필요는 없습니다. Mac 설치기가
 
 ## 다시 켜기
 
-Mac에서 먼저 실행하고 이 터미널을 켜 두세요.
+**평소에는 Setup·Enable·설치를 다시 할 필요가 없습니다.** Mac에서 Start 파일을 두 번 누르거나 아래 명령을 실행하고, 통신 모듈 터미널을 켜 두세요.
 
 ```sh
 sh "$HOME/.config/orangedeck/start-connector.command"
 ```
 
-Ally에서는 아래 명령을 실행합니다.
+Ally에서는 아래 명령을 실행합니다. 이 방식으로 띄웠다면 사용하는 동안 그 터미널도 켜 둡니다.
 
 ```sh
 sh "$HOME/.config/orangedeck/start-ui.sh"
@@ -100,11 +114,22 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 
 ## 업데이트
 
-1. 두 기기에서 새 ZIP을 받고 **새 폴더**에 압축을 풉니다.
-2. **Mac:** 새 폴더의 **Setup OrangeDeck.command**를 실행합니다. **Ally:** 새 폴더에서 `sh install.sh --role ui`를 실행합니다.
-3. 켜져 있던 OrangeDeck을 닫고 다시 켭니다. 개인 설정·연결·언어는 유지됩니다. 0.1.23 이하의 개별 단축키 배치는 새 5쌍 배치에서 사용하지 않으므로, 위쪽 + 버튼에서 대화를 한 번 연결하세요.
+두 기기에서 새 ZIP을 받고 **새 폴더**에 압축을 풉니다. 그다음 기기별로 진행하세요.
 
-**0.1.21 이하에서 업데이트한다면:** Mac의 프로그램·설정 파일 이름이 Connector로 바뀝니다. Setup이 기존 프로젝트와 인증값을 새 파일에 이어받고 이전 파일은 보관합니다. 연결 파일을 다시 옮길 필요는 없습니다. 업데이트한 통신 모듈 실행 → **Enable Codex Notifications.command** 실행 → Codex **`/hooks`**에서 다시 확인·신뢰하세요.
+**Mac에서:**
+
+1. 새 폴더의 **Setup OrangeDeck.command**를 두 번 누릅니다. 설치 완료 후 안내에 따라 Enter를 누르고 창을 닫습니다.
+2. 이전 **OrangeDeck 통신 모듈 터미널**에서 Ctrl+C를 누릅니다. 새 폴더의 **Start OrangeDeck Connector.command**를 실행하고 그 터미널은 켜 둡니다.
+3. 새 폴더의 **Enable Codex Notifications.command**를 실행합니다. 설정 완료 후 창을 닫고, **Mac Codex에서 `/hooks` → OrangeDeck 확인·신뢰**를 진행합니다.
+
+**Ally에서:**
+
+1. 새 폴더에서 `sh install.sh --role ui`로 업데이트합니다.
+2. 기존 OrangeDeck 앱 창을 닫고 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 다시 켭니다.
+
+**개인 설정·연결·언어는 유지되며 연결 파일을 다시 옮길 필요는 없습니다.** 0.1.23 이하의 개별 단축키 배치는 새5쌍 배치에서 사용하지 않으므로, 위쪽 + 버튼에서 대화를 한 번 연결하세요. 평소에 다시 켤 때는 위의 설치·알림 설정을 반복하지 않습니다.
+
+**0.1.21 이하에서 업데이트한다면:** Mac의 프로그램·설정 파일 이름이 Connector로 바뀝니다. Setup이 기존 프로젝트와 인증값을 새 파일에 이어받고 이전 파일은 보관합니다. 위의 Enable → `/hooks` 확인·신뢰 단계까지 마치세요.
 
 예전 소스 폴더 방식으로 설치했다면 이번 업데이트에서 Mac의 Setup도 한 번 실행하세요. 이후 새 폴더의 `Start OrangeDeck Connector.command`로 켭니다. Ally의 기존 실행 방법은 프로젝트 폴더에서 `./scripts/run-ally.zsh`입니다.
 

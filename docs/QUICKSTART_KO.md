@@ -4,9 +4,25 @@
 
 [처음 설치](../README.md#설치하기) · [설치 도움말·업데이트](INSTALL.md)
 
+## Mac의 세 파일은 각각 무엇인가요?
+
+**세 파일 모두 Mac용입니다. 처음 설치할 때 ① → ② → ③ 순서로 두 번 눌러 실행하세요.**
+
+| 파일 | 하는 일 | 실행 후 |
+| --- | --- | --- |
+| **① Setup OrangeDeck.command** | 통신 모듈 설치·업데이트와 개인 설정 준비 | **설치 완료 후** 안내에 따라 Enter를 누르고 창 닫기 |
+| **② Start OrangeDeck Connector.command** | Mac과 Ally 사이의 통신 실행 | **사용하는 동안 터미널 켜 두기** |
+| **③ Enable Codex Notifications.command** | Codex 완료 알림·승인 요청 연결 설정 | **설정 완료 후** 안내에 따라 Enter를 누르고 창 닫기 |
+
+③이 끝나면 **Mac의 평소 Codex에서 `/hooks` → OrangeDeck 항목 확인·신뢰**를 진행합니다. Mac에서 계속 켜둘 OrangeDeck 창은 **② 통신 모듈 하나**입니다. **다음부터는 Start만 실행합니다.** Codex와 Tailscale은 평소처럼 켜 두세요.
+
+**업데이트할 때:** 새 폴더의 Setup을 실행해 설치를 마칩니다. 이전 **통신 모듈 터미널**에서 Ctrl+C를 누른 뒤 새 Start를 실행하고, Enable → Codex `/hooks` 확인·신뢰까지 진행합니다. Ctrl+C는 OrangeDeck 통신 모듈 창에서만 누릅니다. [업데이트 순서](INSTALL.md#업데이트).
+
+**Ally의 Linux(CachyOS Handheld)에서는 이 세 파일을 실행하지 않습니다.** 설치·업데이트할 때만 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행하고, 평소에는 아래의 Ally 실행 명령으로 앱을 켭니다.
+
 ## 켜기
 
-두 기기의 Tailscale을 켜고, **Mac 먼저 → Ally** 순서로 실행하세요.
+**설치와 알림 연결을 마쳤다면 아래 두 실행 명령만 사용하세요.** 두 기기의 Tailscale을 켜고, **Mac 먼저 → Ally** 순서로 실행합니다. Setup·Enable을 매번 다시 실행하지 않습니다.
 
 **Mac 터미널:**
 
@@ -20,7 +36,7 @@ sh "$HOME/.config/orangedeck/start-connector.command"
 sh "$HOME/.config/orangedeck/start-ui.sh"
 ```
 
-Mac 터미널은 켜 두세요. Ally에 **연결됨**이 보이면 프로젝트와 대화를 골라 확인합니다.
+Mac 통신 모듈 터미널은 켜 두세요. 위 명령으로 Ally 앱을 띄웠다면 그 터미널도 앱을 사용하는 동안 켜 둡니다. Ally에 **연결됨**이 보이면 프로젝트와 대화를 골라 확인합니다.
 
 예전 소스 폴더 방식으로 설치했다면 이번 업데이트에서 Mac의 Setup을 한 번 실행하세요. 이후 Mac은 **Start OrangeDeck Connector.command**, Ally는 **기존 프로젝트 폴더에서 `./scripts/run-ally.zsh`**로 켭니다. 설정 폴더를 따로 지정했다면 설치 끝에 안내된 실행 파일을 사용하세요.
 

@@ -36,11 +36,19 @@ Before you start:
 
 ### 1. Install Connector on the Mac
 
-In the extracted folder:
+**The three `.command` files below run on the Mac.** For a first installation, double-click them in the extracted folder in order: **1 → 2 → 3**.
 
-1. Double-click **Setup OrangeDeck.command**. When asked for a project folder, choose **the folder you work on with Codex on this Mac**. Press Enter to use the suggested device and project names. Choose `zed`, `vs_code`, `cursor` or `vscodium` for the editor, or Enter for automatic detection.
-2. When setup finishes, double-click **Start OrangeDeck Connector.command**. **Leave its terminal open.**
-3. Double-click **Enable Codex Notifications.command**. Then enter **`/hooks`** in your usual Mac Codex session, review the OrangeDeck connection and trust it.
+| File to run on the Mac | Why run it? | What to do with its window |
+| --- | --- | --- |
+| **1. Setup OrangeDeck.command** | Installs or updates Connector and prepares your project and connection settings. | **After setup completes**, press Enter when prompted and close the window. |
+| **2. Start OrangeDeck Connector.command** | Sends Mac Codex status to the Ally and receives your button actions. | **Keep it open while using OrangeDeck.** |
+| **3. Enable Codex Notifications.command** | Connects Codex completion alerts and approval requests to OrangeDeck. | **After configuration completes**, press Enter when prompted and close the window. |
+
+After step 3, open your **usual Mac Codex terminal**, enter **`/hooks`**, and **review and trust the OrangeDeck entry** to finish connecting notifications.
+
+**Only the Connector window from step 2 needs to stay open for OrangeDeck on the Mac. For everyday use, run Start only.** Keep Codex and Tailscale running as usual. Setup and notification configuration are not daily steps. [Update instructions](docs/INSTALL.en.md#update).
+
+When Setup asks for a project folder, choose **the folder you work on with Codex on this Mac**. Press Enter to use the suggested device and project names. Choose `zed`, `vs_code`, `cursor` or `vscodium` for the editor, or Enter for automatic detection.
 
 When setup offers required tools, review the prompt and enter `y` to install them. The first build can take several minutes. If the Mac opens a developer-tools installer, finish it and reopen Setup. [If the command file will not open](docs/INSTALL.en.md#mac-command-file-will-not-open).
 
@@ -56,19 +64,25 @@ Copy **`orangedeck-pairing.toml`** from that folder to **your Ally's Downloads f
 
 ### 3. Install the remote on the Ally
 
-Use **desktop mode in CachyOS Handheld**. Inside the extracted folder, right-click an empty area and choose **Open Terminal Here**. Make sure this is the folder containing `install.sh`.
+**The Linux Ally running CachyOS Handheld uses its own commands, not the three Mac files above.** One command installs the remote; another starts it.
+
+**1. To install or update:** use desktop mode, right-click an empty area inside the extracted folder, and choose **Open Terminal Here**. Run the following in the folder containing `install.sh`. It installs the remote and registers the Mac connection file.
 
 ```sh
 sh install.sh --role ui
 ```
 
-When asked for the connection file, drag the transferred **`orangedeck-pairing.toml`** into the terminal and press Enter. There is no need to type an IP address or password. After installation, start the app in the same terminal:
+When asked for the connection file, drag the transferred **`orangedeck-pairing.toml`** into the terminal and press Enter. There is no need to type an IP address or password.
+
+**2. To start the app:** after installation, run this command in the same terminal. Use it for everyday launches too.
 
 ```sh
 sh "$HOME/.config/orangedeck/start-ui.sh"
 ```
 
-When the Ally shows **연결됨 / CONNECTED**, do some Codex work on the Mac. Check that the Ally receives new numbers and completion alerts. When an approval request appears, read it and make a deliberate choice; check that the Mac receives that choice.
+When launching this way, leave that terminal open while using the app. You do not need to rerun installation for everyday use.
+
+When the Ally shows **연결됨 / CONNECTED**, open **Deck → an upper + key** and assign each terminal's Codex conversation. Then do some Codex work on the Mac. Check that the Ally receives new numbers and completion alerts. When an approval request appears, read it and make a deliberate choice; check that the Mac receives that choice.
 
 If you chose a custom settings folder, use the paths printed by setup. [Setup help, extra settings and updates](docs/INSTALL.en.md).
 
@@ -139,7 +153,14 @@ Use **한국어 / EN** at the top right to switch languages. Language, conversat
 
 ## Start and stop
 
-**Start Connector on the Mac first, then the remote on the Ally.** Close the Ally app window to stop the remote. Press **Ctrl+C** in the Mac Connector terminal to stop Connector. Ordinary restarts do not need installation or another connection-file transfer.
+**For everyday use: Start on the Mac → launch the app on the Ally.**
+
+| Device | Start each time | Stop |
+| --- | --- | --- |
+| **Mac** | Double-click **Start OrangeDeck Connector.command** and leave its terminal open. | Press Ctrl+C in the **Connector terminal**. |
+| **Ally** | In a terminal, run `sh "$HOME/.config/orangedeck/start-ui.sh"`. | Close the OrangeDeck app window. |
+
+Keep Tailscale running on both devices and Codex on the Mac. Everyday launches do not require Setup, Enable, `install.sh` or another connection-file transfer.
 
 [Launch commands](docs/INSTALL.en.md#start-again) · [Connection or alert problems](docs/INSTALL.en.md#connection-or-alert-problems) · [Update](docs/INSTALL.en.md#update) · [Controls](docs/CONTROLS.md)
 
