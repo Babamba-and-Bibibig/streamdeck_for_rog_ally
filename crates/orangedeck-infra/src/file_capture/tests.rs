@@ -275,3 +275,21 @@ fn macos_new_nested_folders_atomic_saves_and_immediate_finish_use_real_fsevents(
         assert!(!file.truncated);
     }
 }
+
+#[cfg(target_os = "macos")]
+#[test]
+fn macos_cancelled_tools_release_capacity_for_the_next_turn() {
+    let directory = tempfile::tempdir().unwrap();
+    let cwd = directory.path().to_str().unwrap();
+    let captures: Vec<_> = (0..4).map(|_| FileCapture::before(cwd).unwrap()).collect();
+    drop(captures);
+    let next = FileCapture::before(cwd).expect("Cancelled tools must release their observer slots");
+    fs::write(directory.path().join("next.py"), "next turn\n").unwrap();
+    assert!(
+        next.finish()
+            .unwrap()
+            .files
+            .iter()
+            .any(|file| file.path == "next.py")
+    );
+}

@@ -10,7 +10,7 @@ use std::{
     path::{Path, PathBuf},
     ptr::NonNull,
     sync::{
-        atomic::{AtomicUsize, Ordering},
+        Condvar, Mutex,
         mpsc::{self, Receiver, SyncSender},
     },
     thread,
@@ -18,21 +18,33 @@ use std::{
 };
 
 const TIMEOUT: Duration = Duration::from_secs(2);
-static WORKERS: AtomicUsize = AtomicUsize::new(0);
+static WORKERS: (Mutex<usize>, Condvar) = (Mutex::new(0), Condvar::new());
 struct Permit;
 impl Permit {
     fn acquire() -> io::Result<Self> {
-        WORKERS
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
-                (count < 4).then_some(count + 1)
-            })
-            .map(|_| Self)
-            .map_err(|_| io::Error::other("file event observer capacity reached"))
+        let count = WORKERS
+            .0
+            .lock()
+            .map_err(|_| io::Error::other("file observer lock failed"))?;
+        // Cancelled streams exit on their next run-loop iteration. Allow that
+        // cleanup to finish before rejecting the first tool of the next turn.
+        let (mut count, _) = WORKERS
+            .1
+            .wait_timeout_while(count, Duration::from_millis(100), |count| *count >= 4)
+            .map_err(|_| io::Error::other("file observer lock failed"))?;
+        if *count >= 4 {
+            return Err(io::Error::other("file event observer capacity reached"));
+        }
+        *count += 1;
+        Ok(Self)
     }
 }
 impl Drop for Permit {
     fn drop(&mut self) {
-        WORKERS.fetch_sub(1, Ordering::AcqRel);
+        if let Ok(mut count) = WORKERS.0.lock() {
+            *count -= 1;
+            WORKERS.1.notify_one();
+        }
     }
 }
 
@@ -51,8 +63,8 @@ impl Watcher {
         thread::Builder::new()
             .name("file-events".into())
             .spawn(move || {
-                let _permit = permit;
                 let result = observe(root, &ready_tx, &finish_rx);
+                drop(permit);
                 if let Err(error) = &result {
                     let _ = ready_tx.try_send(Err(io::Error::other(error.to_string())));
                 }
