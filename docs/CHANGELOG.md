@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.31 — Preserve the latest file preview and harden event capture
+
+- Show the last captured file contents alongside an existing Codex diff. Later deletion or recreation updates whether that file can be opened.
+- Invalidate overlapping active captures before rejecting an over-capacity tool, mark duplicate tool starts as ambiguous, and discard results arriving after Stop/Interrupt.
+- Apply credential-path exclusions regardless of ASCII case, including common CLI credential stores. Stop an unexpectedly finished macOS event loop without spinning.
+- Keep event-only collection, bounded previews, explicit approvals and existing private settings. Add regressions for mixed edits, capacity rejection, credential paths, interruption and the file dialog.
+
 ## 0.1.30 — Receive changed paths from macOS file events
 
 - Replace whole-folder before/after scans with FSEvents. A small edit no longer disappears because an unrelated folder exceeds the old 8,192-entry limit.

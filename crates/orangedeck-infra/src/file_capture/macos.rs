@@ -2,7 +2,9 @@
 //! All native objects and callbacks stay on their owning worker thread. Start is
 //! acknowledged only after success; finish flushes pending events before release.
 use super::{EventFlags, Events};
-use objc2_core_foundation::{CFArray, CFRunLoop, CFString, kCFRunLoopDefaultMode};
+use objc2_core_foundation::{
+    CFArray, CFRunLoop, CFRunLoopRunResult, CFString, kCFRunLoopDefaultMode,
+};
 use objc2_core_services as fs;
 use std::{
     ffi::{CStr, c_char, c_void},
@@ -188,7 +190,12 @@ fn observe(
                 return Err(io::Error::other("file observation cancelled"));
             }
             Err(mpsc::TryRecvError::Empty) => {
-                CFRunLoop::run_in_mode(Some(mode), 0.02, true);
+                if matches!(
+                    CFRunLoop::run_in_mode(Some(mode), 0.02, true),
+                    CFRunLoopRunResult::Finished | CFRunLoopRunResult::Stopped
+                ) {
+                    return Err(io::Error::other("file event run loop stopped"));
+                }
             }
         }
     }

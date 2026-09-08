@@ -259,6 +259,11 @@ fn read_changes(root: &File, events: Events) -> TurnChanges {
 }
 
 fn excluded(name: &str) -> bool {
+    let lowercase = name
+        .bytes()
+        .any(|byte| byte.is_ascii_uppercase())
+        .then(|| name.to_ascii_lowercase());
+    let name = lowercase.as_deref().unwrap_or(name);
     matches!(
         name,
         "." | ".."
@@ -269,7 +274,13 @@ fn excluded(name: &str) -> bool {
             | ".gnupg"
             | ".config"
             | ".local"
-            | "Library"
+            | "library"
+            | ".netrc"
+            | ".npmrc"
+            | ".pypirc"
+            | ".git-credentials"
+            | ".docker"
+            | ".kube"
             | "node_modules"
             | "target"
             | "dist"

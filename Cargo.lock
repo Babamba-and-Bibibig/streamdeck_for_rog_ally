@@ -2465,7 +2465,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orangedeck-application"
-version = "0.1.30"
+version = "0.1.31"
 dependencies = [
  "chrono",
  "orangedeck-domain",
@@ -2477,7 +2477,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-connector"
-version = "0.1.30"
+version = "0.1.31"
 dependencies = [
  "async-trait",
  "axum",
@@ -2505,7 +2505,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-domain"
-version = "0.1.30"
+version = "0.1.31"
 dependencies = [
  "chrono",
  "serde",
@@ -2516,7 +2516,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-infra"
-version = "0.1.30"
+version = "0.1.31"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2541,7 +2541,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-protocol"
-version = "0.1.30"
+version = "0.1.31"
 dependencies = [
  "chrono",
  "serde",
@@ -2551,7 +2551,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-ui"
-version = "0.1.30"
+version = "0.1.31"
 dependencies = [
  "chrono",
  "clap",

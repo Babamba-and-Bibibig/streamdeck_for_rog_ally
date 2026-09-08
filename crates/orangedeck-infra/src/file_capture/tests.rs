@@ -176,6 +176,41 @@ fn links_replaced_ancestors_private_paths_and_outside_paths_cannot_copy_contents
 }
 
 #[test]
+fn review_credential_path_exclusions_ignore_ascii_case() {
+    let directory = tempfile::tempdir().unwrap();
+    let paths = [
+        ".ENV",
+        "Auth.JSON",
+        ".SSH/private",
+        ".AWS/credentials",
+        "CONNECTOR.TOKEN",
+        ".NETRC",
+        ".NPMRC",
+        ".PYPIRC",
+        ".GIT-CREDENTIALS",
+        ".DOCKER/config.json",
+        ".KUBE/config",
+        "source.py",
+    ];
+    for path in paths {
+        let file = directory.path().join(path);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(file, "fixture contents").unwrap();
+    }
+    let events: Vec<_> = paths
+        .iter()
+        .map(|path| (*path, EventFlags::default()))
+        .collect();
+    let changes = collected(directory.path(), &events);
+    assert_eq!(changes.files.len(), 1);
+    assert_eq!(changes.files[0].path, "source.py");
+    assert_eq!(
+        changes.files[0].content.as_deref(),
+        Some("fixture contents")
+    );
+}
+
+#[test]
 fn changed_file_and_content_limits_keep_filenames_and_valid_utf8() {
     let directory = tempfile::tempdir().unwrap();
     let mut events = Events::new(directory.path().to_owned());

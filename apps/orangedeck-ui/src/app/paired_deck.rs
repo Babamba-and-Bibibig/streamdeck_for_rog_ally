@@ -1090,9 +1090,7 @@ impl OrangeDeckApp {
                             };
                             ui.label(RichText::new(line).monospace().size(12.0).color(color));
                         }
-                        if file.diff.is_empty()
-                            && let Some(content) = &file.content
-                        {
+                        if let Some(content) = &file.content {
                             ui.label(lang.text("현재 파일 내용", "Current file contents"));
                             ui.label(RichText::new(content).monospace().size(12.0));
                         }

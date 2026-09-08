@@ -45,7 +45,7 @@ Review changes on the Ally. Select a file to move your <b>Mac editor</b> to that
 
 **The connected Codex conversation's working folder is used automatically.** No extra folder registration is needed to open its files. Zed, VS Code, Cursor and VSCodium are supported.
 
-The list shows **file names and changed text recorded for this question**, using Mac file events to fetch only changed files. When Codex provides no diff, the dialog shows **Current file contents**. Incomplete records show **Check file records**; a confirmed empty list shows **No file changes**. [File checks, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
+The list shows **file names and changed text recorded for this question**, using Mac file events to fetch only changed files. The dialog distinguishes Codex diffs from the last captured **Current file contents**. Incomplete records show **Check file records**; a confirmed empty list shows **No file changes**. [File checks, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
 
 Tap outside a dialog or **Close** to dismiss it without making a decision. Language, conversation assignments and sound settings are saved for the next launch.
 
@@ -66,7 +66,7 @@ This guide covers that configuration. Steam Deck and SteamOS installation and op
 
 ## Installation
 
-**Set up the Mac → transfer the connection file → set up the Ally.** Current version: **0.1.30**.
+**Set up the Mac → transfer the connection file → set up the Ally.** Current version: **0.1.31**.
 
 Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
 

@@ -119,10 +119,6 @@ impl FileHooks {
             let captured = record(&mut state, thread, turn, cwd);
             captured.complete = false;
             captured.saw_tool = true;
-            if state.pending.len() >= 4 || state.pending.contains_key(&key) {
-                record(&mut state, thread, turn, cwd).changes.truncated = true;
-                return;
-            }
             let mut ambiguous = false;
             for (other, pending) in &mut state.pending {
                 if (pending.root.starts_with(&root) || root.starts_with(&pending.root))
@@ -131,6 +127,14 @@ impl FileHooks {
                     pending.ambiguous = true;
                     ambiguous = true;
                 }
+            }
+            // Even an unobserved tool can invalidate another conversation's capture.
+            if state.pending.len() >= 4 || state.pending.contains_key(&key) {
+                if let Some(pending) = state.pending.get_mut(&key) {
+                    pending.ambiguous = true;
+                }
+                record(&mut state, thread, turn, cwd).changes.truncated = true;
+                return;
             }
             state.pending.insert(
                 key.clone(),
@@ -175,10 +179,11 @@ impl FileHooks {
                 .ok()
         });
         let mut state = self.state.lock().expect("file hook lock");
+        // Stop/Interrupt may have removed the tool while its event flush was running.
         let ambiguous = state
             .pending
             .remove(&key)
-            .is_some_and(|pending| pending.ambiguous || pending.cwd != cwd);
+            .is_none_or(|pending| pending.ambiguous || pending.cwd != cwd);
         let record = record(&mut state, thread, turn, cwd);
         record.saw_tool = true;
         record.captured_at = Utc::now();
@@ -244,6 +249,15 @@ impl FileHooks {
             }) {
                 if old.diff.is_empty() {
                     *old = file.clone();
+                } else {
+                    // Keep the Codex diff and its line, alongside the last observed text.
+                    old.content.clone_from(&file.content);
+                    old.truncated |= file.truncated;
+                    if file.kind == orangedeck_domain::CodeChangeKind::Deleted
+                        || old.kind == orangedeck_domain::CodeChangeKind::Deleted
+                    {
+                        old.kind = file.kind;
+                    }
                 }
             } else if changes.files.len() < 64 {
                 changes.files.push(file.clone());
@@ -411,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn latest_event_preview_survives_refresh_without_replacing_official_codex_diff() {
+    fn review_latest_event_preview_survives_refresh_without_replacing_official_codex_diff() {
         let directory = tempfile::tempdir().unwrap();
         let root = directory.path().join("project");
         fs::create_dir(&root).unwrap();
@@ -460,7 +474,61 @@ mod tests {
             .files[0];
         assert_eq!(file.first_line, 7);
         assert!(file.diff.contains("-old\n+new"));
-        assert!(file.content.is_none());
+        assert_eq!(file.content.as_deref(), Some("latest contents"));
+        for deleted in [true, false] {
+            hooks.before("s", "t", "later", cwd);
+            if deleted {
+                fs::remove_file(root.join("file.py")).unwrap();
+            } else {
+                fs::write(root.join("file.py"), "recreated contents").unwrap();
+            }
+            hooks.after("s", "t", "later", cwd);
+            hooks.enrich(&mut captured);
+            let file = &captured
+                .observation
+                .as_ref()
+                .unwrap()
+                .changes
+                .as_ref()
+                .unwrap()
+                .files[0];
+            assert_eq!(
+                file.kind == orangedeck_domain::CodeChangeKind::Deleted,
+                deleted
+            );
+            assert!(file.diff.contains("-old\n+new"));
+            assert_eq!(
+                file.content.as_deref(),
+                (!deleted).then_some("recreated contents")
+            );
+        }
+    }
+
+    #[test]
+    fn review_capacity_rejection_still_isolates_overlapping_conversations() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("project");
+        fs::create_dir(&root).unwrap();
+        let cwd = root.to_str().unwrap();
+        let hooks = FileHooks::new(directory.path().join("files.json"));
+        hooks.lifecycle("a", "t", cwd, true);
+        hooks.lifecycle("b", "t", cwd, true);
+        for index in 0..4 {
+            hooks.before("a", "t", &index.to_string(), cwd);
+        }
+        hooks.before("b", "t", "overflow", cwd);
+        fs::write(root.join("belongs-to-b.py"), "cannot attribute").unwrap();
+        for index in 0..4 {
+            hooks.after("a", "t", &index.to_string(), cwd);
+        }
+        hooks.after("b", "t", "overflow", cwd);
+        for id in ["a", "b"] {
+            hooks.lifecycle(id, "t", cwd, false);
+            let mut observed = thread(cwd, id, "t");
+            hooks.enrich(&mut observed);
+            let changes = observed.observation.unwrap().changes.unwrap();
+            assert!(changes.files.is_empty() && changes.truncated, "{id}");
+        }
     }
 
     #[test]
@@ -515,6 +583,36 @@ mod tests {
             assert!(
                 thread.observation.unwrap().changes.unwrap().truncated,
                 "{mode}"
+            );
+        }
+    }
+
+    #[test]
+    fn interrupted_tool_keeps_completed_edits_and_marks_the_turn_incomplete() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("project");
+        fs::create_dir(&root).unwrap();
+        let cwd = root.to_str().unwrap();
+        let path = directory.path().join("file-changes.json");
+        let hooks = FileHooks::new(path.clone());
+        hooks.lifecycle("s", "t", cwd, true);
+        hooks.before("s", "t", "finished", cwd);
+        fs::write(root.join("completed.py"), "recorded contents").unwrap();
+        hooks.after("s", "t", "finished", cwd);
+        hooks.before("s", "t", "interrupted", cwd);
+        fs::write(root.join("unfinished.py"), "no matching post hook").unwrap();
+        hooks.lifecycle("s", "t", cwd, false);
+        hooks.after("s", "t", "interrupted", cwd);
+        for source in [&hooks, &FileHooks::new(path)] {
+            let mut observed = thread(cwd, "s", "t");
+            source.enrich(&mut observed);
+            let changes = observed.observation.unwrap().changes.unwrap();
+            assert!(changes.truncated);
+            assert_eq!(changes.files.len(), 1);
+            assert_eq!(changes.files[0].path, "completed.py");
+            assert_eq!(
+                changes.files[0].content.as_deref(),
+                Some("recorded contents")
             );
         }
     }
