@@ -27,6 +27,17 @@ Current version: **0.1.24**.
 
 Follow this order: **set up the Mac → transfer the connection file → set up the Ally**.
 
+<a id="my-settings"></a>
+
+**How are my settings created?**
+
+| Situation | What happens to your settings? |
+| --- | --- |
+| **First installation** | Choose your Mac's project folder and editor. Setup **detects your Mac's address and generates a new connection credential.** Register the resulting connection file on your Ally. |
+| **Update on the same device** | Setup reuses the settings saved on that device. **It is normal not to be asked for your project, editor or connection file again.** |
+
+Personal settings are stored separately in **`~/.config/orangedeck/`** on each device and are not included in the GitHub download. Downloading the app does not give someone access to your Mac. Connecting requires **both Tailscale access to your Mac and your connection credential**. [Why setup skips these questions](docs/INSTALL.en.md#saved-settings).
+
 Before you start:
 
 - **Both devices:** install [Tailscale](https://tailscale.com/download) and sign in with **the same account**. It connects the two machines.
@@ -60,7 +71,7 @@ In Mac **Finder → Go → Go to Folder…**, paste:
 ~/.config/orangedeck
 ```
 
-Copy **`orangedeck-pairing.toml`** from that folder to **your Ally's Downloads folder**, for example using a USB drive. It contains the settings needed to connect the devices. **Do not upload it to GitHub or chat.**
+Copy **`orangedeck-pairing.toml`** from that folder to **your Ally's Downloads folder**, for example using a USB drive. It contains **your Mac's address and secret connection credential**. **Do not upload it to GitHub or chat.**
 
 ### 3. Install the remote on the Ally
 

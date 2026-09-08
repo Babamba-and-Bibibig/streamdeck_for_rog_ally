@@ -65,15 +65,26 @@ sh install.sh --role connector
 
 ## 설치 중 무엇을 입력하나요?
 
+**처음 설치할 때 내 환경에 맞게 입력합니다.** 업데이트라면 [기존 설정을 그대로 사용](#saved-settings)하므로 같은 질문을 다시 하지 않습니다.
+
 | 질문 | 입력할 것 |
 | --- | --- |
 | Mac의 작업 폴더 | Codex로 작업하는 실제 폴더. 폴더를 터미널에 끌어 놓아도 됩니다. |
 | 기기 이름·프로젝트 이름 | Ally 화면에 보여줄 이름. Enter로 기본값을 써도 됩니다. |
+| Mac 편집기 | `zed`, `vs_code`, `cursor`, `vscodium` 중 하나. Enter를 누르면 자동으로 고릅니다. |
 | Codex 실행 파일 | 자동으로 찾지 못했을 때만 묻습니다. Mac 터미널의 `command -v codex`로 위치를 확인하세요. |
 | Ally의 연결 파일 | Mac에서 옮겨 온 `orangedeck-pairing.toml`. 파일을 터미널에 끌어 놓으세요. |
 | 필요한 도구 설치 | 안내를 읽고 설치하려면 `y`를 입력합니다. |
 
-IP 주소나 인증값을 직접 만들 필요는 없습니다. Mac 설치기가 만든 연결 파일을 Ally에 주면 됩니다. 연결 파일은 개인 파일이므로 공개하지 마세요.
+설치기가 지금 설치하는 Mac의 Tailscale 주소를 읽고 **새 연결 인증값**을 만듭니다. IP 주소나 인증값을 직접 입력할 필요 없이, 이렇게 만든 `orangedeck-pairing.toml`을 내 Ally에 주면 됩니다. 이 파일에는 Mac 주소와 비밀 인증값이 들어 있으므로 GitHub나 채팅에 올리지 마세요.
+
+<a id="saved-settings"></a>
+
+## 설정이나 편집기를 다시 묻지 않아요
+
+**이미 설치한 기기에서는 정상입니다.** 업데이트는 그 기기에 저장된 작업 폴더·편집기·연결 설정을 그대로 사용합니다. 개인 설정의 기본 위치는 각 기기의 **`~/.config/orangedeck/`**입니다. 새 ZIP을 다른 폴더에 풀어도 이 설정은 유지됩니다. 예전 Mac 설정에 편집기 선택이 없으면 자동 선택을 사용합니다. 바꾸려면 [편집기 설정](#host-shortcuts)을 보세요.
+
+**개인 설정과 연결 인증값은 각자 설치할 때 만들며, GitHub 다운로드에는 들어 있지 않습니다.** 내 Mac에서 만든 연결 파일을 내 Ally에 등록해 두 기기를 연결합니다. 실제 연결에는 **해당 Mac에 접속할 수 있는 Tailscale 연결과 올바른 연결 인증값**이 모두 필요합니다.
 
 ## 다시 켜기
 
@@ -114,7 +125,7 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 
 ## 업데이트
 
-두 기기에서 새 ZIP을 받고 **새 폴더**에 압축을 풉니다. 그다음 기기별로 진행하세요.
+**업데이트 파일은 GitHub에서 받습니다.** [새 ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip)을 두 기기에서 받고 **새 폴더**에 압축을 풉니다. 그다음 기기별로 진행하세요. 앱이 자동으로 새 버전을 설치하지는 않습니다.
 
 **Mac에서:**
 
@@ -127,7 +138,7 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 1. 새 폴더에서 `sh install.sh --role ui`로 업데이트합니다.
 2. 기존 OrangeDeck 앱 창을 닫고 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 다시 켭니다.
 
-**개인 설정·연결·언어는 유지되며 연결 파일을 다시 옮길 필요는 없습니다.** 0.1.23 이하의 개별 단축키 배치는 새5쌍 배치에서 사용하지 않으므로, 위쪽 + 버튼에서 대화를 한 번 연결하세요. 평소에 다시 켤 때는 위의 설치·알림 설정을 반복하지 않습니다.
+**개인 설정·연결·언어는 유지되며 연결 파일을 다시 옮길 필요는 없습니다.** 작업 폴더나 편집기를 다시 묻지 않아도 정상입니다. [기존 설정을 쓰는 이유](#saved-settings). 0.1.23 이하의 개별 단축키 배치는 새5쌍 배치에서 사용하지 않으므로, 위쪽 + 버튼에서 대화를 한 번 연결하세요. 평소에 다시 켤 때는 위의 설치·알림 설정을 반복하지 않습니다.
 
 **0.1.21 이하에서 업데이트한다면:** Mac의 프로그램·설정 파일 이름이 Connector로 바뀝니다. Setup이 기존 프로젝트와 인증값을 새 파일에 이어받고 이전 파일은 보관합니다. 위의 Enable → `/hooks` 확인·신뢰 단계까지 마치세요.
 
@@ -164,7 +175,7 @@ path = "/Users/YOU/Code/my-website"
 
 | 파일 | 용도 |
 | --- | --- |
-| Mac의 `connector.toml` | 작업 폴더·Codex 실행 파일 설정 |
+| Mac의 `connector.toml` | 작업 폴더·편집기·Codex 실행 파일 설정 |
 | Ally의 `config.toml` | 연결할 Mac 설정 |
 | `orangedeck-pairing.toml` | Mac에서 Ally로 옮기는 비밀 연결 파일 |
 | `connector.token` / `ui.token` | 연결에 쓰는 비밀 인증값 |

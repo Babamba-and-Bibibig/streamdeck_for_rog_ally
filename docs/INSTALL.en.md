@@ -65,15 +65,26 @@ Then continue from [step 2: Start Connector](../README.en.md#1-install-connector
 
 ## What to enter
 
+**These choices are for a first installation on your own devices.** An update [reuses saved settings](#saved-settings), so it does not ask the same questions again.
+
 | Prompt | Your input |
 | --- | --- |
 | Project folder on the Mac | The real folder you work on with Codex. Dragging a folder into the terminal is supported. |
 | Device and project names | Labels to show on the Ally. Enter accepts the suggested value. |
+| Mac editor | Choose `zed`, `vs_code`, `cursor` or `vscodium`. Enter uses automatic detection. |
 | Codex executable | Asked only if discovery fails. Find it with `command -v codex` in your normal Mac terminal. |
 | Connection file on the Ally | The transferred `orangedeck-pairing.toml`. Drag the file into the terminal. |
 | Install required tools | Review the prompt and enter `y` to proceed. |
 
-You do not need to invent an IP address or credential. Transfer the connection file created on the Mac. Keep that file private.
+Setup reads this Mac's Tailscale address and generates **a new connection credential**. Instead of typing either value, transfer the resulting `orangedeck-pairing.toml` to your Ally. It contains the Mac address and secret credential, so do not upload it to GitHub or chat.
+
+<a id="saved-settings"></a>
+
+## Setup did not ask for my settings or editor again
+
+**This is normal on a device where OrangeDeck is already installed.** Updates reuse that device's saved project folders, editor and connection settings. Personal settings default to **`~/.config/orangedeck/`** on each device. Extracting a new ZIP into a different folder does not remove them. An older Mac configuration without an editor choice uses automatic detection. To change it, see [editor settings](#host-shortcuts).
+
+**Personal settings and connection credentials are created during each user's installation and are not included in the GitHub download.** Register the connection file from your Mac on your Ally to connect them. Connecting requires **both Tailscale access to that Mac and its correct connection credential**.
 
 ## Start again
 
@@ -114,7 +125,7 @@ Approval keys are active only when Codex has an actual approval request. Answer 
 
 ## Update
 
-Download the new ZIP on both devices and extract it into a **new folder**. Then follow the steps for each device.
+**Get updates from GitHub.** Download the [new ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) on both devices and extract it into a **new folder**. Then follow the steps for each device. The app does not install new versions automatically.
 
 **On the Mac:**
 
@@ -127,7 +138,7 @@ Download the new ZIP on both devices and extract it into a **new folder**. Then 
 1. Run `sh install.sh --role ui` in the new folder to update.
 2. Close the old OrangeDeck app window and restart it with `sh "$HOME/.config/orangedeck/start-ui.sh"`.
 
-**Personal settings, pairing and language are preserved. No new connection-file transfer is needed.** The individual action keys from 0.1.23 and earlier are replaced by five conversation pairs; assign conversations with the upper + keys once. Everyday launches do not repeat installation or notification configuration.
+**Personal settings, pairing and language are preserved. No new connection-file transfer is needed.** It is normal not to be asked for your project or editor again. [Why settings are reused](#saved-settings). The individual action keys from 0.1.23 and earlier are replaced by five conversation pairs; assign conversations with the upper + keys once. Everyday launches do not repeat installation or notification configuration.
 
 **When updating from 0.1.21 or earlier:** the Mac program and settings files now use the Connector name. Setup imports existing projects and credentials into the new filenames and keeps the old files. Complete the Enable → `/hooks` review and trust steps above.
 
@@ -164,7 +175,7 @@ The default directory on both devices is **`~/.config/orangedeck`**. Its content
 
 | File | Purpose |
 | --- | --- |
-| Mac `connector.toml` | Project folders and Codex executable settings |
+| Mac `connector.toml` | Project folders, editor and Codex executable settings |
 | Ally `config.toml` | Mac connection settings |
 | `orangedeck-pairing.toml` | Private connection file transferred from Mac to Ally |
 | `connector.token` / `ui.token` | Secret connection credentials |
