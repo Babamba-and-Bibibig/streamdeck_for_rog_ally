@@ -34,9 +34,17 @@ The selected terms choose one allowed alternative where an upstream license uses
   modifying these components, rebuilding with them, or reverse engineering for
   debugging those modifications. The original OrangeDeck source and build files
   are supplied so it can be rebuilt with modified third-party components.
+- **Apple SDK bindings:** `objc2-core-foundation` and `objc2-core-services`
+  select the Apache-2.0 alternative offered by their
+  [versioned upstream license](https://github.com/madsmtm/objc2/blob/7b1abfd750a2cacaea71d6a56ecfb83cb7de560b/LICENSE.md);
+  the complete terms and upstream explanation are retained below. That
+  explanation also identifies a separate question about SDK-derived bindings.
+  Apple SDK terms remain separate from these crate and OrangeDeck licenses.
 - **Embedded fonts:** egui's Hack, Noto Emoji, Ubuntu and emoji-icon fonts keep
   their MIT/Bitstream, SIL Open Font and Ubuntu Font notices, included below.
-  The app's license does not replace a font license.
+  Copyright fields from the unchanged Noto Emoji and Ubuntu font files are
+  reproduced below with their license texts. The app's license does not replace
+  a font license.
 - **System components:** Noto Sans CJK, libc, libudev, graphics/input libraries,
   the GCC runtime, Python, Rust, Tailscale, Codex and your editor are installed
   separately and retain their own licenses. This source download does not bundle
@@ -71,8 +79,8 @@ MPL 라이브러리, LGPL 조건의 일부 Wayland 프로토콜과 시스템 라
 | [atomic-waker 1.1.2](https://crates.io/api/v1/crates/atomic-waker/1.1.2/download) | Apache-2.0 OR MIT | MIT | [1](#notice-a60eea817514), [2](#notice-23f18e03dc49), [3](#notice-6226d0632e2e) |
 | [autocfg 1.5.1](https://crates.io/api/v1/crates/autocfg/1.5.1/download) | Apache-2.0 OR MIT | MIT | [1](#notice-a60eea817514), [2](#notice-27995d58ad5c) |
 | [aws-lc-rs 1.18.1](https://crates.io/api/v1/crates/aws-lc-rs/1.18.1/download) | ISC AND (Apache-2.0 OR ISC) | Apache-2.0 AND ISC | [1](#notice-b50b376e7d24), [2](#notice-c244630c98ac), [3](#notice-eee2fc85cfb7), [4](#notice-cbf35adafbc4), [5](#notice-6a21a007c853), [6](#notice-01087d3fc566), [7](#notice-28b0a13277cf), [8](#notice-a2414f300548), [9](#notice-9024ecdac16f), [10](#notice-fa82014af096), [11](#notice-ad5623e2151c), [12](#notice-b1ccaafee245), [13](#notice-5e4d5e9723a1), [14](#notice-8ee9cb3b1888) |
-| [aws-lc-sys 0.45.0](https://crates.io/api/v1/crates/aws-lc-sys/0.45.0/download) | ISC AND (Apache-2.0 OR ISC) AND Apache-2.0 AND MIT AND BSD-3-Clause AND (Apache-2.0 OR ISC OR MIT) AND (Apache-2.0 OR ISC OR MIT-0) | Apache-2.0 AND BSD-3-Clause AND ISC AND MIT | [1](#notice-728536b4160e), [2](#notice-43e358d7b6eb), [3](#notice-74aa1f6d8863), [4](#notice-1f3da733d701), [5](#notice-0d3b86c089ec), [6](#notice-c244630c98ac), [7](#notice-68eb534823f2), [8](#notice-e18394f240a7), [9](#notice-f7010c1d1691), [10](#notice-010ec5208fa6), [11](#notice-b0db138947b6), [12](#notice-f2c4b5cca8c6), [13](#notice-1726d7ef8d06), [14](#notice-5350f38a34ef), [15](#notice-337f3057ff84), [16](#notice-bb42c55f8e20), [17](#notice-ac87d51f5b3f), [18](#notice-beb44b8aac88), [19](#notice-1f1504386c14), [20](#notice-970e98a5fea9), [21](#notice-b48232b4e26b), [22](#notice-2f1265334d2c), [23](#notice-c66b3111c803), [24](#notice-bb12b9df50a5), [25](#notice-0b2ff46e2095), [26](#notice-c6e1b15396f2), [27](#notice-5f1969a346e2), [28](#notice-6fcf64a93139), [29](#notice-3e65b9bf9ab5), [30](#notice-c541690df9ba), [31](#notice-af01f3e7c6db), [32](#notice-91f9941aab0d), [33](#notice-013927683028), [34](#notice-7e886028b9ce), [35](#notice-63bd2aa920c8), [36](#notice-870e92b59358), [37](#notice-4d0ad658b700), [38](#notice-89c5e1108efa), [39](#notice-cc2cb6f03fd0), [40](#notice-29ae1c95f279), [41](#notice-9a4d6c23d66e), [42](#notice-fea267380f56), [43](#notice-b8b013ef60e9), [44](#notice-5f4b8d509016), [45](#notice-5998f2cd8d09), [46](#notice-bea32589a697), [47](#notice-8af7633b667a), [48](#notice-30aae776a884), [49](#notice-0b18fe0f7e21), [50](#notice-b6b60851dac8), [51](#notice-7a5353326b93), [52](#notice-484cba0972cc), [53](#notice-78e837c94593), [54](#notice-663e204ce2fb), [55](#notice-4929b42dc270), [56](#notice-8481bbf88cfb), [57](#notice-c987221e66ce), [58](#notice-87a2caee8eb8), [59](#notice-7243c7537668), [60](#notice-a4316b89c047), [61](#notice-c30608f4c0a5), [62](#notice-b87675bfb808), [63](#notice-16b2e6a6d2ab), [64](#notice-b9cc1365d2ed), [65](#notice-e77362baa870), [66](#notice-bbeba93a21c3), [67](#notice-daa8c73721d9), [68](#notice-3a3397b2d4c0), [69](#notice-96379934f20d), [70](#notice-24a6762dcca1), [71](#notice-9beece3a0f29), [72](#notice-d63616b4fb84), [73](#notice-f980a641a8aa), [74](#notice-24b534e62fc6), [75](#notice-98f845414cc3), [76](#notice-aaedd3d0147a), [77](#notice-32aee3067901), [78](#notice-516c50d008d6), [79](#notice-ba777b12a7e7), [80](#notice-235240279e1d), [81](#notice-a78695cda835), [82](#notice-ed7b2b25e61a), [83](#notice-0021723b9015), [84](#notice-b39ecbc09384), [85](#notice-2f4ba69096d2), [86](#notice-82c35d6a5c36), [87](#notice-d78b96b0c00d), [88](#notice-5b0461857e04), [89](#notice-7d4bc8eaa6a5), [90](#notice-2d04b8cd1595), [91](#notice-ea11e4fdf0de), [92](#notice-b67f51c9ae5d), [93](#notice-5fb7637016eb), [94](#notice-4a98fe7c9720), [95](#notice-311728f75404), [96](#notice-eff8366da862), [97](#notice-cc712c1ebc05), [98](#notice-3045fed516ad), [99](#notice-1b0697f3d606), [100](#notice-b652900685b3), [101](#notice-a5ec48295527), [102](#notice-db335ebfbd98), [103](#notice-c7cecdd81df1), [104](#notice-7da1dbb08577), [105](#notice-7c5d4d854158), [106](#notice-107920ddc1e8), [107](#notice-bf839665e0e3), [108](#notice-0eb17f51a30a), [109](#notice-e809e086748c), [110](#notice-77dc87cf73dc), [111](#notice-30d757428bdc), [112](#notice-f09e204b3aaa), [113](#notice-fa6d1b70fd80), [114](#notice-cb426d4c086b), [115](#notice-f4f18de4c066), [116](#notice-b1ccced9fbb8), [117](#notice-271e526eb9c5), [118](#notice-449fff145a98), [119](#notice-b7920de828ac), [120](#notice-d5aefa893685), [121](#notice-c7f2afaabf20), [122](#notice-263509f08df2), [123](#notice-014e916694f5), [124](#notice-2b1573f40d0a), [125](#notice-27db1446e463), [126](#notice-911abd089caa), [127](#notice-8acd4b687f05), [128](#notice-a63fcd03cbe6), [129](#notice-3298d128e09e) |
-| [axum 0.8.9](https://crates.io/api/v1/crates/axum/0.8.9/download) | MIT | MIT | [1](#notice-6a13bc24a100) |
+| [aws-lc-sys 0.45.0](https://crates.io/api/v1/crates/aws-lc-sys/0.45.0/download) | ISC AND (Apache-2.0 OR ISC) AND Apache-2.0 AND MIT AND BSD-3-Clause AND (Apache-2.0 OR ISC OR MIT) AND (Apache-2.0 OR ISC OR MIT-0) | Apache-2.0 AND BSD-3-Clause AND ISC AND MIT | [1](#notice-728536b4160e), [2](#notice-43e358d7b6eb), [3](#notice-74aa1f6d8863), [4](#notice-1f3da733d701), [5](#notice-0d3b86c089ec), [6](#notice-c244630c98ac), [7](#notice-68eb534823f2), [8](#notice-e18394f240a7), [9](#notice-f7010c1d1691), [10](#notice-010ec5208fa6), [11](#notice-b0db138947b6), [12](#notice-f2c4b5cca8c6), [13](#notice-1726d7ef8d06), [14](#notice-5350f38a34ef), [15](#notice-337f3057ff84), [16](#notice-bb42c55f8e20), [17](#notice-ac87d51f5b3f), [18](#notice-beb44b8aac88), [19](#notice-1f1504386c14), [20](#notice-970e98a5fea9), [21](#notice-b48232b4e26b), [22](#notice-2f1265334d2c), [23](#notice-c66b3111c803), [24](#notice-bb12b9df50a5), [25](#notice-0b2ff46e2095), [26](#notice-c6e1b15396f2), [27](#notice-5f1969a346e2), [28](#notice-6fcf64a93139), [29](#notice-3e65b9bf9ab5), [30](#notice-c541690df9ba), [31](#notice-af01f3e7c6db), [32](#notice-91f9941aab0d), [33](#notice-013927683028), [34](#notice-7e886028b9ce), [35](#notice-63bd2aa920c8), [36](#notice-870e92b59358), [37](#notice-4d0ad658b700), [38](#notice-89c5e1108efa), [39](#notice-cc2cb6f03fd0), [40](#notice-29ae1c95f279), [41](#notice-9a4d6c23d66e), [42](#notice-fea267380f56), [43](#notice-b8b013ef60e9), [44](#notice-5f4b8d509016), [45](#notice-5998f2cd8d09), [46](#notice-bea32589a697), [47](#notice-8af7633b667a), [48](#notice-30aae776a884), [49](#notice-0b18fe0f7e21), [50](#notice-b6b60851dac8), [51](#notice-7a5353326b93), [52](#notice-484cba0972cc), [53](#notice-78e837c94593), [54](#notice-663e204ce2fb), [55](#notice-4929b42dc270), [56](#notice-8481bbf88cfb), [57](#notice-c987221e66ce), [58](#notice-87a2caee8eb8), [59](#notice-7243c7537668), [60](#notice-a4316b89c047), [61](#notice-c30608f4c0a5), [62](#notice-b87675bfb808), [63](#notice-16b2e6a6d2ab), [64](#notice-b9cc1365d2ed), [65](#notice-e77362baa870), [66](#notice-bbeba93a21c3), [67](#notice-daa8c73721d9), [68](#notice-3a3397b2d4c0), [69](#notice-96379934f20d), [70](#notice-24a6762dcca1), [71](#notice-9beece3a0f29), [72](#notice-d63616b4fb84), [73](#notice-f980a641a8aa), [74](#notice-24b534e62fc6), [75](#notice-98f845414cc3), [76](#notice-aaedd3d0147a), [77](#notice-32aee3067901), [78](#notice-516c50d008d6), [79](#notice-ba777b12a7e7), [80](#notice-235240279e1d), [81](#notice-a78695cda835), [82](#notice-ed7b2b25e61a), [83](#notice-0021723b9015), [84](#notice-b39ecbc09384), [85](#notice-2f4ba69096d2), [86](#notice-82c35d6a5c36), [87](#notice-d78b96b0c00d), [88](#notice-5b0461857e04), [89](#notice-7d4bc8eaa6a5), [90](#notice-2d04b8cd1595), [91](#notice-ea11e4fdf0de), [92](#notice-b67f51c9ae5d), [93](#notice-5fb7637016eb), [94](#notice-4a98fe7c9720), [95](#notice-311728f75404), [96](#notice-eff8366da862), [97](#notice-cc712c1ebc05), [98](#notice-3045fed516ad), [99](#notice-1b0697f3d606), [100](#notice-b652900685b3), [101](#notice-a5ec48295527), [102](#notice-db335ebfbd98), [103](#notice-c7cecdd81df1), [104](#notice-7da1dbb08577), [105](#notice-7c5d4d854158), [106](#notice-107920ddc1e8), [107](#notice-bf839665e0e3), [108](#notice-0eb17f51a30a), [109](#notice-e809e086748c), [110](#notice-77dc87cf73dc), [111](#notice-30d757428bdc), [112](#notice-f09e204b3aaa), [113](#notice-fa6d1b70fd80), [114](#notice-cb426d4c086b), [115](#notice-f4f18de4c066), [116](#notice-b1ccced9fbb8), [117](#notice-271e526eb9c5), [118](#notice-449fff145a98), [119](#notice-b7920de828ac), [120](#notice-d5aefa893685), [121](#notice-c7f2afaabf20), [122](#notice-263509f08df2), [123](#notice-014e916694f5), [124](#notice-2b1573f40d0a), [125](#notice-27db1446e463), [126](#notice-911abd089caa), [127](#notice-8acd4b687f05), [128](#notice-a63fcd03cbe6), [129](#notice-3298d128e09e), [130](#notice-d039dd90b5d2), [131](#notice-017de976485e), [132](#notice-12a31cf332bc), [133](#notice-bd42dd806283), [134](#notice-9ef2ac897b3a), [135](#notice-9467189a4af3), [136](#notice-8a2016f24344), [137](#notice-f4148d41fe7c), [138](#notice-6ea8ebdc81f8), [139](#notice-8a3462e8545d), [140](#notice-99e2c447a8d8), [141](#notice-a3a3c1af16f9), [142](#notice-d5b0607ba3d3), [143](#notice-91041d4dab22), [144](#notice-61e3be4f323f), [145](#notice-2a09f40dc028), [146](#notice-14e391acebc2), [147](#notice-c6e95328506e), [148](#notice-f62fbed78e02), [149](#notice-d1e2322cd03b), [150](#notice-40db174ddfb3) |
+| [axum 0.8.9](https://crates.io/api/v1/crates/axum/0.8.9/download) | MIT | MIT | [1](#notice-6a13bc24a100), [2](#notice-7fea0ee51a4c) |
 | [axum-core 0.5.6](https://crates.io/api/v1/crates/axum-core/0.5.6/download) | MIT | MIT | [1](#notice-e5c343775a0e) |
 | [axum-macros 0.5.1](https://crates.io/api/v1/crates/axum-macros/0.5.1/download) | MIT | MIT | [1](#notice-2c417b11aaf6), [2](#notice-9fde707f84d7) |
 | [base64 0.22.1](https://crates.io/api/v1/crates/base64/0.22.1/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-0dd882e53de1) |
@@ -93,7 +101,7 @@ MPL 라이브러리, LGPL 조건의 일부 Wayland 프로토콜과 시스템 라
 | [chacha20 0.10.2](https://crates.io/api/v1/crates/chacha20/0.10.2/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a9040321c371), [2](#notice-b8c6939380a4) |
 | [chrono 0.4.45](https://crates.io/api/v1/crates/chrono/0.4.45/download) | MIT OR Apache-2.0 | MIT | [1](#notice-2200505ceae3), [2](#notice-118929e2af64), [3](#notice-f3e4452a5049) |
 | [clap 4.6.6](https://crates.io/api/v1/crates/clap/4.6.6/download) | MIT OR Apache-2.0 | MIT | [1](#notice-b40930bbcf80), [2](#notice-6efb0476a1cc), [3](#notice-1aaf8a23326e) |
-| [clap_builder 4.6.6](https://crates.io/api/v1/crates/clap_builder/4.6.6/download) | MIT OR Apache-2.0 | MIT | [1](#notice-b40930bbcf80), [2](#notice-6efb0476a1cc), [3](#notice-1aaf8a23326e) |
+| [clap_builder 4.6.6](https://crates.io/api/v1/crates/clap_builder/4.6.6/download) | MIT OR Apache-2.0 | MIT | [1](#notice-b40930bbcf80), [2](#notice-6efb0476a1cc), [3](#notice-1aaf8a23326e), [4](#notice-7b63ecd5f190) |
 | [clap_derive 4.6.4](https://crates.io/api/v1/crates/clap_derive/4.6.4/download) | MIT OR Apache-2.0 | MIT | [1](#notice-b40930bbcf80), [2](#notice-6efb0476a1cc), [3](#notice-c0f6e7ab3536), [4](#notice-5e87c8ddf3e6) |
 | [clap_lex 1.1.0](https://crates.io/api/v1/crates/clap_lex/1.1.0/download) | MIT OR Apache-2.0 | MIT | [1](#notice-b40930bbcf80), [2](#notice-6efb0476a1cc) |
 | [cmake 0.1.58](https://crates.io/api/v1/crates/cmake/0.1.58/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-378f5840b258) |
@@ -126,7 +134,7 @@ MPL 라이브러리, LGPL 조건의 일부 Wayland 프로토콜과 시스템 라
 | [either 1.18.0](https://crates.io/api/v1/crates/either/1.18.0/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-7576269ea71f) |
 | [emath 0.36.1](https://crates.io/api/v1/crates/emath/0.36.1/download) | MIT OR Apache-2.0 | MIT | [1](#notice-8173d5c29b4f), [2](#notice-95ca92f5f8ea) |
 | [epaint 0.36.1](https://crates.io/api/v1/crates/epaint/0.36.1/download) | MIT OR Apache-2.0 | MIT | [1](#notice-8173d5c29b4f), [2](#notice-95ca92f5f8ea) |
-| [epaint_default_fonts 0.36.1](https://crates.io/api/v1/crates/epaint_default_fonts/0.36.1/download) | (MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0 | MIT AND OFL-1.1 AND Ubuntu-font-1.0 | [1](#notice-47c0cccbeec7), [2](#notice-6a73f9541c2d), [3](#notice-2f0015108d68), [4](#notice-b9d2c1d909aa), [5](#notice-8173d5c29b4f), [6](#notice-95ca92f5f8ea) |
+| [epaint_default_fonts 0.36.1](https://crates.io/api/v1/crates/epaint_default_fonts/0.36.1/download) | (MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0 | MIT AND OFL-1.1 AND Ubuntu-font-1.0 | [1](#notice-47c0cccbeec7), [2](#notice-6a73f9541c2d), [3](#notice-2f0015108d68), [4](#notice-b9d2c1d909aa), [5](#notice-8173d5c29b4f), [6](#notice-95ca92f5f8ea), [7](#notice-ee46c54c490e), [8](#notice-8acacc7c5ad4) |
 | [errno 0.3.14](https://crates.io/api/v1/crates/errno/0.3.14/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-8764a5976757), [3](#notice-5d392ff1ac69), [4](#notice-3b7df402160f) |
 | [euclid 0.22.14](https://crates.io/api/v1/crates/euclid/0.22.14/download) | MIT OR Apache-2.0 | MIT | [1](#notice-ec82b96487e9), [2](#notice-a60eea817514), [3](#notice-62065228e42c), [4](#notice-7dedeb59e2a6), [5](#notice-adbef851d785), [6](#notice-d566ebc0e99f), [7](#notice-1ed3eabc4bc6) |
 | [fdeflate 0.3.7](https://crates.io/api/v1/crates/fdeflate/0.3.7/download) | MIT OR Apache-2.0 | MIT | [1](#notice-0d542e0c8804), [2](#notice-c77a4cf9da72) |
@@ -213,8 +221,8 @@ MPL 라이브러리, LGPL 조건의 일부 Wayland 프로토콜과 시스템 라
 | [nohash-hasher 0.2.0](https://crates.io/api/v1/crates/nohash-hasher/0.2.0/download) | Apache-2.0 OR MIT | MIT | [1](#notice-cfc7749b96f6), [2](#notice-ec353d4fecf7), [3](#notice-9b5609e57499) |
 | [nu-ansi-term 0.50.3](https://crates.io/api/v1/crates/nu-ansi-term/0.50.3/download) | MIT | MIT | [1](#notice-cfdb7491dfa8) |
 | [num-traits 0.2.19](https://crates.io/api/v1/crates/num-traits/0.2.19/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-6485b8ed310d), [3](#notice-84ff7c28d9c9) |
-| [objc2-core-foundation 0.3.2](https://crates.io/api/v1/crates/objc2-core-foundation/0.3.2/download) | Zlib OR Apache-2.0 OR MIT | MIT | [1](#notice-7f976f7e9cb2) |
-| [objc2-core-services 0.3.2](https://crates.io/api/v1/crates/objc2-core-services/0.3.2/download) | Zlib OR Apache-2.0 OR MIT | MIT | [1](#notice-7f976f7e9cb2), [2](#notice-8cec637d76f6) |
+| [objc2-core-foundation 0.3.2](https://crates.io/api/v1/crates/objc2-core-foundation/0.3.2/download) | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | [1](#notice-7f976f7e9cb2), [2](#notice-4d10fe5f3aa1) |
+| [objc2-core-services 0.3.2](https://crates.io/api/v1/crates/objc2-core-services/0.3.2/download) | Zlib OR Apache-2.0 OR MIT | Apache-2.0 | [1](#notice-7f976f7e9cb2), [2](#notice-8cec637d76f6), [3](#notice-4d10fe5f3aa1) |
 | [once_cell 1.21.4](https://crates.io/api/v1/crates/once_cell/1.21.4/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-23f18e03dc49) |
 | [openssl-probe 0.2.1](https://crates.io/api/v1/crates/openssl-probe/0.2.1/download) | MIT OR Apache-2.0 | MIT | [1](#notice-a60eea817514), [2](#notice-378f5840b258) |
 | [option-ext 0.2.0](https://crates.io/api/v1/crates/option-ext/0.2.0/download) | MPL-2.0 | MPL-2.0 | [1](#notice-3f3d9e0024b1) |
@@ -12409,6 +12417,7 @@ DEALINGS IN THE SOFTWARE.
 - heck 0.5.0 — LICENSE-MIT
 - unicode-segmentation 1.13.3 — LICENSE-MIT
 - vec_map 0.8.2 — LICENSE-MIT
+- clap_builder 4.6.6 — src/parser/matches/arg_matches.rs (vec-map be5e1fa3c26e351761b33010ddbdaf5f05dbcc33/LICENSE-MIT)
 
 ````text
 Copyright (c) 2015 The Rust Project Developers
@@ -12765,6 +12774,8 @@ THE SOFTWARE.
 <summary>notice-4d10fe5f3aa1</summary>
 
 - httpdate 1.0.3 — LICENSE-APACHE
+- objc2-core-foundation 0.3.2 — upstream/LICENSE.md (Apache-2.0 alternative)
+- objc2-core-services 0.3.2 — upstream/LICENSE.md (Apache-2.0 alternative)
 
 ````text
 Apache License
@@ -21595,6 +21606,7 @@ THE SOFTWARE.
 
 - tungstenite 0.29.0 — LICENSE-MIT
 - tungstenite 0.30.0 — LICENSE-MIT
+- axum 0.8.9 — src/extract/ws.rs (tungstenite-derived WebSocket messages)
 
 ````text
 Copyright (c) 2017 Alexey Galakhov
@@ -27288,6 +27300,369 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+````
+
+</details>
+
+<a id="notice-d039dd90b5d2"></a>
+
+<details>
+<summary>notice-d039dd90b5d2</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/chacha/asm/chacha-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/chacha/chacha-x86_64.S)
+
+````text
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-017de976485e"></a>
+
+<details>
+<summary>notice-017de976485e</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/cipher_extra/asm/aes128gcmsiv-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/cipher_extra/aes128gcmsiv-x86_64.S)
+
+````text
+# Copyright (c) 2017, Shay Gueron.
+# Copyright (c) 2017, Google Inc.
+# SPDX-License-Identifier: ISC
+````
+
+</details>
+
+<a id="notice-12a31cf332bc"></a>
+
+<details>
+<summary>notice-12a31cf332bc</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/cipher_extra/asm/aesni-sha1-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/cipher_extra/aesni-sha1-x86_64.S)
+
+````text
+# Copyright 2011-2020 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-bd42dd806283"></a>
+
+<details>
+<summary>notice-bd42dd806283</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/cipher_extra/asm/aesni-sha256-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/cipher_extra/aesni-sha256-x86_64.S)
+
+````text
+# Copyright 2013-2020 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-9ef2ac897b3a"></a>
+
+<details>
+<summary>notice-9ef2ac897b3a</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/cipher_extra/asm/chacha20_poly1305_x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/cipher_extra/chacha20_poly1305_x86_64.S)
+
+````text
+# Copyright (c) 2015, CloudFlare Ltd.
+# SPDX-License-Identifier: ISC
+````
+
+</details>
+
+<a id="notice-9467189a4af3"></a>
+
+<details>
+<summary>notice-9467189a4af3</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/aes/asm/aesni-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/aesni-x86_64.S)
+
+````text
+# Copyright 2009-2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-8a2016f24344"></a>
+
+<details>
+<summary>notice-8a2016f24344</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/aes/asm/aesni-xts-avx512.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/aesni-xts-avx512.S)
+
+````text
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-f4148d41fe7c"></a>
+
+<details>
+<summary>notice-f4148d41fe7c</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/aes/asm/vpaes-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/vpaes-x86_64.S)
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/bn/asm/x86_64-mont5.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/x86_64-mont5.S)
+
+````text
+# Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-6ea8ebdc81f8"></a>
+
+<details>
+<summary>notice-6ea8ebdc81f8</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/bn/asm/rsaz-2k-avx512.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/rsaz-2k-avx512.S)
+
+````text
+# Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2020, Intel Corporation. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Originally written by Sergey Kirillov and Andrey Matyukov.
+# Special thanks to Ilya Albrekht for his valuable hints.
+# Intel Corporation
+````
+
+</details>
+
+<a id="notice-8a3462e8545d"></a>
+
+<details>
+<summary>notice-8a3462e8545d</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/bn/asm/rsaz-3k-avx512.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/rsaz-3k-avx512.S)
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/bn/asm/rsaz-4k-avx512.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/rsaz-4k-avx512.S)
+
+````text
+# Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2021, Intel Corporation. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Originally written by Sergey Kirillov and Andrey Matyukov
+# Intel Corporation
+````
+
+</details>
+
+<a id="notice-99e2c447a8d8"></a>
+
+<details>
+<summary>notice-99e2c447a8d8</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/bn/asm/rsaz-avx2.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/rsaz-avx2.S)
+
+````text
+# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2012, Intel Corporation. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Originally written by Shay Gueron (1, 2), and Vlad Krasnov (1)
+# (1) Intel Corporation, Israel Development Center, Haifa, Israel
+# (2) University of Haifa, Israel
+````
+
+</details>
+
+<a id="notice-a3a3c1af16f9"></a>
+
+<details>
+<summary>notice-a3a3c1af16f9</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/bn/asm/x86_64-mont.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/x86_64-mont.S)
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/sha/asm/sha512-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/sha512-x86_64.S)
+
+````text
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-d5b0607ba3d3"></a>
+
+<details>
+<summary>notice-d5b0607ba3d3</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/ec/asm/p256-x86_64-asm.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/p256-x86_64-asm.S)
+
+````text
+# Copyright 2014-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright (c) 2014, Intel Corporation. All Rights Reserved.
+# Copyright (c) 2015 CloudFlare, Inc.
+#
+# Originally written by Shay Gueron (1, 2), and Vlad Krasnov (1, 3)
+# (1) Intel Corporation, Israel Development Center, Haifa, Israel
+# (2) University of Haifa, Israel
+# (3) CloudFlare, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-91041d4dab22"></a>
+
+<details>
+<summary>notice-91041d4dab22</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/ec/asm/p256_beeu-x86_64-asm.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/p256_beeu-x86_64-asm.S)
+
+````text
+# Copyright (c) 2018, Amazon Inc.
+#
+# Written by Nir Drucker, and Shay Gueron
+# AWS Cryptographic Algorithms Group
+# (ndrucker@amazon.com, gueron@amazon.com)
+# based on BN_mod_inverse_odd
+#
+# SPDX-License-Identifier: Apache-2.0 OR ISC
+````
+
+</details>
+
+<a id="notice-61e3be4f323f"></a>
+
+<details>
+<summary>notice-61e3be4f323f</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/md5/asm/md5-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/md5-x86_64.S)
+
+````text
+#
+# MD5 optimized for AMD64.
+#
+# Author: Marc Bevand <bevand_m (at) epita.fr>
+# Licence: I hereby disclaim the copyright on this code and place it
+# in the public domain.
+````
+
+</details>
+
+<a id="notice-2a09f40dc028"></a>
+
+<details>
+<summary>notice-2a09f40dc028</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/modes/asm/aesni-gcm-avx512.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/aesni-gcm-avx512.S)
+
+````text
+# Copyright (C) 2022 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# This implementation is based on the AES-GCM code (AVX512VAES + VPCLMULQDQ)
+# from Intel(R) Multi-Buffer Crypto for IPsec Library v1.1
+# (https://github.com/intel/intel-ipsec-mb).
+# Original author is Tomasz Kantecki <tomasz.kantecki@intel.com>.
+````
+
+</details>
+
+<a id="notice-14e391acebc2"></a>
+
+<details>
+<summary>notice-14e391acebc2</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/modes/asm/aesni-gcm-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/aesni-gcm-x86_64.S)
+
+````text
+# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-c6e95328506e"></a>
+
+<details>
+<summary>notice-c6e95328506e</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/modes/asm/ghash-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/ghash-x86_64.S)
+
+````text
+# Copyright 2010-2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-f62fbed78e02"></a>
+
+<details>
+<summary>notice-f62fbed78e02</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/modes/asm/ghash-ssse3-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/ghash-ssse3-x86_64.S)
+
+````text
+# Copyright (c) 2019, Google Inc.
+#
+# SPDX-License-Identifier: ISC
+````
+
+</details>
+
+<a id="notice-d1e2322cd03b"></a>
+
+<details>
+<summary>notice-d1e2322cd03b</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/rand/asm/rdrand-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/rdrand-x86_64.S)
+
+````text
+# Copyright (c) 2015, Google Inc.
+# SPDX-License-Identifier: ISC
+````
+
+</details>
+
+<a id="notice-40db174ddfb3"></a>
+
+<details>
+<summary>notice-40db174ddfb3</summary>
+
+- aws-lc-sys 0.45.0 — aws-lc/crypto/fipsmodule/sha/asm/sha1-x86_64.pl (attribution for aws-lc/generated-src/linux-x86_64/crypto/fipsmodule/sha1-x86_64.S)
+
+````text
+# Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+````
+
+</details>
+
+<a id="notice-ee46c54c490e"></a>
+
+<details>
+<summary>notice-ee46c54c490e</summary>
+
+- epaint_default_fonts 0.36.1 — fonts/NotoEmoji-Regular.ttf (embedded copyright metadata)
+
+````text
+Copyright 2013 Google Inc. All Rights Reserved.
+````
+
+</details>
+
+<a id="notice-8acacc7c5ad4"></a>
+
+<details>
+<summary>notice-8acacc7c5ad4</summary>
+
+- epaint_default_fonts 0.36.1 — fonts/Ubuntu-Light.ttf (embedded copyright metadata)
+
+````text
+Copyright 2011 Canonical Ltd.  Licensed under the Ubuntu Font Licence 1.0
 ````
 
 </details>
