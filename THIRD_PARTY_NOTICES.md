@@ -19,6 +19,10 @@ The selected terms choose one allowed alternative where an upstream license uses
 
 ## Source and separate rights
 
+- **Gamepad input:** `gilrs` and `gilrs-core` use their original MIT terms,
+  selected from their MIT/Apache alternatives. The SDL_GameControllerDB mappings
+  bundled with `gilrs` have a separate zlib license. Both notices are retained
+  below; OrangeDeck's terms do not replace them.
 - **MPL-2.0:** `option-ext 0.2.0` remains under MPL. Its unmodified source is
   available in the [versioned source package](https://crates.io/api/v1/crates/option-ext/0.2.0/download)
   and [source browser](https://docs.rs/crate/option-ext/0.2.0/source/).
@@ -144,7 +148,7 @@ MPL 라이브러리, LGPL 조건의 일부 Wayland 프로토콜과 시스템 라
 | [gethostname 1.1.0](https://crates.io/api/v1/crates/gethostname/1.1.0/download) | Apache-2.0 | Apache-2.0 | [1](#notice-a60eea817514), [2](#notice-f2e835a5d40b) |
 | [getrandom 0.3.4](https://crates.io/api/v1/crates/getrandom/0.3.4/download) | MIT OR Apache-2.0 | MIT | [1](#notice-aaff376532ea), [2](#notice-29e9fe5074bd) |
 | [getrandom 0.4.3](https://crates.io/api/v1/crates/getrandom/0.4.3/download) | MIT OR Apache-2.0 | MIT | [1](#notice-aaff376532ea), [2](#notice-523a42c25d24) |
-| [gilrs 0.11.2](https://crates.io/api/v1/crates/gilrs/0.11.2/download) | Apache-2.0/MIT | MIT | [1](#notice-7826eca0a0f7), [2](#notice-1260e2e9adb4) |
+| [gilrs 0.11.2](https://crates.io/api/v1/crates/gilrs/0.11.2/download) | Apache-2.0/MIT | MIT AND Zlib | [1](#notice-7826eca0a0f7), [2](#notice-1260e2e9adb4), [3](#notice-74497fa3c93e), [4](#notice-a60eea817514) |
 | [gilrs-core 0.6.8](https://crates.io/api/v1/crates/gilrs-core/0.6.8/download) | Apache-2.0/MIT | MIT | [1](#notice-74497fa3c93e), [2](#notice-a60eea817514), [3](#notice-1260e2e9adb4), [4](#notice-df83882a227f) |
 | [gl_generator 0.14.0](https://crates.io/api/v1/crates/gl_generator/0.14.0/download) | Apache-2.0 | Apache-2.0 | [1](#notice-cfc7749b96f6), [2](#notice-7eb15307bafc), [3](#notice-b185f94aadad) |
 | [glow 0.17.0](https://crates.io/api/v1/crates/glow/0.17.0/download) | MIT OR Apache-2.0 OR Zlib | MIT | [1](#notice-a60eea817514), [2](#notice-23f18e03dc49), [3](#notice-b3ec01ad0869) |
@@ -1017,6 +1021,7 @@ limitations under the License.
 - fnv 1.0.7 — LICENSE-APACHE
 - form_urlencoded 1.2.2 — LICENSE-APACHE
 - gethostname 1.1.0 — LICENSE
+- gilrs 0.11.2 — upstream/LICENSE-APACHE
 - gilrs-core 0.6.8 — upstream/LICENSE-APACHE
 - glow 0.17.0 — LICENSE-APACHE
 - hashbrown 0.17.1 — LICENSE-APACHE
@@ -11883,6 +11888,7 @@ freely, subject to the following restrictions:
 <details>
 <summary>notice-74497fa3c93e</summary>
 
+- gilrs 0.11.2 — upstream/LICENSE-MIT
 - gilrs-core 0.6.8 — upstream/LICENSE-MIT
 
 ````text
