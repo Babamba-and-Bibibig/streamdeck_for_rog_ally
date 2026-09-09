@@ -19,7 +19,7 @@ OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC
 - **Codex와 통신 모듈을 실행하는 메인 PC:** macOS만 지원합니다. Linux·Windows 메인 PC는 미지원입니다.
 - **핸드헬드 리모컨:** 위 CachyOS 구성에서 테스트했습니다. Windows는 미지원입니다. 다른 Linux 배포판·Steam Deck·SteamOS·다른 핸드헬드는 리모컨으로서의 설치·동작이 미검증입니다.
 
-[⬇ ZIP 다운로드](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [설치하기](#설치하기) · [간단 사용법](docs/QUICKSTART_KO.md)
+[⬇ ZIP 다운로드](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [설치하기](#설치하기) · [업데이트하기](#업데이트하기) · [간단 사용법](docs/QUICKSTART_KO.md)
 
 ## LIVE · 지금 하는 일과 남은 사용량
 
@@ -88,7 +88,7 @@ OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC
 
 ### 1. Mac에 통신 모듈 설치
 
-**아래 세 파일은 Mac에서 실행합니다.** 압축을 푼 폴더에서 순서대로 두 번 누르세요.
+**아래 세 파일은 Mac에서 실행합니다.** 처음 설치할 때는 **Setup → Start → Enable** 순서로 두 번 누르세요.
 
 1. **Setup OrangeDeck.command** — 설치하고 내 작업 폴더·편집기를 고릅니다. 설치 완료 후 안내에 따라 Enter를 누르고 창을 닫습니다.
 2. **Start OrangeDeck Connector.command** — Mac과 핸드헬드를 연결합니다. **OrangeDeck을 사용하는 동안 이 창은 켜 둡니다.**
@@ -131,11 +131,22 @@ sh "$HOME/.config/orangedeck/start-ui.sh"
 
 Codex와 두 기기의 Tailscale은 켜 두세요. 앱을 터미널에서 실행했다면 사용하는 동안 그 터미널도 켜 둡니다. Setup·Enable·설치는 매번 다시 하지 않습니다.
 
+## 업데이트하기
+
+**두 기기에서 위의 ZIP 다운로드를 눌러 새 버전을 받고, 새 폴더에 압축을 푸세요.** 앱이 자동으로 업데이트되지는 않습니다.
+
+| 기기 | 업데이트 순서 |
+| --- | --- |
+| **Mac** | 새 폴더의 **Setup 완료 → 기존 통신 모듈 종료 → 새 Start 실행 → Enable 완료 → Codex `/hooks` 확인·신뢰** |
+| **핸드헬드 PC** | 새 폴더에서 `sh install.sh --role ui` 실행 → 기존 앱 창 닫기 → `sh "$HOME/.config/orangedeck/start-ui.sh"`로 다시 켜기 |
+
+Mac의 기존 통신 모듈은 **그 통신 모듈의 터미널에서만 Ctrl+C**로 종료하세요. **새 Start 창은 사용 중에 켜 두고**, Setup·Enable 창은 각각 완료 후 닫습니다. [파일별 자세한 순서·이전 버전 안내](docs/INSTALL.md#업데이트).
+
 <a id="my-settings"></a>
 
 ### 업데이트해도 내 설정은 그대로
 
-처음 설치할 때 각 기기의 설정과 개인 연결 파일을 준비합니다. 같은 기기에 업데이트할 때는 저장된 **작업 폴더·편집기·연결·언어·대화 배치·알림음**을 그대로 씁니다. 개인 설정은 각 기기의 `~/.config/orangedeck/`에 있고 다운로드에 포함되지 않습니다. [업데이트 순서](docs/INSTALL.md#업데이트) · [설정을 다시 묻지 않는 이유](docs/INSTALL.md#saved-settings).
+처음 설치할 때 각 기기의 설정과 개인 연결 파일을 준비합니다. 같은 기기에 업데이트할 때는 저장된 **작업 폴더·편집기·연결·언어·대화 배치·알림음**을 그대로 씁니다. **연결 파일을 다시 옮기거나 작업 폴더·편집기를 다시 입력할 필요는 없습니다.** 개인 설정은 각 기기의 `~/.config/orangedeck/`에 있고 다운로드에 포함되지 않습니다. [설정을 다시 묻지 않는 이유](docs/INSTALL.md#saved-settings).
 
 [간단 사용법·패드 조작](docs/QUICKSTART_KO.md) · [설치·연결 문제 해결](docs/INSTALL.md) · [English guide](README.en.md) · [변경 기록](docs/CHANGELOG.md)
 

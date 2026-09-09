@@ -129,7 +129,7 @@ Approval keys are active only when Codex has an actual approval request. Answer 
 
 **Get updates from GitHub.** Download the [new ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) on both devices and extract it into a **new folder**. Then follow the steps for each device. The app does not install new versions automatically.
 
-**For the 0.1.33 file list and language controls, updating only the Ally is enough if your Mac already runs Connector 0.1.31.**
+**Mac Connector 0.1.31 is compatible with UI 0.1.34.** Updating only the Ally is enough to get the file list and language controls. If you also update the Mac, follow the steps below.
 
 **On the Mac:**
 

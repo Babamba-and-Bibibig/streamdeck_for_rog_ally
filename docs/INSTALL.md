@@ -129,7 +129,7 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 
 **업데이트 파일은 GitHub에서 받습니다.** [새 ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip)을 두 기기에서 받고 **새 폴더**에 압축을 풉니다. 그다음 기기별로 진행하세요. 앱이 자동으로 새 버전을 설치하지는 않습니다.
 
-**Mac 통신 모듈이 이미 0.1.31이면, 이번 0.1.33 파일 목록·언어 전환 변경은 Ally만 업데이트해도 적용됩니다.**
+**Mac 통신 모듈 0.1.31은 UI 0.1.34와 호환됩니다.** 파일 목록·언어 전환을 적용하려면 Ally만 업데이트해도 됩니다. Mac도 업데이트할 때는 아래 순서를 따르세요.
 
 **Mac에서:**
 

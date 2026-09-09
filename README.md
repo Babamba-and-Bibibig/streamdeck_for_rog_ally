@@ -19,7 +19,7 @@ Use the **한국어 / English buttons at the top right of the app** to switch la
 - **Main PC running Codex and Connector:** macOS only. Linux and Windows hosts are not supported.
 - **Handheld remote:** tested on the CachyOS setup above. Windows is not supported. Other Linux distributions, Steam Deck, SteamOS and other handhelds are unverified as remotes.
 
-[⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Controls](docs/CONTROLS.md)
+[⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Update](#updating) · [Controls](docs/CONTROLS.md)
 
 ## LIVE · Current work and remaining quota
 
@@ -88,7 +88,7 @@ On both devices, use **Download ZIP** above and extract it. Git and SSH keys are
 
 ### 1. Install Connector on the Mac
 
-**These three files run on the Mac.** In the extracted folder, double-click them in order.
+**These three files run on the Mac.** For first setup, double-click them in **Setup → Start → Enable** order.
 
 1. **Setup OrangeDeck.command** — install Connector and choose your work folder and editor. When setup finishes, press Enter as prompted and close the window.
 2. **Start OrangeDeck Connector.command** — connect the Mac and handheld. **Keep this window open while using OrangeDeck.**
@@ -131,11 +131,22 @@ When it shows **CONNECTED**, open **Agents → an upper + key** and assign a con
 
 Keep Codex and Tailscale running. If you launch the app from a terminal, keep that terminal open too. Setup, Enable and installation are not daily steps.
 
+## Updating
+
+**Use Download ZIP above on both devices to get the new version, and extract it into a new folder.** The app does not update automatically.
+
+| Device | Update steps |
+| --- | --- |
+| **Mac** | In the new folder: **finish Setup → stop the old Connector → run the new Start → finish Enable → review/trust Codex `/hooks`** |
+| **Handheld PC** | Run `sh install.sh --role ui` in the new folder → close the old app window → restart with `sh "$HOME/.config/orangedeck/start-ui.sh"` |
+
+Stop the old Mac Connector with **Ctrl+C in that Connector's own terminal only**. **Keep the new Start window open while using OrangeDeck**; close Setup and Enable after each finishes. [Full filenames, detailed steps and older versions](docs/INSTALL.en.md#update).
+
 <a id="my-settings"></a>
 
 ### Updates keep your settings
 
-First setup creates each device's settings and your personal connection file. Updating the same devices keeps your **work folder, editor, connection, language, conversation assignments and sound setting**. Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Update steps](docs/INSTALL.en.md#update) · [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
+First setup creates each device's settings and your personal connection file. Updating the same devices keeps your **work folder, editor, connection, language, conversation assignments and sound setting**. **You do not need to transfer the connection file again or re-enter your work folder and editor.** Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
 
 [Controls and everyday use](docs/CONTROLS.md) · [Setup and connection help](docs/INSTALL.en.md) · [한국어 안내](README.ko.md) · [Changelog](docs/CHANGELOG.md)
 
