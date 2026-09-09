@@ -185,6 +185,7 @@ pub fn turn_changes_to_dto(changes: &domain::TurnChanges) -> dto::TurnChangesDto
         files: changes
             .files
             .iter()
+            .filter(|file| file.is_listable())
             .map(|file| dto::CodeChangeDto {
                 path: file.path.clone(),
                 previous_path: file.previous_path.clone(),
@@ -195,8 +196,9 @@ pub fn turn_changes_to_dto(changes: &domain::TurnChanges) -> dto::TurnChangesDto
                     domain::CodeChangeKind::Renamed => dto::CodeChangeKindDto::Renamed,
                 },
                 first_line: file.first_line,
-                diff: file.diff.clone(),
-                content: file.content.clone(),
+                // Older clients require this field; file records carry no source text.
+                diff: String::new(),
+                content: None,
                 truncated: file.truncated,
             })
             .collect(),

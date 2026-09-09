@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub(super) struct RecordedEdits {
-    pending: HashMap<String, String>,
+    pending: HashMap<String, Option<Vec<Value>>>,
     completed: Vec<Value>,
     bytes: usize,
     incomplete: bool,
@@ -37,13 +37,14 @@ impl RecordedEdits {
                     input.filter(|text| text.len() <= 65_536 && self.bytes + text.len() <= 262_144)
                 {
                     self.bytes += input.len();
-                    self.pending.insert(call_id.to_owned(), input);
+                    self.pending
+                        .insert(call_id.to_owned(), patch_changes(&input));
                 } else {
                     self.incomplete = true;
                 }
             }
             Some("custom_tool_call_output" | "function_call_output") => {
-                let Some(patch) = self.pending.remove(call_id) else {
+                let Some(changes) = self.pending.remove(call_id) else {
                     return;
                 };
                 let output = payload["output"].as_str().unwrap_or("");
@@ -59,7 +60,7 @@ impl RecordedEdits {
                 {
                     return;
                 }
-                if let Some(changes) = patch_changes(&patch) {
+                if let Some(changes) = changes {
                     self.completed
                         .push(json!({"type":"fileChange","status":"completed","changes":changes}));
                 } else {
@@ -110,10 +111,13 @@ fn patch_changes(patch: &str) -> Option<Vec<Value>> {
             changes.last_mut()?["kind"]["move_path"] = destination.into();
         } else if line != "*** End of File" {
             let change = changes.last_mut()?;
-            let mut diff = change["diff"].as_str()?.to_owned();
-            diff.push_str(line);
-            diff.push('\n');
-            change["diff"] = diff.into();
+            // Retain only a numeric hunk location, including while awaiting success.
+            // Context on an @@ header can itself contain source text.
+            if change["diff"].as_str()?.is_empty()
+                && let Some(first_line) = super::changes::first_changed_line(line)
+            {
+                change["diff"] = format!("@@ -1 +{first_line} @@").into();
+            }
         }
     }
     None

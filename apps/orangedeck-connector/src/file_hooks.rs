@@ -52,7 +52,7 @@ pub struct FileHooks {
 
 impl FileHooks {
     pub fn new(path: PathBuf) -> Self {
-        let load = || -> io::Result<VecDeque<CapturedTurn>> {
+        let load = || -> io::Result<(VecDeque<CapturedTurn>, bool)> {
             let file = fs::OpenOptions::new()
                 .read(true)
                 .custom_flags(orangedeck_infra::file_capture::private_read_flags())
@@ -63,25 +63,37 @@ impl FileHooks {
             }
             let mut bytes = Vec::new();
             file.take(MAX_CACHE + 1).read_to_end(&mut bytes)?;
-            let turns: VecDeque<CapturedTurn> = serde_json::from_slice(&bytes)?;
+            // Unknown legacy diff/content fields are skipped by the metadata-only type.
+            let mut turns: VecDeque<CapturedTurn> = serde_json::from_slice(&bytes)?;
             if bytes.len() > usize::try_from(MAX_CACHE).unwrap_or(0)
                 || turns.len() > MAX_TURNS
-                || turns.iter().any(|turn| {
-                    turn.changes.files.len() > 64
-                        || turn.changes.files.iter().map(change_bytes).sum::<usize>() > 65_536
-                })
+                || turns.iter().any(|turn| turn.changes.files.len() > 64)
             {
                 return Err(io::Error::other("oversized file-change cache"));
             }
-            Ok(turns)
+            for turn in &mut turns {
+                turn.changes
+                    .files
+                    .retain(orangedeck_domain::CodeChange::is_listable);
+            }
+            let rewrite = serde_json::to_vec(&turns)? != bytes;
+            Ok((turns, rewrite))
         };
-        Self {
+        let (turns, rewrite) = load().unwrap_or_default();
+        let hooks = Self {
             state: Mutex::new(State {
-                turns: load().unwrap_or_default(),
+                turns,
                 ..State::default()
             }),
             path,
+        };
+        if rewrite {
+            // Remove legacy source text from this cache before any new tool runs.
+            if let Err(error) = hooks.save(&hooks.state.lock().expect("file hook lock").turns) {
+                tracing::warn!(%error, "Could not remove legacy source text from file-change cache");
+            }
         }
+        hooks
     }
 
     pub fn lifecycle(&self, thread: &str, turn: &str, cwd: &str, started: bool) {
@@ -241,36 +253,33 @@ impl FileHooks {
         });
         observation.observed_at = observation.observed_at.max(record.captured_at);
         let changes = observation.changes.get_or_insert_with(TurnChanges::default);
+        changes
+            .files
+            .retain(orangedeck_domain::CodeChange::is_listable);
+        let mut overflow = false;
         // Captured changes supersede missing history, but keep unrelated structured edits.
         for file in &record.changes.files {
             if let Some(old) = changes.files.iter_mut().find(|old| {
                 let path = std::path::Path::new(&old.path);
                 path.strip_prefix(&thread.cwd).unwrap_or(path) == std::path::Path::new(&file.path)
             }) {
-                if old.diff.is_empty() {
-                    *old = file.clone();
-                } else {
-                    // Keep the Codex diff and its line, alongside the last observed text.
-                    old.content.clone_from(&file.content);
-                    old.truncated |= file.truncated;
-                    if file.kind == orangedeck_domain::CodeChangeKind::Deleted
-                        || old.kind == orangedeck_domain::CodeChangeKind::Deleted
-                    {
-                        old.kind = file.kind;
-                    }
+                // Keep the structured edit's recorded line and rename information.
+                old.truncated |= file.truncated;
+                if file.kind == orangedeck_domain::CodeChangeKind::Deleted
+                    || old.kind == orangedeck_domain::CodeChangeKind::Deleted
+                {
+                    old.kind = file.kind;
                 }
             } else if changes.files.len() < 64 {
                 changes.files.push(file.clone());
+            } else {
+                overflow = true;
             }
         }
-        changes.truncated = !record.complete
+        changes.truncated = overflow
+            || !record.complete
             || record.changes.truncated
             || changes.files.iter().any(|file| file.truncated);
-        let mut remaining = 65_536;
-        for file in &mut changes.files {
-            bound_change(file, &mut remaining);
-            changes.truncated |= file.truncated;
-        }
         if let Some(activity) = &thread.activity {
             observation.last_turn_status = activity.status;
         }
@@ -322,33 +331,18 @@ fn record<'a>(state: &'a mut State, thread: &str, turn: &str, cwd: &str) -> &'a 
     state.turns.back_mut().expect("inserted turn")
 }
 
-fn change_bytes(change: &orangedeck_domain::CodeChange) -> usize {
-    change.diff.len() + change.content.as_ref().map_or(0, String::len)
-}
-
-fn bound_change(change: &mut orangedeck_domain::CodeChange, remaining: &mut usize) {
-    let mut budget = (*remaining).min(16_384);
-    for text in std::iter::once(&mut change.diff).chain(change.content.iter_mut()) {
-        let mut length = text.len().min(budget);
-        while !text.is_char_boundary(length) {
-            length -= 1;
-        }
-        change.truncated |= length < text.len();
-        text.truncate(length);
-        budget -= length;
-        *remaining -= length;
-    }
-}
-
 fn merge_changes(existing: &mut TurnChanges, incoming: &TurnChanges) {
     existing.truncated |= incoming.truncated;
-    for change in &incoming.files {
+    existing
+        .files
+        .retain(orangedeck_domain::CodeChange::is_listable);
+    for change in incoming.files.iter().filter(|file| file.is_listable()) {
         if let Some(old) = existing
             .files
             .iter_mut()
             .find(|file| file.path == change.path)
         {
-            // A later event replaces the current preview, not an invented diff.
+            // A later event updates the file's current state.
             let was_added = old.kind == orangedeck_domain::CodeChangeKind::Added;
             *old = change.clone();
             if was_added && old.kind == orangedeck_domain::CodeChangeKind::Modified {
@@ -360,9 +354,5 @@ fn merge_changes(existing: &mut TurnChanges, incoming: &TurnChanges) {
             existing.truncated = true;
         }
     }
-    let mut remaining = 65_536;
-    for file in &mut existing.files {
-        bound_change(file, &mut remaining);
-        existing.truncated |= file.truncated;
-    }
+    existing.truncated |= existing.files.iter().any(|file| file.truncated);
 }

@@ -127,11 +127,81 @@ pub struct CodeChange {
     pub previous_path: Option<String>,
     pub kind: CodeChangeKind,
     pub first_line: u32,
-    pub diff: String,
-    /// Current file text when an OS event supplies no before-image or Codex diff.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub content: Option<String>,
     pub truncated: bool,
+}
+
+impl CodeChange {
+    /// The same exclusion policy applies to events, history, caches and navigation.
+    pub fn is_listable(&self) -> bool {
+        is_file_change_path(&self.path)
+            && self
+                .previous_path
+                .as_deref()
+                .is_none_or(is_file_change_path)
+    }
+}
+
+pub fn is_file_change_path(path: &str) -> bool {
+    !path.is_empty()
+        && path.len() <= 4096
+        && !path.chars().any(char::is_control)
+        && std::path::Path::new(path).file_name().is_some()
+        && std::path::Path::new(path)
+            .components()
+            .all(|part| match part {
+                std::path::Component::Normal(name) => name
+                    .to_str()
+                    .is_some_and(|name| !excluded_change_component(name)),
+                std::path::Component::RootDir | std::path::Component::CurDir => true,
+                _ => false,
+            })
+}
+
+pub fn excluded_change_component(name: &str) -> bool {
+    let lowercase = name
+        .bytes()
+        .any(|byte| byte.is_ascii_uppercase())
+        .then(|| name.to_ascii_lowercase());
+    let name = lowercase.as_deref().unwrap_or(name);
+    matches!(
+        name,
+        "." | ".."
+            | ".git"
+            | ".codex"
+            | ".ssh"
+            | ".aws"
+            | ".gnupg"
+            | ".config"
+            | ".local"
+            | "library"
+            | ".netrc"
+            | ".npmrc"
+            | ".pypirc"
+            | ".git-credentials"
+            | ".docker"
+            | ".kube"
+            | "node_modules"
+            | "target"
+            | "dist"
+            | "build"
+            | ".venv"
+            | "venv"
+            | "__pycache__"
+            | ".cache"
+            | ".next"
+            | ".tox"
+            | "auth.json"
+            | "credentials.json"
+            | "hooks.json"
+            | "file-changes.json"
+            | "known_hosts"
+            | "authorized_keys"
+    ) || name.starts_with(".env")
+        || name.starts_with("id_rsa")
+        || name.starts_with("id_ed25519")
+        || [".token", ".pem", ".key", ".p12", ".pfx", ".local.toml"]
+            .iter()
+            .any(|suffix| name.ends_with(suffix))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

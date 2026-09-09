@@ -440,8 +440,10 @@ pub struct CodeChangeDto {
     pub previous_path: Option<String>,
     pub kind: CodeChangeKindDto,
     pub first_line: u32,
+    /// Empty compatibility field; discard source text sent by older Connectors.
+    #[serde(default, skip_deserializing)]
     pub diff: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_deserializing, skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
     pub truncated: bool,
 }

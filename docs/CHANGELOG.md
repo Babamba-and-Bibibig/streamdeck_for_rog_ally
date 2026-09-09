@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.35 — Keep changed-file records to paths and line numbers
+
+- Stop reading changed-file contents for the file list. Retain paths, change kinds and recorded lines without storing or sending source text or patches as file records.
+- Apply the same sensitive-path exclusions to filesystem events, completed Codex edits, cached records and editor navigation. Remove legacy source text from readable file-change caches when the Connector starts.
+- Preserve explicit file selection, recorded-line navigation, full replies and approval details. Older clients still receive the compatible empty diff field; the new UI discards file bodies from older Connectors.
+- Update the Mac Connector to apply collection and cache changes. Update both devices for all 0.1.35 changes; personal settings and pairing are preserved.
+
 ## 0.1.34 — Smaller source downloads
 
 - Exclude development tests and test scripts from the public source and installation downloads. Preserve the app's build and installation files, illustrated guides and all user features.

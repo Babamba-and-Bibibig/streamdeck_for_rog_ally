@@ -80,7 +80,7 @@ The diagram below shows **the tested Mac Studio + ASUS ROG Ally setup**.
 
 ## Installation
 
-**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.34**.
+**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.35**.
 
 Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
 
@@ -134,6 +134,8 @@ Keep Codex and Tailscale running. If you launch the app from a terminal, keep th
 ## Updating
 
 **Use Download ZIP above on both devices to get the new version, and extract it into a new folder.** The app does not update automatically.
+
+**For 0.1.35, update the Mac Connector too.** It stops retaining and sending source text for the changed-file list and removes that text from readable older file-change caches. File selection and recorded-line navigation stay the same.
 
 | Device | Update steps |
 | --- | --- |

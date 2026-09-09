@@ -1,5 +1,5 @@
 //! Read the completed fileChange items of one turn. Never infer authorship from Git status.
-use orangedeck_domain::{CodeChange, CodeChangeKind, TurnChanges};
+use orangedeck_domain::{CodeChange, CodeChangeKind, TurnChanges, is_file_change_path};
 use serde_json::Value;
 
 pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
@@ -12,7 +12,6 @@ pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
     }
     let items = turn.get("items")?.as_array()?;
     let mut result = TurnChanges::default();
-    let mut remaining = 65_536;
     for item in items {
         // A tool can change files without producing a fileChange item. Missing
         // records are not evidence of no edits; never disable the UI as "none".
@@ -52,6 +51,9 @@ pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
                 result.truncated = true;
                 continue;
             }
+            if !is_file_change_path(path) || moved.is_some_and(|path| !is_file_change_path(path)) {
+                continue;
+            }
             let change_kind = match kind
                 .get("type")
                 .and_then(Value::as_str)
@@ -79,39 +81,19 @@ pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
                 result.truncated = true;
                 continue;
             };
-            let previous_length = existing.map_or(0, |index| result.files[index].diff.len());
-            let separator = usize::from(previous_length > 0 && !diff.is_empty()) * 2;
-            let budget = remaining.min(16_384_usize.saturating_sub(previous_length));
-            let mut length = diff.len().min(budget.saturating_sub(separator));
-            while !diff.is_char_boundary(length) {
-                length -= 1;
-            }
-            let separator = if length > 0 { separator } else { 0 };
-            remaining -= length + separator;
-            let truncated = length < diff.len();
             let file = CodeChange {
                 path: destination.to_owned(),
                 previous_path: moved.map(|_| path.to_owned()),
                 kind: change_kind,
-                first_line: first_changed_line(diff),
-                diff: diff[..length].to_owned(),
-                content: None,
-                truncated,
+                first_line: first_changed_line(diff).unwrap_or(1),
+                truncated: false,
             };
             if let Some(index) = existing {
-                // Preserve each edit's diff, but use the latest target and location.
+                // Keep the latest target and line, never a copy of the source patch.
                 let previous = &mut result.files[index];
-                let mut combined = std::mem::take(&mut previous.diff);
-                if separator > 0 {
-                    combined.push_str("\n\n");
-                }
-                combined.push_str(&file.diff);
                 let original = previous.previous_path.clone();
                 let was_added = previous.kind == CodeChangeKind::Added;
-                let clipped = previous.truncated || file.truncated;
                 *previous = file;
-                previous.diff = combined;
-                previous.truncated = clipped;
                 previous.previous_path = original.or(previous.previous_path.clone());
                 if was_added && previous.kind == CodeChangeKind::Modified {
                     previous.kind = CodeChangeKind::Added;
@@ -119,7 +101,6 @@ pub(super) fn parse_changes(turn: &Value) -> Option<TurnChanges> {
             } else {
                 result.files.push(file);
             }
-            result.truncated |= truncated;
         }
     }
     Some(result)
@@ -129,7 +110,7 @@ fn valid_path(path: &str) -> bool {
     !path.is_empty() && path.len() <= 4096 && !path.chars().any(char::is_control)
 }
 
-fn first_changed_line(diff: &str) -> u32 {
+pub(super) fn first_changed_line(diff: &str) -> Option<u32> {
     for line in diff.lines() {
         if let Some(hunk) = line.strip_prefix("@@ ")
             && let Some(added) = hunk
@@ -140,8 +121,8 @@ fn first_changed_line(diff: &str) -> u32 {
                 .next()
                 .and_then(|value| value.parse::<u32>().ok())
         {
-            return line.clamp(1, 10_000_000);
+            return Some(line.clamp(1, 10_000_000));
         }
     }
-    1
+    None
 }

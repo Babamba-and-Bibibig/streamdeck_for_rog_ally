@@ -18,7 +18,12 @@ pub fn recorded_change<'a>(
     let change = observation
         .changes
         .as_ref()
-        .and_then(|changes| changes.files.iter().find(|change| change.path == path))
+        .and_then(|changes| {
+            changes
+                .files
+                .iter()
+                .find(|change| change.path == path && change.is_listable())
+        })
         .ok_or(
             "이 질의의 수정 파일 목록에 없는 파일입니다 / File is not a recorded edit in this turn",
         )?;

@@ -1,9 +1,9 @@
-//! Observe a tool's filesystem events, then read only the reported paths.
+//! Observe a tool's filesystem events, then check only the reported paths' metadata.
 //! No directory traversal, Git baseline, command parsing or filesystem writes.
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{self, Read},
+    io,
     os::unix::fs::MetadataExt,
     path::{Component, Path, PathBuf},
 };
@@ -12,7 +12,9 @@ use nix::{
     fcntl::{OFlag, open, openat},
     sys::stat::Mode,
 };
-use orangedeck_domain::{CodeChange, CodeChangeKind, TurnChanges};
+use orangedeck_domain::{
+    CodeChange, CodeChangeKind, TurnChanges, excluded_change_component as excluded,
+};
 
 #[cfg(target_os = "macos")]
 #[allow(unsafe_code)] // The native callback and stream lifetime are isolated here.
@@ -25,8 +27,6 @@ mod other;
 use other::Watcher;
 
 const MAX_PATHS: usize = 64;
-const MAX_FILE: usize = 16_384;
-const MAX_CONTENT: usize = 65_536;
 const FLAGS: OFlag = OFlag::O_RDONLY
     .union(OFlag::O_NOFOLLOW)
     .union(OFlag::O_NONBLOCK)
@@ -170,7 +170,6 @@ fn read_changes(root: &File, events: Events) -> TurnChanges {
         files: Vec::new(),
         truncated: events.incomplete,
     };
-    let mut remaining = MAX_CONTENT;
     for (path, flags) in events.paths {
         let mut change = CodeChange {
             path,
@@ -181,8 +180,6 @@ fn read_changes(root: &File, events: Events) -> TurnChanges {
                 CodeChangeKind::Modified
             },
             first_line: 1,
-            diff: String::new(),
-            content: None,
             truncated: false,
         };
         match open_file(root, &change.path) {
@@ -194,45 +191,8 @@ fn read_changes(root: &File, events: Events) -> TurnChanges {
                 if !metadata.is_file() {
                     continue;
                 }
-                // An outside hard link must not become a way to copy private contents.
-                let budget = remaining.min(MAX_FILE);
-                if metadata.nlink() > 1 || budget == 0 {
-                    change.truncated = true;
-                } else {
-                    let mut bytes = Vec::new();
-                    let read = (&file)
-                        .take(u64::try_from(budget + 1).unwrap_or(0))
-                        .read_to_end(&mut bytes);
-                    remaining -= bytes.len().min(budget);
-                    let stable = file.metadata().is_ok_and(|after| {
-                        (
-                            metadata.len(),
-                            metadata.mtime(),
-                            metadata.mtime_nsec(),
-                            metadata.ctime(),
-                            metadata.ctime_nsec(),
-                        ) == (
-                            after.len(),
-                            after.mtime(),
-                            after.mtime_nsec(),
-                            after.ctime(),
-                            after.ctime_nsec(),
-                        )
-                    });
-                    if read.is_ok() && stable && !bytes.contains(&0) {
-                        change.truncated = bytes.len() > budget || metadata.len() > budget as u64;
-                        bytes.truncate(budget);
-                        // Clipping a UTF-8 code point is different from a binary file.
-                        if let Err(error) = std::str::from_utf8(&bytes)
-                            && error.error_len().is_none()
-                            && change.truncated
-                        {
-                            bytes.truncate(error.valid_up_to());
-                        }
-                        change.content = String::from_utf8(bytes).ok();
-                    }
-                    change.truncated |= change.content.is_none();
-                }
+                // Keep the hard-link ambiguity marker without reading any file bytes.
+                change.truncated = metadata.nlink() > 1;
             }
             Err(error)
                 if error.kind() == io::ErrorKind::NotFound && (flags.removed || flags.renamed) =>
@@ -256,51 +216,4 @@ fn read_changes(root: &File, events: Events) -> TurnChanges {
         changes.files.push(change);
     }
     changes
-}
-
-fn excluded(name: &str) -> bool {
-    let lowercase = name
-        .bytes()
-        .any(|byte| byte.is_ascii_uppercase())
-        .then(|| name.to_ascii_lowercase());
-    let name = lowercase.as_deref().unwrap_or(name);
-    matches!(
-        name,
-        "." | ".."
-            | ".git"
-            | ".codex"
-            | ".ssh"
-            | ".aws"
-            | ".gnupg"
-            | ".config"
-            | ".local"
-            | "library"
-            | ".netrc"
-            | ".npmrc"
-            | ".pypirc"
-            | ".git-credentials"
-            | ".docker"
-            | ".kube"
-            | "node_modules"
-            | "target"
-            | "dist"
-            | "build"
-            | ".venv"
-            | "venv"
-            | "__pycache__"
-            | ".cache"
-            | ".next"
-            | ".tox"
-            | "auth.json"
-            | "credentials.json"
-            | "hooks.json"
-            | "file-changes.json"
-            | "known_hosts"
-            | "authorized_keys"
-    ) || name.starts_with(".env")
-        || name.starts_with("id_rsa")
-        || name.starts_with("id_ed25519")
-        || [".token", ".pem", ".key", ".p12", ".pfx", ".local.toml"]
-            .iter()
-            .any(|suffix| name.ends_with(suffix))
 }

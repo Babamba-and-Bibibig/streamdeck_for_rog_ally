@@ -129,7 +129,7 @@ Approval keys are active only when Codex has an actual approval request. Answer 
 
 **Get updates from GitHub.** Download the [new ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) on both devices and extract it into a **new folder**. Then follow the steps for each device. The app does not install new versions automatically.
 
-**Mac Connector 0.1.31 is compatible with UI 0.1.34.** Updating only the Ally is enough to get the file list and language controls. If you also update the Mac, follow the steps below.
+**Update the Mac Connector to apply 0.1.35's reduction in file-content collection and storage.** The file list and language controls remain compatible with Mac 0.1.31, but updating only the Ally does not change that Mac's collection or cache behavior. Update both devices below.
 
 **On the Mac:**
 
@@ -168,7 +168,7 @@ Relative file paths resolve from that conversation’s working folder. Files mus
 
 If opening fails, the reason and **Try again** appear above the file list. Automatic working-folder selection requires version 0.1.26 or later. If an older Mac Connector returns a folder-registration error, the Ally displays an update instruction.
 
-Mac filesystem events fetch only changed paths without scanning the whole project. **The 0.1.33 file list and language controls are an Ally UI update and work with an existing 0.1.31 Mac Connector.** If upgrading an older Mac that cannot capture files, update it, rerun **Enable Codex Notifications.command**, and **review/trust the hooks in Codex `/hooks`**. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes.
+Mac filesystem events fetch only changed paths without scanning the whole project. **From 0.1.35, the changed-file list does not read, retain or send file contents.** Records keep paths, change kinds and recorded line numbers. Capture starts with subsequent work; it cannot reconstruct earlier unrecorded changes. Questions, replies and the original details needed for approval decisions remain available.
 
 Capture stays inside the conversation's Mac working folder. Links, credential files, `.env` and common build/dependency directories are excluded. Code contents are viewed in your Mac editor. Overlapping work from different conversations, interrupted tools without a completion hook, OS-reported event loss, or too many changed files leaves an incomplete record. Incomplete or loading records show **Check file records / Loading** on the lower key. Press it to open the dialog and retry. Responses, approvals and files are all in **Agents**; there is no separate Notifications tab.
 
