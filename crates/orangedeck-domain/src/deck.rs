@@ -118,21 +118,3 @@ impl UiPreferences {
             .filter(|action| *action != Shortcut::Unassigned)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn custom_actions_cannot_replace_decision_keys_or_escape_the_grid() {
-        let mut preferences = UiPreferences::default();
-        for key in [0, 1, 10, usize::MAX] {
-            assert!(!preferences.assign(key, Some(Shortcut::OpenTerminal)));
-            assert_eq!(preferences.action(key), None);
-        }
-        assert!(preferences.assign(2, Some(Shortcut::Refresh)));
-        assert_eq!(preferences.action(2), Some(Shortcut::Refresh));
-        assert!(preferences.assign(2, None));
-        assert_eq!(preferences.action(2), None);
-    }
-}

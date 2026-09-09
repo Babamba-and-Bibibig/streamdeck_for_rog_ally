@@ -147,17 +147,3 @@ pub enum SetupError {
     #[error(transparent)]
     Config(#[from] orangedeck_infra::ConfigError),
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn recognizes_only_cgnat_tailscale_addresses() {
-        assert!(is_tailscale_ip("100.64.0.1".parse().unwrap()));
-        assert!(is_tailscale_ip("100.127.255.254".parse().unwrap()));
-        assert!(!is_tailscale_ip("100.1.2.3".parse().unwrap()));
-        assert!(!is_tailscale_ip("192.168.0.2".parse().unwrap()));
-        assert!(!is_tailscale_ip("127.0.0.1".parse().unwrap()));
-    }
-}

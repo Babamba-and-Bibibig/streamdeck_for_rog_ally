@@ -239,16 +239,3 @@ fn init_tracing(default_level: &str) {
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_level));
     tracing_subscriber::fmt().with_env_filter(filter).init();
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn real_connector_accepts_only_tailscale_v4() {
-        assert!(is_tailscale_ip("100.64.0.2".parse().unwrap()));
-        assert!(!is_tailscale_ip("100.1.2.3".parse().unwrap()));
-        assert!(!is_tailscale_ip("192.168.0.15".parse().unwrap()));
-        assert!(!is_tailscale_ip("0.0.0.0".parse().unwrap()));
-    }
-}

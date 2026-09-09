@@ -66,38 +66,3 @@ pub fn status_message(language: Language, message: &str) -> Cow<'_, str> {
         Cow::Owned(format!("{prefix}{translated}"))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn language_is_window_local_and_changes_without_restarting() {
-        let first = egui::Context::default();
-        let second = egui::Context::default();
-        set_language(&first, Language::English);
-        assert_eq!(language(&first), Language::English);
-        assert_eq!(language(&second), Language::Korean);
-        set_language(&first, Language::Korean);
-        assert_eq!(language(&first), Language::Korean);
-    }
-
-    #[test]
-    fn known_connector_statuses_translate_without_stripping_unknown_error_details() {
-        assert_eq!(
-            status_message(
-                Language::English,
-                "approval_not_pending: 이 승인 요청은 이미 종료되었습니다"
-            ),
-            "approval_not_pending: This approval request has already ended."
-        );
-        for text in [
-            "custom_error: 경로 / 내용: 원문을 유지하세요",
-            "Run this exact command: printf '작업 폴더: /tmp/example / details'",
-            "unrecognized failure: line 42\nfull error details",
-        ] {
-            assert_eq!(status_message(Language::English, text), text);
-            assert_eq!(status_message(Language::Korean, text), text);
-        }
-    }
-}

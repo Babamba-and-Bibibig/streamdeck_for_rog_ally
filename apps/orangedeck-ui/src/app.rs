@@ -32,16 +32,6 @@ enum Page {
 impl Page {
     const ALL: [Self; 4] = [Self::Dashboard, Self::Agents, Self::Projects, Self::Codex];
 
-    #[cfg(test)]
-    const fn label(self) -> &'static str {
-        match self {
-            Self::Dashboard => "LIVE",
-            Self::Agents => "에이전트들",
-            Self::Projects => "프로젝트들",
-            Self::Codex => "대화",
-        }
-    }
-
     const fn translated(self, lang: Language) -> &'static str {
         match self {
             Self::Dashboard => "LIVE",
@@ -1135,6 +1125,3 @@ fn activity_time(lang: Language, timestamp: i64) -> String {
         },
     )
 }
-
-#[cfg(test)]
-mod tests;

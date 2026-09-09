@@ -33,22 +33,3 @@ impl Default for ReconnectBackoff {
         Self::new(Duration::from_millis(500), Duration::from_secs(15))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn reconnect_backoff_grows_caps_and_resets() {
-        let mut backoff =
-            ReconnectBackoff::new(Duration::from_millis(100), Duration::from_millis(450));
-
-        assert_eq!(backoff.next_delay(), Duration::from_millis(100));
-        assert_eq!(backoff.next_delay(), Duration::from_millis(200));
-        assert_eq!(backoff.next_delay(), Duration::from_millis(400));
-        assert_eq!(backoff.next_delay(), Duration::from_millis(450));
-        assert_eq!(backoff.next_delay(), Duration::from_millis(450));
-        backoff.reset();
-        assert_eq!(backoff.next_delay(), Duration::from_millis(100));
-    }
-}

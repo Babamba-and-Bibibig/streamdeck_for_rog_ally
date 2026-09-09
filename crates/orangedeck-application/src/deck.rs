@@ -53,28 +53,3 @@ pub fn resolve_shortcut(
     };
     Ok(ShortcutEffect::Remote(command))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn offline_navigation_remains_local_but_host_actions_require_a_registered_project() {
-        assert_eq!(
-            resolve_shortcut(Shortcut::Live, None, None, false),
-            Ok(ShortcutEffect::Local(Shortcut::Live))
-        );
-        assert_eq!(
-            resolve_shortcut(Shortcut::OpenTerminal, None, Some("/mock/project"), false),
-            Err(ShortcutUnavailable::Disconnected)
-        );
-        assert_eq!(
-            resolve_shortcut(Shortcut::OpenTerminal, None, Some("/mock/project"), true),
-            Err(ShortcutUnavailable::UnregisteredProject)
-        );
-        assert_eq!(
-            resolve_shortcut(Shortcut::Refresh, None, None, true),
-            Ok(ShortcutEffect::Remote(ClientCommand::CodexRefreshThreads))
-        );
-    }
-}

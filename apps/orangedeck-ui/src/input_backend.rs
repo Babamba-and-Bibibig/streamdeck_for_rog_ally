@@ -53,34 +53,3 @@ pub fn prepare() -> std::io::Result<()> {
     }
     Ok(())
 }
-
-#[cfg(all(test, target_os = "linux"))]
-mod tests {
-    use super::*;
-    use std::{fs, os::unix::fs::PermissionsExt};
-
-    #[test]
-    fn inaccessible_original_pad_uses_directory_discovery_without_changing_permissions() {
-        let root = std::env::temp_dir().join(format!("orangedeck-input-{}", uuid::Uuid::new_v4()));
-        let sys = root.join("sys");
-        let input = root.join("input");
-        let udev = root.join("udev");
-        for path in [sys.join("event7"), input.clone(), udev.clone()] {
-            fs::create_dir_all(path).unwrap();
-        }
-        fs::write(sys.join("event7/dev"), "13:71\n").unwrap();
-        fs::write(udev.join("c13:71"), "E:ID_INPUT_JOYSTICK=1\n").unwrap();
-        let node = input.join("event7");
-        fs::write(&node, "").unwrap();
-        fs::set_permissions(&node, fs::Permissions::from_mode(0o600)).unwrap();
-        assert!(!directory_backend_needed(&sys, &input, &udev));
-        fs::set_permissions(&node, fs::Permissions::from_mode(0o000)).unwrap();
-        assert!(directory_backend_needed(&sys, &input, &udev));
-        assert_eq!(fs::metadata(&node).unwrap().permissions().mode() & 0o777, 0);
-        fs::remove_file(node).unwrap();
-        assert!(directory_backend_needed(&sys, &input, &udev));
-        fs::write(udev.join("c13:71"), "E:ID_INPUT_KEYBOARD=1\n").unwrap();
-        assert!(!directory_backend_needed(&sys, &input, &udev));
-        fs::remove_dir_all(root).unwrap();
-    }
-}

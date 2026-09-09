@@ -11,8 +11,6 @@ mod network;
 mod notifications;
 mod paired;
 mod selection;
-#[cfg(test)]
-mod test_support;
 mod theme;
 mod usage;
 mod verify;
@@ -242,17 +240,4 @@ fn init_tracing(default_level: &str) {
         .with_env_filter(filter)
         .with_target(false)
         .init();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn remote_ui_rejects_lan_and_public_urls() {
-        assert!(require_tailscale_url("http://100.64.0.2:45831").is_ok());
-        assert!(require_tailscale_url("http://100.1.2.3:45831").is_err());
-        assert!(require_tailscale_url("http://192.168.0.2:45831").is_err());
-        assert!(require_tailscale_url("http://0.0.0.0:45831").is_err());
-    }
 }

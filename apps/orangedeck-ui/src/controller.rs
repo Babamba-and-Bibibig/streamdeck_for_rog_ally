@@ -29,17 +29,6 @@ pub struct ControllerInput {
 }
 
 impl ControllerInput {
-    #[cfg(test)]
-    pub fn for_test() -> Self {
-        Self {
-            gilrs: None,
-            detected: Vec::new(),
-            last_axis_action: Instant::now(),
-            last_left_x: 0.0,
-            last_left_y: 0.0,
-            was_focused: false,
-        }
-    }
     pub fn new() -> Self {
         match Gilrs::new() {
             Ok(gilrs) => {
@@ -203,55 +192,4 @@ fn keyboard_actions(ctx: &egui::Context) -> Vec<ControlAction> {
         push(egui::Key::Y, ControlAction::Detail);
         actions
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn typing_in_prompt_does_not_activate_page_shortcuts() {
-        let ctx = egui::Context::default();
-        let input = egui::RawInput {
-            events: vec![egui::Event::Key {
-                key: egui::Key::E,
-                physical_key: None,
-                pressed: true,
-                repeat: false,
-                modifiers: egui::Modifiers::NONE,
-            }],
-            ..Default::default()
-        };
-        ctx.run_ui(input, |ui| {
-            let ctx = ui.ctx().clone();
-            assert_eq!(keyboard_actions(&ctx), vec![ControlAction::NextPage]);
-            let mut prompt = String::new();
-            ui.add(egui::TextEdit::singleline(&mut prompt))
-                .request_focus();
-            assert!(keyboard_actions(&ctx).is_empty());
-        })
-        .drop_without_applying_deltas();
-    }
-
-    #[test]
-    fn xbox_buttons_map_to_documented_commands() {
-        assert_eq!(button_action(Button::South), Some(ControlAction::Activate));
-        assert_eq!(button_action(Button::East), Some(ControlAction::Back));
-        assert_eq!(
-            button_action(Button::LeftTrigger),
-            Some(ControlAction::PreviousPage)
-        );
-        assert_eq!(
-            button_action(Button::RightTrigger),
-            Some(ControlAction::NextPage)
-        );
-        assert_eq!(
-            button_action(Button::LeftTrigger2),
-            Some(ControlAction::PreviousThread)
-        );
-        assert_eq!(
-            button_action(Button::RightTrigger2),
-            Some(ControlAction::NextThread)
-        );
-    }
 }

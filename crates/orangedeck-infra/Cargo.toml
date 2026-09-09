@@ -23,9 +23,6 @@ tracing.workspace = true
 uuid.workspace = true
 url.workspace = true
 
-[dev-dependencies]
-tempfile.workspace = true
-
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFArray", "CFString", "CFRunLoop", "CFDate"] }
 objc2-core-services = { version = "0.3.2", default-features = false, features = ["std", "FSEvents"] }

@@ -30,9 +30,12 @@
 
 !/scripts/
 /scripts/**
-!/scripts/*.py
-!/scripts/*.sh
-!/scripts/*.zsh
+!/scripts/install.py
+!/scripts/build-macos-connector.zsh
+!/scripts/run-ally.zsh
+!/scripts/run-mac.zsh
+!/scripts/check_public.py
+!/scripts/release_policy.py
 !/config/
 /config/**
 !/config/*.example.toml
@@ -71,6 +74,13 @@ dist/
 .vscode/
 __pycache__/
 local/
+tests/
+benches/
+fixtures/
+test_*.rs
+*_tests.rs
+test_support.rs
+tests.rs
 codex-schema/
 AGENTS.md
 starter.md

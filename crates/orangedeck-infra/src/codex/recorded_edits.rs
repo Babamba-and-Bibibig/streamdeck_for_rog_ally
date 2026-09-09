@@ -118,27 +118,3 @@ fn patch_changes(patch: &str) -> Option<Vec<Value>> {
     }
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn only_successful_matching_patch_calls_become_recorded_files() {
-        let call = json!({"type":"custom_tool_call","name":"apply_patch","call_id":"edit","input":"*** Begin Patch\n*** Add File: src/new.rs\n+created\n*** Update File: old.rs\n*** Move to: renamed.rs\n@@ -1 +1 @@\n-before\n+after\n*** End Patch"});
-        let mut edits = RecordedEdits::default();
-        edits.consume(&call);
-        assert!(edits.changes().is_none());
-        edits.consume(&json!({"type":"custom_tool_call_output","call_id":"other","output":"Success. Updated the following files:\nA wrong.rs"}));
-        assert!(edits.changes().is_none());
-        edits.consume(&json!({"type":"custom_tool_call_output","call_id":"edit","output":"Success. Updated the following files:\nA src/new.rs\nM renamed.rs"}));
-        let changes = edits.changes().unwrap();
-        assert_eq!(changes.files.len(), 2);
-        assert_eq!(changes.files[0].path, "src/new.rs");
-        assert_eq!(changes.files[1].path, "renamed.rs");
-        let mut failed = RecordedEdits::default();
-        failed.consume(&call);
-        failed.consume(&json!({"type":"custom_tool_call_output","call_id":"edit","output":"Failed to apply patch"}));
-        assert!(failed.changes().is_none());
-    }
-}

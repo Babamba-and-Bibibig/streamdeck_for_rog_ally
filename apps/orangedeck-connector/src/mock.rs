@@ -1034,31 +1034,3 @@ fn demo_live_usage(now: chrono::DateTime<Utc>) -> orangedeck_protocol::LiveToken
         observed_at: now,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn mock_rejects_unregistered_projects() {
-        let mock = MockBackend::new();
-        let result = mock
-            .execute(&ClientCommand::RunCargoCheck {
-                project_id: "outside".to_owned(),
-            })
-            .await;
-        assert!(result.is_err());
-    }
-
-    #[tokio::test]
-    async fn external_threads_are_read_only() {
-        let mock = MockBackend::new();
-        let result = mock
-            .execute(&ClientCommand::CodexSendPrompt {
-                thread_id: "external-tui".to_owned(),
-                prompt: "do not send this".to_owned(),
-            })
-            .await;
-        assert!(result.is_err());
-    }
-}

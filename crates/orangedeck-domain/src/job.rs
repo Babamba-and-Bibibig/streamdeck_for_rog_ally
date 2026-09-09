@@ -161,24 +161,3 @@ pub struct JobTransitionError {
     pub from: JobStatus,
     pub to: JobStatus,
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn job_state_machine_accepts_only_valid_transitions() {
-        let mut job = JobRecord::queued(
-            Uuid::nil(),
-            JobKind::CargoTest,
-            ProjectId::new("orange").unwrap(),
-        );
-        let now = Utc::now();
-
-        assert!(job.start(now).is_ok());
-        assert!(job.start(now).is_err());
-        assert!(job.finish(JobStatus::Queued, now, None, 1).is_err());
-        assert!(job.finish(JobStatus::Succeeded, now, Some(0), 42).is_ok());
-        assert!(job.finish(JobStatus::Failed, now, Some(1), 43).is_err());
-    }
-}

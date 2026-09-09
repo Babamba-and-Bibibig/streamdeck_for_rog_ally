@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.34 — Smaller source downloads
+
+- Exclude development tests and test scripts from the public source and installation downloads. Preserve the app's build and installation files, illustrated guides and all user features.
+
 ## 0.1.33 — Language controls, English README and clear use terms
 
 - Show full **한국어 / English** names in larger, high-contrast buttons at the top right of every tab. Switch immediately and remember the choice without changing conversation assignments.

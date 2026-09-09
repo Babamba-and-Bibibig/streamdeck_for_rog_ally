@@ -24,12 +24,6 @@ pub struct NetworkHandle {
 }
 
 impl NetworkHandle {
-    #[cfg(test)]
-    pub fn for_test() -> (Self, tokio_mpsc::UnboundedReceiver<ClientCommand>) {
-        let (commands, receiver) = tokio_mpsc::unbounded_channel();
-        let (_, events) = mpsc::channel();
-        (Self { commands, events }, receiver)
-    }
     pub fn start(
         connector_url: String,
         token: AuthToken,
@@ -377,85 +371,4 @@ pub(crate) async fn execute(
 fn emit(events: &mpsc::Sender<NetworkEvent>, repaint: &egui::Context, event: NetworkEvent) {
     let _ = events.send(event);
     repaint.request_repaint();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn health(mode: &str) -> HealthResponse {
-        HealthResponse {
-            name: "OrangeDeck Connector".to_owned(),
-            version: "0.1.0".to_owned(),
-            protocol_version: PROTOCOL_VERSION,
-            ready: true,
-            mode: mode.to_owned(),
-        }
-    }
-
-    #[test]
-    fn real_and_mock_endpoints_cannot_be_confused() {
-        assert!(validate_connector_mode(&health("real"), "real").is_ok());
-        assert!(validate_connector_mode(&health("mock"), "mock").is_ok());
-        assert!(validate_connector_mode(&health("mock"), "real").is_err());
-        assert!(validate_connector_mode(&health("real"), "mock").is_err());
-    }
-
-    #[test]
-    fn pending_commands_are_rejected_instead_of_replayed_after_reconnect() {
-        let (command_tx, mut command_rx) = tokio_mpsc::unbounded_channel();
-        let (event_tx, event_rx) = mpsc::channel();
-        let repaint = egui::Context::default();
-        command_tx.send(ClientCommand::RefreshState).unwrap();
-
-        assert!(reject_pending_commands(
-            &mut command_rx,
-            &event_tx,
-            &repaint
-        ));
-        assert!(matches!(
-            event_rx.recv().unwrap(),
-            NetworkEvent::CommandCompleted(Err(message))
-                if message.contains("was not sent")
-        ));
-        assert!(matches!(
-            command_rx.try_recv(),
-            Err(tokio_mpsc::error::TryRecvError::Empty)
-        ));
-    }
-
-    #[test]
-    fn disconnected_editor_requests_complete_the_exact_request_instead_of_leaving_it_busy() {
-        for register in [false, true] {
-            let id = uuid::Uuid::new_v4();
-            let command = if register {
-                ClientCommand::RegisterCodexProject {
-                    navigation_id: id,
-                    thread_id: "thread".into(),
-                    turn_id: "turn".into(),
-                    expected_cwd: "/project".into(),
-                    path: "new.rs".into(),
-                }
-            } else {
-                ClientCommand::OpenCodexChange {
-                    navigation_id: id,
-                    thread_id: "thread".into(),
-                    turn_id: "turn".into(),
-                    path: "new.rs".into(),
-                }
-            };
-            let (tx, mut rx) = tokio_mpsc::unbounded_channel();
-            let (events, received) = mpsc::channel();
-            tx.send(command).unwrap();
-            assert!(reject_pending_commands(
-                &mut rx,
-                &events,
-                &egui::Context::default()
-            ));
-            assert!(
-                matches!(received.recv().unwrap(), NetworkEvent::FileOpenCompleted { navigation_id, result: Err(_) } if navigation_id == id)
-            );
-            assert!(rx.try_recv().is_err());
-        }
-    }
 }

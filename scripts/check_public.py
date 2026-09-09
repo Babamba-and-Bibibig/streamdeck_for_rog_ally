@@ -62,6 +62,18 @@ def inspect_content(path, data):
     return inspect_bytes(data)
 
 
+def inspect_release_content(path, data):
+    """The current publication contains runtime source, without local tests."""
+    findings = inspect_content(path, data)
+    if str(path).endswith(".rs") and re.search(
+        rb"#\s*\[\s*(?:(?:cfg|cfg_attr)\s*\([^\]]*\btest\b|(?:tokio::)?test\b)", data
+    ):
+        findings.append((0, "test code in release source"))
+    if Path(path).name == "Cargo.toml" and re.search(rb"(?m)^\[[^\n]*dev-dependencies\]", data):
+        findings.append((0, "test dependencies in release manifest"))
+    return findings
+
+
 def git(root, *args):
     return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.PIPE)
 
@@ -77,11 +89,12 @@ def report_path(path):
     return path
 
 
-def inspect_blob(root, oid, path):
+def inspect_blob(root, oid, path, *, release=False):
     size = int(git(root, "cat-file", "-s", oid))
     if size > MAX_PUBLIC_FILE_BYTES:
         return [(0, "oversized/unreviewed content")]
-    return inspect_content(path, git(root, "cat-file", "blob", oid))
+    inspect = inspect_release_content if release else inspect_content
+    return inspect(path, git(root, "cat-file", "blob", oid))
 
 
 def scan(root, tracked=False, history=False):
@@ -100,7 +113,7 @@ def scan(root, tracked=False, history=False):
                 continue
             if stage != b"0" or not public_path(path):
                 findings.append((path, 0, "non-public tracked file"))
-            findings.extend((path, line, kind) for line, kind in inspect_blob(root, oid.decode(), path))
+            findings.extend((path, line, kind) for line, kind in inspect_blob(root, oid.decode(), path, release=True))
     else:
         # Walk only source roots; do not read credential/runtime/private directories.
         import os

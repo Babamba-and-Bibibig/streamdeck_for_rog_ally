@@ -78,6 +78,11 @@ PUBLIC_DOCS = {
     "CHANGELOG.md", "SCREENSHOTS.md",
 }
 
+PUBLIC_SCRIPTS = {
+    "install.py", "build-macos-connector.zsh", "run-ally.zsh", "run-mac.zsh",
+    "check_public.py", "release_policy.py",
+}
+
 # Previously published generic tools/docs remain content-scanned in old commits.
 # They are excluded from the current index, source exports and new archives.
 RETIRED_PUBLIC_PATHS = {
@@ -86,6 +91,11 @@ RETIRED_PUBLIC_PATHS = {
     "scripts/serve-update.py", "download-page/README.md", "download-page/index.html",
     "download-page/config.toml", "download-page/manage.py", "download-page/package.py",
     "download-page/test_manage.py",
+    "scripts/test_install.py", "scripts/test_architecture.py", "scripts/test_public.py",
+    "scripts/check_architecture.py", "scripts/run-demo.zsh",
+    "scripts/build-macos-agent.zsh",
+    "apps/orangedeck-ui/src/app/tests.rs", "apps/orangedeck-ui/src/test_support.rs",
+    "crates/orangedeck-infra/src/file_capture/tests.rs",
 }
 
 
@@ -104,7 +114,7 @@ def private_path(path):
 
 
 def public_path(path, *, historical=False):
-    """Allow source and reviewed documentation, never an arbitrary workspace dump."""
+    """Allow runtime source, installation tools and reviewed user documentation."""
     raw = str(path)
     path = PurePosixPath(path)
     if (str(path) != raw or any(ord(c) < 32 or ord(c) == 127 or c in "\\:" for c in raw)
@@ -118,6 +128,10 @@ def public_path(path, *, historical=False):
         return path.name in ROOT_FILES
     folder = path.parts[0]
     if folder in {"apps", "crates"}:
+        if (set(path.parts) & {"tests", "benches", "fixtures"}
+                or path.stem in {"tests", "test_support"}
+                or path.stem.startswith("test_") or path.stem.endswith("_tests")):
+            return False
         return path.suffix == ".rs" or path.name == "Cargo.toml"
     if folder == "config":
         return len(path.parts) == 2 and (path.name.endswith(".example.toml") or path.name.endswith(".plist.example"))
@@ -125,5 +139,5 @@ def public_path(path, *, historical=False):
         return (str(path) in REVIEWED_SCREENSHOTS or str(path) in REVIEWED_DIAGRAMS
                 or (len(path.parts) == 2 and path.name in PUBLIC_DOCS))
     if folder == "scripts":
-        return len(path.parts) == 2 and path.suffix in {".py", ".sh", ".zsh"}
+        return len(path.parts) == 2 and path.name in PUBLIC_SCRIPTS
     return folder == ".github" and path.suffix in {".yml", ".yaml", ".md"}

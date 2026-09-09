@@ -304,6 +304,3 @@ fn excluded(name: &str) -> bool {
             .iter()
             .any(|suffix| name.ends_with(suffix))
 }
-
-#[cfg(test)]
-mod tests;

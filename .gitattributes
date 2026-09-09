@@ -13,6 +13,17 @@
 /download-page export-ignore
 /scripts/package-source.zsh export-ignore
 /scripts/serve-update.py export-ignore
+/scripts/test_*.py export-ignore
+/scripts/check_architecture.py export-ignore
+/scripts/run-demo.zsh export-ignore
+**/local export-ignore
+**/tests export-ignore
+**/benches export-ignore
+**/fixtures export-ignore
+**/tests.rs export-ignore
+**/test_support.rs export-ignore
+**/test_*.rs export-ignore
+**/*_tests.rs export-ignore
 /docs/ARCHITECTURE.md export-ignore
 /docs/PROTOCOL.md export-ignore
 /docs/ROADMAP.md export-ignore

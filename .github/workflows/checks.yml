@@ -15,7 +15,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - run: python3 scripts/check_public.py --tracked --history
-      - run: python3 scripts/check_architecture.py
       - name: Independent secret scan (pinned Gitleaks release)
         shell: bash
         run: |
@@ -24,7 +23,6 @@ jobs:
           (cd "$RUNNER_TEMP" && sha256sum --check gitleaks.sha256)
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" git . --redact=100 --no-banner --log-opts=--all
-      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
   linux:
     runs-on: ubuntu-latest
@@ -37,11 +35,7 @@ jobs:
       - run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt --component clippy
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - run: cargo test --workspace --locked
       - run: cargo build --release --workspace --locked
-      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
-        env:
-          ORANGEDECK_TEST_BIN_DIR: target/release
 
   mac-connector:
     runs-on: macos-latest
@@ -50,6 +44,4 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install 1.95.0 --profile minimal
-      - name: Native file events and Connector hooks
-        run: cargo test -p orangedeck-infra -p orangedeck-connector --locked -- --test-threads=1
       - run: cargo build --release -p orangedeck-connector --locked

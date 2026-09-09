@@ -1012,12 +1012,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fastrand"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
-
-[[package]]
 name = "fax"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2465,7 +2459,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orangedeck-application"
-version = "0.1.33"
+version = "0.1.34"
 dependencies = [
  "chrono",
  "orangedeck-domain",
@@ -2477,7 +2471,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-connector"
-version = "0.1.33"
+version = "0.1.34"
 dependencies = [
  "async-trait",
  "axum",
@@ -2488,16 +2482,12 @@ dependencies = [
  "orangedeck-domain",
  "orangedeck-infra",
  "orangedeck-protocol",
- "reqwest",
  "serde",
  "serde_json",
  "subtle",
- "tempfile",
  "thiserror 2.0.20",
  "tokio",
- "tokio-tungstenite 0.30.0",
  "tokio-util",
- "tower",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -2505,18 +2495,17 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-domain"
-version = "0.1.33"
+version = "0.1.34"
 dependencies = [
  "chrono",
  "serde",
- "tempfile",
  "thiserror 2.0.20",
  "uuid",
 ]
 
 [[package]]
 name = "orangedeck-infra"
-version = "0.1.33"
+version = "0.1.34"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2529,7 +2518,6 @@ dependencies = [
  "serde",
  "serde_json",
  "subtle",
- "tempfile",
  "thiserror 2.0.20",
  "tokio",
  "tokio-util",
@@ -2541,7 +2529,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-protocol"
-version = "0.1.33"
+version = "0.1.34"
 dependencies = [
  "chrono",
  "serde",
@@ -2551,7 +2539,7 @@ dependencies = [
 
 [[package]]
 name = "orangedeck-ui"
-version = "0.1.33"
+version = "0.1.34"
 dependencies = [
  "chrono",
  "clap",
@@ -2564,7 +2552,6 @@ dependencies = [
  "orangedeck-protocol",
  "reqwest",
  "serde_json",
- "tempfile",
  "thiserror 2.0.20",
  "tokio",
  "tokio-tungstenite 0.30.0",
@@ -3560,19 +3547,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
-]
-
-[[package]]
-name = "tempfile"
-version = "3.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
-dependencies = [
- "fastrand",
- "getrandom 0.4.3",
- "once_cell",
- "rustix 1.1.4",
- "windows-sys 0.61.2",
 ]
 
 [[package]]
