@@ -42,7 +42,7 @@ REVIEWED_DIAGRAMS = {
 # Exact upstream license texts reviewed against Cargo.lock archives and pinned
 # upstream sources. Only their required attribution email addresses are exempt.
 REVIEWED_NOTICES = {
-    "THIRD_PARTY_NOTICES.md": {"f658c2a6c0df533c386673a404af480a2acbd9ae16c5a180c84ca4ff24e779dc"},
+    "THIRD_PARTY_NOTICES.md": {"f658c2a6c0df533c386673a404af480a2acbd9ae16c5a180c84ca4ff24e779dc", "94b79addbbee8f70e5e6e0cfa9814310b5fbecb33cc75809a6fb530ca27c58ba"},
 }
 
 

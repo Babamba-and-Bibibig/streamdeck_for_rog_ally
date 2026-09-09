@@ -152,4 +152,12 @@ First setup creates each device's settings and your personal connection file. Up
 
 ## Use terms
 
-**You may inspect the source and install and use OrangeDeck without modifying it. Modifying, redistributing or selling OrangeDeck requires prior written permission.** You can freely change your settings and work on your own files. [License](LICENSE) · [Third-party library and font notices](THIRD_PARTY_NOTICES.md). Third-party components and copies received under earlier licenses retain their separate terms.
+These terms apply to OrangeDeck's original material. **Third-party libraries and fonts keep their original copyright holders' licenses; the restrictions below do not reduce those rights.**
+
+**Free for personal use and your organization's internal work.** You may inspect the source and install it without modification. You can freely change your settings and work on your own files, including paid work performed using the app.
+
+**Modifying, redistributing or selling the app itself requires prior written permission.** This includes free reuploads and modified copies. Do not falsely claim authorship or remove copyright notices. You may share official download links and screenshots to describe or review the app.
+
+Bug reports and feature suggestions are welcome. Code, translation, artwork and documentation contributions for inclusion in the app require a separate written agreement first. Violating the terms ends the permissions granted by this license.
+
+[Full license](LICENSE) · [Third-party library and font notices](THIRD_PARTY_NOTICES.md). Third-party rights, viewing and forking rights under GitHub's terms, and rights granted to earlier copies under earlier licenses remain intact.

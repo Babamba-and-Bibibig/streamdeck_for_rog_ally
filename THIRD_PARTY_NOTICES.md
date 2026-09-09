@@ -4,9 +4,12 @@ These notices apply to the external components used by OrangeDeck, not to the
 original OrangeDeck code. The [OrangeDeck license](LICENSE) preserves all rights
 granted by these separate licenses.
 
-The inventory below covers **301 direct, transitive and build dependencies** for
-the Linux UI and Apple Silicon macOS Connector in `Cargo.lock` for **0.1.33**.
-Platform-only and development-only entries outside those builds are not listed.
+The inventory below covers **301 direct, transitive and build dependencies** in
+`Cargo.lock` for **OrangeDeck 0.1.34**: the Linux UI
+(`x86_64-unknown-linux-gnu`, 277 dependencies) and Apple Silicon macOS Connector
+(`aarch64-apple-darwin`, 148 dependencies), counting shared dependencies once.
+Each component name and version matches the normal/build dependency graph of
+those builds. Entries used only by other targets or development tools are excluded.
 Package source downloads are linked by exact version; their SHA-256 checksums are
 in `Cargo.lock`. Dependencies are obtained unmodified by Cargo. License texts and
 attributions are reproduced below, with identical texts shared between entries.
