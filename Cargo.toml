@@ -10,10 +10,10 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.32"
+version = "0.1.33"
 edition = "2024"
 rust-version = "1.95"
-license = "MIT"
+license-file = "LICENSE"
 authors = ["OrangeDeck contributors"]
 
 # Keep repeated local builds from accumulating large incremental caches.

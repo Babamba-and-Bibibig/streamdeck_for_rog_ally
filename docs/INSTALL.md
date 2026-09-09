@@ -2,7 +2,7 @@
 
 # 설치 도움말
 
-처음 설치한다면 [README의 세 단계](../README.md#설치하기)를 따라 하세요. 이 문서는 설치가 막히거나 설정을 바꾸고 싶을 때 보시면 됩니다.
+처음 설치한다면 [README의 세 단계](../README.ko.md#설치하기)를 따라 하세요. 이 문서는 설치가 막히거나 설정을 바꾸고 싶을 때 보시면 됩니다.
 
 설치 대상은 **macOS를 쓰는 Mac(작업용 통신 모듈) + ROG Ally의 CachyOS Handheld(리모컨)**입니다. Mac 쪽은 Mac Studio를 기준으로 개발했습니다. Steam Deck·SteamOS와 다른 Linux 배포판의 설치는 확인하지 않았습니다. Windows는 지원하지 않습니다.
 
@@ -18,7 +18,7 @@
 
 ③ 다음에는 **평소 사용하는 Mac Codex에서 `/hooks` → OrangeDeck 확인·신뢰**를 진행하세요. **Mac에서 계속 켜둘 OrangeDeck 창은 ② 하나이며, 평소에는 Start만 실행합니다.** Codex와 Tailscale도 켜 두세요.
 
-**ROG Ally의 CachyOS Handheld에서는 위의 Mac 파일을 쓰지 않습니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.md#3-핸드헬드에-리모컨-설치).
+**ROG Ally의 CachyOS Handheld에서는 위의 Mac 파일을 쓰지 않습니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.ko.md#3-핸드헬드에-리모컨-설치).
 
 ## 준비물
 
@@ -61,7 +61,7 @@ Rust와 나머지 개발 도구는 OrangeDeck 설치기가 설치 여부를 묻�
 sh install.sh --role connector
 ```
 
-설치가 끝나면 [README의 ② Start 실행](../README.md#1-mac에-통신-모듈-설치)부터 이어가세요. macOS의 보안 기능을 통째로 끌 필요는 없습니다.
+설치가 끝나면 [README의 ② Start 실행](../README.ko.md#1-mac에-통신-모듈-설치)부터 이어가세요. macOS의 보안 기능을 통째로 끌 필요는 없습니다.
 
 ## 설치 중 무엇을 입력하나요?
 
@@ -127,7 +127,7 @@ sh "$HOME/.config/orangedeck/check-connector.command"
 
 **업데이트 파일은 GitHub에서 받습니다.** [새 ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip)을 두 기기에서 받고 **새 폴더**에 압축을 풉니다. 그다음 기기별로 진행하세요. 앱이 자동으로 새 버전을 설치하지는 않습니다.
 
-**Mac 통신 모듈이 이미 0.1.31이면, 이번 0.1.32 파일 목록 변경은 Ally만 업데이트해도 적용됩니다.**
+**Mac 통신 모듈이 이미 0.1.31이면, 이번 0.1.33 파일 목록·언어 전환 변경은 Ally만 업데이트해도 적용됩니다.**
 
 **Mac에서:**
 
@@ -166,7 +166,7 @@ editor = "zed"
 
 파일 열기가 실패하면 목록 위에 이유와 **다시 시도**가 나옵니다. 작업 폴더 자동 연결은 0.1.26부터 지원합니다. 구버전 Mac 통신 모듈이 폴더 등록 오류를 보내면 Ally에 업데이트 안내가 나옵니다.
 
-Mac의 파일 변경 이벤트로 바뀐 경로만 가져오며 프로젝트 전체를 훑지 않습니다. **0.1.32의 파일 목록 변경은 Ally UI 업데이트로 적용되며, 기존 0.1.31 Mac 통신 모듈과 호환됩니다.** 아직 파일을 수집하지 못하는 구버전 Mac을 업데이트한다면 **Enable Codex Notifications.command**를 다시 실행하고 Codex **`/hooks`에서 훅을 확인·신뢰**하세요. 그 뒤 실행하는 작업부터 수집하며, 이전에 없던 기록을 복원하지는 않습니다.
+Mac의 파일 변경 이벤트로 바뀐 경로만 가져오며 프로젝트 전체를 훑지 않습니다. **0.1.33의 파일 목록·언어 전환은 Ally UI 업데이트로 적용되며, 기존 0.1.31 Mac 통신 모듈과 호환됩니다.** 아직 파일을 수집하지 못하는 구버전 Mac을 업데이트한다면 **Enable Codex Notifications.command**를 다시 실행하고 Codex **`/hooks`에서 훅을 확인·신뢰**하세요. 그 뒤 실행하는 작업부터 수집하며, 이전에 없던 기록을 복원하지는 않습니다.
 
 수집 범위는 그 대화의 Mac 작업 폴더입니다. 링크·인증 파일·`.env`·주요 빌드/의존성 폴더는 제외합니다. 코드 내용은 Mac 편집기에서 확인합니다. 다른 대화가 같은 폴더에서 동시에 작업해 구분할 수 없거나, 도구가 완료 기록 없이 중단되거나, 운영체제가 이벤트 누락을 알리면 불완전한 기록으로 표시합니다. 한 번에 너무 많은 파일이 바뀐 경우에도 같은 안내가 나옵니다. 기록이 부족하거나 아직 읽는 중이면 아래 버튼이 **파일 정보 확인 / 확인 중**으로 표시됩니다. 눌러서 창을 열고 다시 확인할 수 있습니다. 응답·승인·파일은 **에이전트들**에서 보며, 별도 알림 탭은 없습니다.
 
@@ -210,7 +210,7 @@ GitHub에서 받은 예제 파일에 개인정보를 적지 마세요. 알림 �
 
 Mac 주소가 바뀌었다면 Mac의 `orangedeck-connector pairing --config /path/to/connector.toml --output /path/to/private-pairing.toml`로 연결 파일을 다시 만들고, Ally에서 `orangedeck-ui pair --config /path/to/config.toml --bundle /path/to/private-pairing.toml --force`로 가져옵니다. `/path/to/...`는 자신의 실제 파일 위치로 바꿔야 합니다.
 
-인증값이 공개됐다면 먼저 통신 모듈을 끄세요. `orangedeck-connector init --force`는 인증값뿐 아니라 Mac의 초기 프로젝트 설정도 다시 만듭니다. 기존 프로젝트 설정을 확인·보관한 뒤 새 연결 파일로 다시 연결해야 합니다. [공개 파일 문제 대응](PUBLICATION.md)을 참고하세요.
+인증값이 공개됐다면 먼저 통신 모듈을 끄세요. `orangedeck-connector init --force`는 인증값뿐 아니라 Mac의 초기 프로젝트 설정도 다시 만듭니다. 기존 프로젝트 설정을 확인·보관한 뒤 새 연결 파일로 다시 연결해야 합니다. 연결 파일과 인증값은 저장소나 게시글에 올리지 마세요.
 
 ## 제거
 

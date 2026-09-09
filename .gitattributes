@@ -10,6 +10,13 @@
 /docs/PROGRESS.md export-ignore
 /docs/USAGE_KO.md export-ignore
 /download-page/config.local.toml export-ignore
+/download-page export-ignore
+/scripts/package-source.zsh export-ignore
+/scripts/serve-update.py export-ignore
+/docs/ARCHITECTURE.md export-ignore
+/docs/PROTOCOL.md export-ignore
+/docs/ROADMAP.md export-ignore
+/docs/PUBLICATION.md export-ignore
 /dist export-ignore
 /target export-ignore
 /.codex export-ignore

@@ -734,7 +734,13 @@ impl OrangeDeckApp {
         }
         if self.config.desktop_notifications {
             for alert in &relevant {
-                super::desktop_notification(&alert.notification.title, &alert.notification.body);
+                super::desktop_notification(
+                    &crate::i18n::status_message(
+                        self.preferences.language,
+                        &alert.notification.title,
+                    ),
+                    &alert.notification.body,
+                );
             }
         }
         if !ctx.input(|input| input.viewport().focused.unwrap_or(true)) {
@@ -892,7 +898,7 @@ impl OrangeDeckApp {
                     if let Some((error_id, message)) = &self.model.approval_error
                         && *error_id == approval.id
                     {
-                        ui.colored_label(theme::RED, message);
+                        ui.colored_label(theme::RED, crate::i18n::status_message(lang, message));
                     }
                 } else {
                     ui.separator();

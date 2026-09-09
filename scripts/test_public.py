@@ -6,7 +6,7 @@ import os
 import shutil
 
 import check_public
-from release_policy import REVIEWED_DIAGRAMS, CURRENT_SCREENSHOTS, public_path
+from release_policy import REVIEWED_DIAGRAMS, CURRENT_SCREENSHOTS, RETIRED_PUBLIC_PATHS, public_path
 
 
 class PublicSourceTests(unittest.TestCase):
@@ -17,14 +17,14 @@ class PublicSourceTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q", tmp], check=True)
             shutil.copy(workspace / ".gitignore", root / ".gitignore")
             public = ["README.md", "Cargo.lock", "apps/orangedeck-connector/src/paths.rs", "crates/orangedeck-domain/Cargo.toml",
-                      "config/connector.example.toml", "scripts/install.py", "download-page/config.toml", ".github/workflows/checks.yml",
+                      "config/connector.example.toml", "scripts/install.py", "THIRD_PARTY_NOTICES.md", ".github/workflows/checks.yml",
                       "docs/SCREENSHOTS.md", "docs/INSTALL.en.md", *CURRENT_SCREENSHOTS, *REVIEWED_DIAGRAMS]
             private = ["AGENTS.md", "starter.md", "notes.md", "screenshot.png", "connector.toml", "ui-preferences.toml", "editor-projects.toml", "apps/example/editor-projects.toml", "apps/example/ui-preferences.toml", "auth.json", "received-Pairing.json",
                        "config/local/github-ssh/id_ed25519", "download-page/config.local.toml", "scripts/start-ui.sh",
                        "apps/example/local/private.rs", "crates/example/.codex/private.rs", "scripts/credentials.json",
                        "docs/HANDOFF_latest.md", "dist/private.zip", "new-folder/personal.txt",
                        "docs/screenshots/private.png", "docs/screenshots/local/live.png", "docs/screenshots/live.jpg",
-                       "docs/diagrams/private.svg", "docs/diagrams/local/device-roles-ko.svg"]
+                       "docs/diagrams/private.svg", "docs/diagrams/local/device-roles-ko.svg", *RETIRED_PUBLIC_PATHS]
             for relative in public + private:
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -43,11 +43,45 @@ class PublicSourceTests(unittest.TestCase):
         for path in ["README.ko.md", "apps/x/src/main.rs", "config/connector.example.toml"]:
             self.assertTrue(public_path(path), path)
 
+    def test_retired_tools_are_rejected_in_current_index_and_still_scanned_in_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            def git(*args):
+                return subprocess.check_output(["git", "-C", tmp, *args], stderr=subprocess.DEVNULL)
+            git("init", "-q")
+            git("config", "user.name", "Test")
+            git("config", "user.email", "test@example.com")
+            path = root / "download-page/manage.py"
+            path.parent.mkdir()
+            path.write_text("# generic tool fixture\n")
+            git("add", ".")
+            git("commit", "-qm", "old generic tool")
+            self.assertTrue(any(kind == "non-public tracked file"
+                                for _, _, kind in check_public.scan(root, tracked=True)[1]))
+            path.write_text("# " + "ghp_" + "z" * 36)
+            git("add", ".")
+            git("commit", "-qm", "credential fixture")
+            git("rm", "download-page/manage.py")
+            git("commit", "-qm", "remove old tool")
+            self.assertEqual(check_public.scan(root, tracked=True)[1], [])
+            findings = check_public.scan(root, tracked=True, history=True)[1]
+            self.assertTrue(any(kind == "credential" for _, _, kind in findings))
+            self.assertFalse(any(kind == "non-public file in history" for _, _, kind in findings))
+            self.assertFalse(public_path("download-page/config.local.toml", historical=True))
+
     def test_patterns_report_type_and_line_without_disclosing_the_secret(self):
         value = "ghp_" + "z" * 36
         findings = check_public.inspect_bytes(("first line\ncredential: " + value).encode())
         self.assertEqual(findings, [(2, "credential")])
         self.assertNotIn(value, repr(findings))
+
+    def test_upstream_attribution_exception_is_bound_to_reviewed_notice_bytes_and_path(self):
+        workspace = Path(__file__).resolve().parents[1]
+        data = (workspace / "THIRD_PARTY_NOTICES.md").read_bytes()
+        self.assertEqual(check_public.inspect_content("THIRD_PARTY_NOTICES.md", data), [])
+        self.assertTrue(check_public.inspect_content("THIRD_PARTY_NOTICES.md", data + b"\nchanged attribution"))
+        self.assertTrue(any(kind == "email address" for _, kind in check_public.inspect_content("README.md", data)))
+        self.assertTrue(check_public.inspect_content("THIRD_PARTY_NOTICES.md", b"new-owner" + b"@" + b"private.invalid"))
 
     def test_only_reviewed_screenshot_bytes_at_the_reviewed_path_are_allowed(self):
         workspace = Path(__file__).resolve().parents[1]

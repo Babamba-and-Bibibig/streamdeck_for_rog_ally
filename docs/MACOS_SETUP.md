@@ -1,6 +1,6 @@
 # macOS Connector setup
 
-Start with [Installation](INSTALL.en.md) or the [한국어 README](../README.md#설치하기). This guide pairs a macOS work Mac with a ROG Ally running CachyOS Handheld in desktop mode. Steam Deck and SteamOS are untested.
+Start with [Installation](INSTALL.en.md) or the [한국어 README](../README.ko.md#설치하기). This guide pairs a macOS work Mac with a ROG Ally running CachyOS Handheld in desktop mode. Steam Deck and SteamOS are untested.
 
 The three `.command` files in the downloaded folder are **for the Mac**. Double-click them in this order during first setup:
 

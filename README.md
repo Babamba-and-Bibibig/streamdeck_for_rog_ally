@@ -1,128 +1,141 @@
-<h3 align="center">🇰🇷 한국어 · 현재 페이지　|　<a href="README.en.md">🌐 English</a></h3>
+<div align="center">
+<table>
+<tr>
+<td align="center"><h2><a href="README.ko.md">🇰🇷 한국어</a></h2></td>
+<td align="center"><h2><a href="README.en.md">🌐 English</a></h2></td>
+</tr>
+</table>
+</div>
 
 <h1 align="center">OrangeDeck</h1>
-<h2 align="center">Mac의 Codex 에이전트 작업을,<br>스팀덱 같은 핸드헬드에서 Stream Deck처럼.</h2>
+<h2 align="center">Your Mac's Codex agents.<br>Use a handheld like Steam Deck as your Stream Deck.</h2>
 
-OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC)에서 쓰는 Codex 작업용 리모컨입니다. **진행 상태를 보고, 응답과 승인 요청을 읽고, 수정 파일을 Mac 편집기로 열어 보세요.**
+OrangeDeck is a Codex remote for **handheld gaming PCs, the category that includes Steam Deck and ROG Ally**. **Follow progress, read replies and approval requests, and open changed files in your Mac editor.**
 
-현재 설치 안내는 **ROG Ally + CachyOS Handheld** 기준입니다. Steam Deck·SteamOS와 다른 핸드헬드 기기의 설치·동작은 아직 확인하지 않았습니다.
+Use the **한국어 / English buttons at the top right of the app** to switch languages instantly. OrangeDeck remembers your choice next time.
 
-[⬇ ZIP 다운로드](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [설치하기](#설치하기) · [간단 사용법](docs/QUICKSTART_KO.md)
+The current setup guide covers **ROG Ally running CachyOS Handheld**. Installation and operation on Steam Deck, SteamOS and other handhelds have not yet been verified.
 
-## LIVE · 지금 하는 일과 남은 사용량
+[⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Controls](docs/CONTROLS.md)
 
-### 질문 · 작업 상태 · 토큰 기록을 한 화면에서
+## LIVE · Current work and remaining quota
 
-![LIVE: 현재 질의, 작업 상태, 토큰 사용 기록과 남은 사용량](docs/screenshots/live.png)
+### Your question, work status and token records in one view
 
-지금 진행 중인 질문과 작업 상태, 입력·출력 토큰 기록을 확인합니다. **5시간·주간 한도는 남은 비율**로 보여주므로 얼마나 더 쓸 수 있는지 알아보기 쉽습니다.
+![LIVE: the current question, work status, token records and remaining quota](docs/screenshots/en-live.png)
 
-대화를 하나 골라 계속 보거나 **자동 ON**으로 선택한 프로젝트의 최근 대화를 따라갈 수 있습니다.
+See the current question, work status, and input/output token records. **Five-hour and weekly limits show the remaining percentage**, so you can see how much of your allowance is left.
 
-## 에이전트들 · 여러 대화의 응답과 파일을 한곳에
+Pin one conversation, or turn **Auto ON** to follow the most recent conversation in the selected project.
 
-### 한 열에 한 대화. 위는 응답, 아래는 수정 파일.
+## Agents · Conversations side by side, actions within reach
 
-![에이전트들: 다섯 Codex 대화에 연결한 응답 버튼과 수정 파일 버튼](docs/screenshots/shortcuts.png)
+### One column, one conversation. Replies above. Files below.
 
-**최대 다섯 개의 Codex 대화**를 연결할 수 있습니다. **위쪽 + 버튼**에서 Mac의 대화를 한 번 고르면 다음 실행에도 기억합니다.
+![Agents: five Codex conversations with paired response and changed-file keys](docs/screenshots/en-shortcuts.png)
 
-새 응답이나 승인 요청이 오면 **그 열의 두 버튼이 함께 깜빡이고 알림음**이 납니다. 어느 대화를 확인할지 바로 알아볼 수 있습니다. 알림음은 켜고 끌 수 있습니다.
+Connect **up to five Codex conversations**. Choose a Mac conversation with an **upper + key** once; OrangeDeck remembers it next time.
 
-### ① 위 버튼 · 응답을 읽고, 필요한 요청만 승인
+A new reply or approval request makes **both keys in its column pulse, with a notification sound**. You can see which conversation needs attention and turn sound on or off.
 
-질문과 Codex의 응답을 읽습니다. 실제 승인 요청이 있으면 상세 내용을 확인하고 **승인 / 거부**를 직접 누릅니다. 결정은 **지금 표시된 요청 하나**에만 전달됩니다.
+### ① Upper key · Read the reply and review each request
 
-![질문·응답과 승인 요청을 읽고 직접 결정하는 창](docs/screenshots/response.png)
+Read your question and Codex's reply. When an approval request arrives, review the details and choose **Approve / Reject** yourself. Your decision applies **only to the request currently displayed**.
 
-창 바깥이나 **닫기**를 누르면 창만 닫힙니다. 승인·거절은 보내지 않습니다.
+![Read the question, reply and approval details before making a decision](docs/screenshots/en-response.png)
 
-### ② 아래 버튼 · 파일 목록부터 보고, 원하는 파일만 열기
+Tap outside the dialog or **Close** to dismiss it without sending an approval or rejection.
 
-**아래 버튼 → 파일명·전체 경로 확인 → 파일 선택 → Mac 편집기**
+### ② Lower key · Check the file list, then choose what to open
 
-![이번 질의에서 수정된 파일의 이름·전체 경로·변경 줄을 보여주는 목록](docs/screenshots/files.png)
+**Lower key → file names and full paths → select a file → Mac editor**
 
-아래 버튼은 **이번 질의의 수정 파일 목록만** 엽니다. **목록에서 파일을 누를 때** Mac 편집기가 열리며, 그 파일의 기록된 변경 줄로 이동합니다. 코드 내용은 Mac 편집기에서 확인하세요. 변경 줄 정보가 없으면 첫 줄로 엽니다.
+![Changed file names, full paths and recorded line numbers for this question](docs/screenshots/en-files.png)
 
-**작업 폴더는 연결한 Codex 대화에서 자동으로 가져옵니다.** 경로를 다시 등록할 필요가 없습니다. Zed·VS Code·Cursor·VSCodium을 지원합니다. 파일 변경 이벤트로 바뀐 경로만 수집하며 프로젝트 전체를 다시 훑지 않습니다.
+The lower key opens **only the changed file list for this question**. **Selecting a file in the list** opens your Mac editor at its recorded changed line. Review code in that editor. If no line is recorded, the file opens at the first line.
 
-수정이 없다고 확인되면 **파일 수정 없음**으로 표시합니다. [파일 목록·재시도·편집기 설정](docs/INSTALL.md#host-shortcuts).
+**The connected Codex conversation supplies the working folder automatically.** No extra folder registration is needed. Zed, VS Code, Cursor and VSCodium are supported. File events capture changed paths without scanning the whole project again.
 
-모든 화면은 **모의 데이터**입니다. 사진을 누르면 크게 볼 수 있습니다. [촬영 정보](docs/SCREENSHOTS.md).
+A confirmed empty edit record shows **No file changes**. [File lists, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
 
-## 두 기기는 이렇게 연결됩니다
+All screenshots use **simulated data**. Click a screenshot to enlarge it. [Explore all app screens](docs/SCREENSHOTS.md).
 
-아래 그림은 **ROG Ally를 핸드헬드 리모컨으로 사용하는 설치 예시**입니다.
+## How the two devices connect
 
-![Mac의 Codex와 통신 모듈을 핸드헬드의 LIVE·에이전트들 화면에 연결하고, 승인과 파일 열기 요청을 Mac으로 보냅니다.](docs/diagrams/device-roles-ko.svg)
+The diagram below shows **ROG Ally as an example handheld remote**.
 
-**AI 작업은 Mac의 Codex가 하고, OrangeDeck은 두 기기를 연결합니다.** 리모컨으로 쓸 핸드헬드에는 Codex를 설치할 필요가 없습니다.
+![Codex and Connector on the Mac send activity to LIVE and Agents on the handheld; approvals and file-open requests return to the Mac.](docs/diagrams/device-roles-en.svg)
 
-| 기기 | 설치할 것 |
+**Codex does the AI work on the Mac. OrangeDeck connects the devices.** You do not need to install Codex on the handheld remote.
+
+| Device | Install |
 | --- | --- |
-| **macOS 작업용 Mac** · Mac Studio를 기준으로 개발 | Codex CLI + OrangeDeck **통신 모듈(Connector)** |
-| **핸드헬드 PC** · 이 안내의 설치 예시: ROG Ally + CachyOS Handheld, 데스크톱 모드 | OrangeDeck **리모컨(UI)** |
+| **macOS work Mac** · developed around Mac Studio | Codex CLI + OrangeDeck **Connector** |
+| **Handheld gaming PC** · setup example: ROG Ally with CachyOS Handheld, desktop mode | OrangeDeck **remote UI** |
 
-이 설명서는 위 구성을 대상으로 합니다. Steam Deck·SteamOS는 설치·동작을 확인하지 않았으며, 다른 Linux 배포판과 Windows는 안내 대상에 포함하지 않습니다.
+This guide covers that configuration. Steam Deck and SteamOS installation and operation are unverified; other Linux distributions and Windows are outside this guide.
 
-## 설치하기
+## Installation
 
-**Mac 설치 → 연결 파일 옮기기 → 핸드헬드에 리모컨 설치**, 세 단계입니다. 현재 버전은 **0.1.32**입니다.
+**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.33**.
 
-먼저 두 기기에 [Tailscale](https://tailscale.com/download)을 설치하고 같은 계정으로 로그인하세요. Mac에는 [Codex CLI](https://learn.chatgpt.com/docs/cli)를 설치하고 로그인해 둡니다. 두 기기에 Python 3.9 이상이 필요합니다. [준비물 확인](docs/INSTALL.md#준비물).
+Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
 
-두 기기에서 위의 **ZIP 다운로드**를 누르고 압축을 풉니다. Git이나 SSH 키는 필요하지 않습니다.
+On both devices, use **Download ZIP** above and extract it. Git and SSH keys are not needed.
 
-### 1. Mac에 통신 모듈 설치
+### 1. Install Connector on the Mac
 
-**아래 세 파일은 Mac에서 실행합니다.** 압축을 푼 폴더에서 순서대로 두 번 누르세요.
+**These three files run on the Mac.** In the extracted folder, double-click them in order.
 
-1. **Setup OrangeDeck.command** — 설치하고 내 작업 폴더·편집기를 고릅니다. 설치 완료 후 안내에 따라 Enter를 누르고 창을 닫습니다.
-2. **Start OrangeDeck Connector.command** — Mac과 핸드헬드를 연결합니다. **OrangeDeck을 사용하는 동안 이 창은 켜 둡니다.**
-3. **Enable Codex Notifications.command** — 완료 알림·승인 요청을 연결합니다. 설정 완료 후 Enter를 누르고 창을 닫습니다.
+1. **Setup OrangeDeck.command** — install Connector and choose your work folder and editor. When setup finishes, press Enter as prompted and close the window.
+2. **Start OrangeDeck Connector.command** — connect the Mac and handheld. **Keep this window open while using OrangeDeck.**
+3. **Enable Codex Notifications.command** — connect completion alerts and approval requests. When configuration finishes, press Enter and close the window.
 
-마지막으로 **평소 사용하는 Mac Codex**에서 **`/hooks` → OrangeDeck 확인·신뢰**를 진행하세요. Mac에서 계속 켜둘 OrangeDeck 창은 **2번 통신 모듈 하나**입니다.
+Finally, open **`/hooks` in your usual Mac Codex session → review and trust OrangeDeck**. The only OrangeDeck window you need to keep open is **step 2, Connector**.
 
-필요한 개발 도구 설치가 뜨면 설치를 마친 뒤 Setup을 다시 실행하세요. [Mac 설치 도움말](docs/INSTALL.md#mac-설치-파일이-안-열릴-때).
+If a developer-tool installer appears, finish it and run Setup again. [Mac setup help](docs/INSTALL.en.md#mac-command-file-will-not-open).
 
-### 2. Mac의 연결 파일을 핸드헬드로 옮기기
+### 2. Transfer the Mac's connection file to your handheld
 
-Mac Finder에서 **이동 → 폴더로 이동…** 메뉴를 고르고, `~/.config/orangedeck`을 엽니다.
+In Mac **Finder → Go → Go to Folder…**, open `~/.config/orangedeck`.
 
-그 안의 `orangedeck-pairing.toml` 파일을 USB 등으로 **내 핸드헬드의 다운로드 폴더**에 옮기세요. 내 Mac의 주소와 비밀 연결 인증값이 담긴 **개인 연결 파일**입니다. GitHub나 채팅에 올리지 마세요.
+Copy **`orangedeck-pairing.toml`** to **your handheld's Downloads folder** using USB or another private transfer. This **personal connection file** contains your Mac's address and secret connection credential. Do not post it on GitHub or in a chat.
 
-### 3. 핸드헬드에 리모컨 설치
+### 3. Install the remote UI on your handheld
 
-이 단계는 **ROG Ally의 CachyOS Handheld 데스크톱 모드** 기준입니다. 압축을 푼 폴더를 열고, 빈 곳을 오른쪽 클릭해 **여기서 터미널 열기**를 누릅니다. Mac용 `.command` 파일 대신 아래 명령을 실행하세요.
+This step covers **ROG Ally running CachyOS Handheld in desktop mode**. Open the extracted folder, right-click an empty area and select **Open Terminal Here**. Use this command instead of the Mac `.command` files:
 
 ```sh
 sh install.sh --role ui
 ```
 
-연결 파일을 물으면 옮겨 둔 `orangedeck-pairing.toml` 파일을 터미널에 끌어 놓고 Enter를 누릅니다. IP 주소나 인증값을 직접 적을 필요가 없습니다.
+When asked for a connection file, drag **`orangedeck-pairing.toml`** into the terminal and press Enter. You do not need to type an IP address or credential.
 
-설치가 끝나면 앱을 켭니다.
+After installation, start the app:
 
 ```sh
 sh "$HOME/.config/orangedeck/start-ui.sh"
 ```
 
-**연결됨**이 뜨면 **에이전트들 → 위쪽 + 버튼**에서 대화를 연결하세요. Mac에서 Codex 작업을 하면서 LIVE의 새 기록과 에이전트들의 응답·파일을 확인하면 됩니다.
+When it shows **CONNECTED**, open **Agents → an upper + key** and assign a conversation. Use Codex on the Mac to check new LIVE records, replies and changed files on your handheld.
 
-## 다음부터는 켜기만 하세요
+## Next time, just start the apps
 
-| 기기 | 켜기 | 끄기 |
+| Device | Start | Stop |
 | --- | --- | --- |
-| **Mac** | **Start OrangeDeck Connector.command** 두 번 누르기 | 통신 모듈 터미널에서 Ctrl+C |
-| **핸드헬드 PC** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | OrangeDeck 창 닫기 |
+| **Mac** | Double-click **Start OrangeDeck Connector.command** | Press Ctrl+C in the Connector terminal |
+| **Handheld PC** | `sh "$HOME/.config/orangedeck/start-ui.sh"` | Close the OrangeDeck window |
 
-Codex와 두 기기의 Tailscale은 켜 두세요. 앱을 터미널에서 실행했다면 사용하는 동안 그 터미널도 켜 둡니다. Setup·Enable·설치는 매번 다시 하지 않습니다.
+Keep Codex and Tailscale running. If you launch the app from a terminal, keep that terminal open too. Setup, Enable and installation are not daily steps.
 
 <a id="my-settings"></a>
 
-### 업데이트해도 내 설정은 그대로
+### Updates keep your settings
 
-처음 설치할 때 각 기기의 설정과 개인 연결 파일을 준비합니다. 같은 기기에 업데이트할 때는 저장된 **작업 폴더·편집기·연결·언어·대화 배치·알림음**을 그대로 씁니다. 개인 설정은 각 기기의 `~/.config/orangedeck/`에 있고 다운로드에 포함되지 않습니다. [업데이트 순서](docs/INSTALL.md#업데이트) · [설정을 다시 묻지 않는 이유](docs/INSTALL.md#saved-settings).
+First setup creates each device's settings and your personal connection file. Updating the same devices keeps your **work folder, editor, connection, language, conversation assignments and sound setting**. Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Update steps](docs/INSTALL.en.md#update) · [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
 
-[간단 사용법·패드 조작](docs/QUICKSTART_KO.md) · [설치·연결 문제 해결](docs/INSTALL.md) · [English guide](README.en.md) · [변경 기록](docs/CHANGELOG.md)
+[Controls and everyday use](docs/CONTROLS.md) · [Setup and connection help](docs/INSTALL.en.md) · [한국어 안내](README.ko.md) · [Changelog](docs/CHANGELOG.md)
+
+## Use terms
+
+**You may inspect the source and install and use OrangeDeck without modifying it. Modifying, redistributing or selling OrangeDeck requires prior written permission.** You can freely change your settings and work on your own files. [License](LICENSE) · [Third-party library and font notices](THIRD_PARTY_NOTICES.md). Third-party components and copies received under earlier licenses retain their separate terms.

@@ -316,6 +316,175 @@ fn context() -> egui::Context {
 }
 
 #[test]
+fn prominent_language_buttons_switch_immediately_and_preserve_saved_assignments() {
+    for width in [800.0, 1280.0] {
+        let snapshot = files_snapshot();
+        let (mut app, mut commands) = test_app(&snapshot);
+        bind(&mut app, 0, "a");
+        app.preferences.notification_sound = false;
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("ui-preferences.toml");
+        app.preference_store = Some(UiPreferenceStore::new(path.clone()));
+        let ctx = context();
+        let header = |app: &mut OrangeDeckApp, events| {
+            ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(width, 600.0),
+                    )),
+                    time: Some(
+                        f64::from(u32::try_from(ctx.cumulative_frame_nr()).unwrap_or(0)) / 10.0,
+                    ),
+                    events,
+                    ..Default::default()
+                },
+                |root| app.render_header(root),
+            )
+        };
+        header(&mut app, vec![]).drop_without_applying_deltas();
+        for (label, language) in [("English", Language::English), ("한국어", Language::Korean)] {
+            let output = header(&mut app, vec![]);
+            let position = output
+                .shapes
+                .iter()
+                .find_map(|shape| match &shape.shape {
+                    egui::Shape::Text(text) if text.galley.job.text == label => {
+                        let rect = text.galley.rect.translate(text.pos.to_vec2());
+                        assert!(
+                            shape.clip_rect.contains_rect(rect),
+                            "language button is clipped"
+                        );
+                        assert!(rect.right() <= width);
+                        assert!(text.galley.job.sections[0].format.font_id.size >= 16.0);
+                        Some(rect.center())
+                    }
+                    _ => None,
+                })
+                .expect("both complete language names must be visible");
+            output.drop_without_applying_deltas();
+            for pressed in [true, false] {
+                header(&mut app, pointer(position, pressed)).drop_without_applying_deltas();
+            }
+            assert_eq!(app.preferences.language, language);
+            assert_eq!(i18n::language(&ctx), language);
+            let (mut reopened, _) = test_app(&snapshot);
+            reopened.load_preferences(&context(), Some(path.clone()));
+            assert_eq!(reopened.preferences, app.preferences);
+            assert_eq!(reopened.preferences.conversations[0].thread_id, "a");
+            assert!(!reopened.preferences.notification_sound);
+        }
+        assert!(
+            commands.try_recv().is_err(),
+            "language changes must not send a Mac command"
+        );
+    }
+}
+
+#[test]
+fn all_four_pages_and_three_dialogs_render_english_interface_text() {
+    let snapshot = files_snapshot();
+    let (mut app, _) = test_app(&snapshot);
+    app.preferences.language = Language::English;
+    bind(&mut app, 0, "a");
+    app.select_project("/Users/mac/project-a");
+    let english_only = |text: &str| {
+        assert!(
+            !text
+                .replace("한국어", "")
+                .chars()
+                .any(|c| ('\u{ac00}'..='\u{d7a3}').contains(&c)),
+            "untranslated interface text: {text}",
+        );
+    };
+    for page in Page::ALL {
+        for connected in [true, false] {
+            app.page = page;
+            app.model.connected = connected;
+            let text = crate::test_support::render(1280.0, 800.0, |ui| {
+                i18n::set_language(ui.ctx(), Language::English);
+                match page {
+                    Page::Dashboard => app.render_dashboard(ui, &snapshot),
+                    Page::Agents => app.render_agents(ui, &snapshot),
+                    Page::Projects => app.render_projects(ui, &snapshot),
+                    Page::Codex => app.render_codex(ui, &snapshot),
+                }
+            });
+            assert!(!text.is_empty());
+            english_only(&text);
+        }
+    }
+    app.model.connected = true;
+    app.model.command_message =
+        Some("선택을 전송했습니다. Mac의 처리 결과를 기다립니다.".to_owned());
+    let text = crate::test_support::render(1280.0, 800.0, |ui| app.render_status_line(ui));
+    assert!(text.contains("Decision sent."));
+    english_only(&text);
+    let ctx = context();
+    i18n::set_language(&ctx, Language::English);
+    for key in [0, 5] {
+        app.activate_pair(key);
+        frame(&mut app, &ctx, vec![]);
+        let painted = frame(&mut app, &ctx, vec![]);
+        for (text, _) in painted.labels {
+            english_only(&text);
+        }
+        app.close_deck_modal();
+    }
+    app.open_key_editor(0);
+    frame(&mut app, &ctx, vec![]);
+    for (text, _) in frame(&mut app, &ctx, vec![]).labels {
+        english_only(&text);
+    }
+}
+
+#[test]
+fn english_approval_labels_preserve_the_full_original_request_and_work_content() {
+    let mut approval = request("a", "new");
+    approval.title = "Mac Codex 승인 요청".to_owned();
+    approval.summary = "원문 요청을 변경하지 마세요".to_owned();
+    let arguments = "{\"command\":\"printf '한글 / English: keep every argument'\"}";
+    approval.details = vec![
+        "작업 폴더: /tmp/프로젝트".to_owned(),
+        "도구: Bash".to_owned(),
+        arguments.to_owned(),
+    ];
+    let text = crate::test_support::render(960.0, 600.0, |ui| {
+        i18n::set_language(ui.ctx(), Language::English);
+        assert!(notifications::approval_panel(ui, &approval, true, false, true).is_none());
+    });
+    for expected in [
+        "Approval required",
+        "Working folder: /tmp/프로젝트",
+        "Tool: Bash",
+        arguments,
+        &approval.summary,
+    ] {
+        assert!(
+            text.contains(expected),
+            "approval detail was lost: {expected}"
+        );
+    }
+    assert!(!text.contains("작업 폴더: ") && !text.contains("도구: "));
+    let mut snapshot = files_snapshot();
+    let observation = snapshot.codex.threads[0].observation.as_mut().unwrap();
+    observation.latest_user_prompt = Some("질문 원문".to_owned());
+    observation.latest_codex_reply = Some("응답 원문".to_owned());
+    let (mut app, _) = test_app(&snapshot);
+    app.preferences.language = Language::English;
+    bind(&mut app, 0, "a");
+    app.activate_pair(0);
+    let ctx = context();
+    i18n::set_language(&ctx, Language::English);
+    frame(&mut app, &ctx, vec![]);
+    let painted = frame(&mut app, &ctx, vec![]);
+    painted.label("YOUR QUESTION");
+    painted.label("CODEX RESPONSE");
+    painted.label("질문 원문");
+    painted.label("응답 원문");
+}
+
+#[test]
 fn confirmed_no_edits_is_inert_but_loading_opens_a_recovery_modal() {
     let mut snapshot = files_snapshot();
     snapshot.codex.threads[0]

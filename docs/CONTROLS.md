@@ -34,6 +34,6 @@ Long command, permission and file-change approval details remain complete inside
 
 ## Language and preferences
 
-Use **한국어 / EN** at the top right. User project names and conversation contents are not translated. Language, five conversation assignments and sound are saved privately in `ui-preferences.toml` beside the active config. Demo settings last only for the session. The former individual action-key assignments are no longer used by the paired deck.
+Use the large **한국어 / English** buttons at the top right of any tab. The selected language is highlighted in orange and changes immediately. Close an open dialog first. User project names, conversation contents and supplied approval commands stay in their original language. Language, five conversation assignments and sound are saved privately in `ui-preferences.toml` beside the active config. Demo settings last only for the session. The former individual action-key assignments are no longer used by the paired deck.
 
 Keyboard fallbacks: arrows for navigation, Q/E for tabs, Z/C for project/conversation selection. Input is isolated while a picker/dialog or text editor is open. Steam Input/InputPlumber may expose a virtual controller; touch and mouse work independently of controller detection.

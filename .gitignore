@@ -10,7 +10,7 @@
 !/README.ko.md
 !/README.en.md
 !/LICENSE
-!/SECURITY.md
+!/THIRD_PARTY_NOTICES.md
 !/install.sh
 !/Setup OrangeDeck.command
 !/Start OrangeDeck Connector.command
@@ -39,28 +39,15 @@
 !/config/*.plist.example
 !/docs/
 /docs/**
-!/docs/ARCHITECTURE.md
 !/docs/CONTROLS.md
-!/docs/SECURITY.md
-!/docs/PROTOCOL.md
-!/docs/ROADMAP.md
 !/docs/QUICKSTART_KO.md
 !/docs/NOTIFICATIONS_KO.md
 !/docs/MACOS_SETUP.md
 !/docs/INSTALL.md
 !/docs/INSTALL.en.md
 !/docs/CHANGELOG.md
-!/docs/PUBLICATION.md
 !/docs/SCREENSHOTS.md
 
-!/download-page/
-/download-page/**
-!/download-page/README.md
-!/download-page/index.html
-!/download-page/config.toml
-!/download-page/manage.py
-!/download-page/package.py
-!/download-page/test_manage.py
 !/.github/
 /.github/**
 !/.github/**/
@@ -69,6 +56,9 @@
 !/.github/**/*.md
 
 # Private state wins over every allow rule above, even inside source directories.
+download-page/
+/scripts/package-source.zsh
+/scripts/serve-update.py
 target/
 dist/
 .codex/

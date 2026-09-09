@@ -13,7 +13,7 @@ import stat
 import subprocess
 import sys
 
-from release_policy import MAX_PUBLIC_FILE_BYTES, REVIEWED_DIAGRAMS, REVIEWED_SCREENSHOTS, private_path, public_path, read_public_file
+from release_policy import MAX_PUBLIC_FILE_BYTES, REVIEWED_DIAGRAMS, REVIEWED_NOTICES, REVIEWED_SCREENSHOTS, private_path, public_path, read_public_file
 
 PATTERNS = {
     "credential": re.compile(r"(?:\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16})|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY)"),
@@ -47,6 +47,10 @@ def inspect_bytes(data):
 
 def inspect_content(path, data):
     """Binary approval is bound to both the exact path and reviewed bytes."""
+    if str(path) in REVIEWED_NOTICES:
+        if len(data) <= MAX_PUBLIC_FILE_BYTES and hashlib.sha256(data).hexdigest() in REVIEWED_NOTICES[str(path)]:
+            return [(line, kind) for line, kind in inspect_bytes(data) if kind != "email address"]
+        return [(0, "unreviewed dependency notices")]
     if str(path) in REVIEWED_DIAGRAMS:
         if len(data) <= MAX_PUBLIC_FILE_BYTES and hashlib.sha256(data).hexdigest() in REVIEWED_DIAGRAMS[str(path)]:
             return inspect_bytes(data)
@@ -140,7 +144,7 @@ def scan(root, tracked=False, history=False):
                 path = raw_path.decode("utf-8", "replace")
                 label = f"history:{oid.decode()[:12]}:{path}"
                 findings.extend((label, line, kind) for _, line, kind in path_findings(path))
-                if not public_path(path):
+                if not public_path(path, historical=True):
                     findings.append((label, 0, "non-public file in history"))
                 if mode not in {b"100644", b"100755"} or object_type != b"blob":
                     findings.append((label, 0, "non-regular file in history"))

@@ -1,9 +1,18 @@
-<h3 align="center">🇰🇷 한국어 · 현재 페이지　|　<a href="README.en.md">🌐 English</a></h3>
+<div align="center">
+<table>
+<tr>
+<td align="center"><h2><a href="README.ko.md">🇰🇷 한국어</a></h2></td>
+<td align="center"><h2><a href="README.en.md">🌐 English</a></h2></td>
+</tr>
+</table>
+</div>
 
 <h1 align="center">OrangeDeck</h1>
 <h2 align="center">Mac의 Codex 에이전트 작업을,<br>스팀덱 같은 핸드헬드에서 Stream Deck처럼.</h2>
 
 OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC)에서 쓰는 Codex 작업용 리모컨입니다. **진행 상태를 보고, 응답과 승인 요청을 읽고, 수정 파일을 Mac 편집기로 열어 보세요.**
+
+**앱 오른쪽 위의 한국어 / English 버튼**으로 언어를 바로 바꿀 수 있습니다. 선택한 언어는 다음 실행에도 유지됩니다.
 
 현재 설치 안내는 **ROG Ally + CachyOS Handheld** 기준입니다. Steam Deck·SteamOS와 다른 핸드헬드 기기의 설치·동작은 아직 확인하지 않았습니다.
 
@@ -49,7 +58,7 @@ OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC
 
 수정이 없다고 확인되면 **파일 수정 없음**으로 표시합니다. [파일 목록·재시도·편집기 설정](docs/INSTALL.md#host-shortcuts).
 
-모든 화면은 **모의 데이터**입니다. 사진을 누르면 크게 볼 수 있습니다. [촬영 정보](docs/SCREENSHOTS.md).
+모든 화면은 **모의 데이터**입니다. 사진을 누르면 크게 볼 수 있습니다. [전체 화면 둘러보기](docs/SCREENSHOTS.md).
 
 ## 두 기기는 이렇게 연결됩니다
 
@@ -68,7 +77,7 @@ OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC
 
 ## 설치하기
 
-**Mac 설치 → 연결 파일 옮기기 → 핸드헬드에 리모컨 설치**, 세 단계입니다. 현재 버전은 **0.1.32**입니다.
+**Mac 설치 → 연결 파일 옮기기 → 핸드헬드에 리모컨 설치**, 세 단계입니다. 현재 버전은 **0.1.33**입니다.
 
 먼저 두 기기에 [Tailscale](https://tailscale.com/download)을 설치하고 같은 계정으로 로그인하세요. Mac에는 [Codex CLI](https://learn.chatgpt.com/docs/cli)를 설치하고 로그인해 둡니다. 두 기기에 Python 3.9 이상이 필요합니다. [준비물 확인](docs/INSTALL.md#준비물).
 
@@ -126,3 +135,7 @@ Codex와 두 기기의 Tailscale은 켜 두세요. 앱을 터미널에서 실행
 처음 설치할 때 각 기기의 설정과 개인 연결 파일을 준비합니다. 같은 기기에 업데이트할 때는 저장된 **작업 폴더·편집기·연결·언어·대화 배치·알림음**을 그대로 씁니다. 개인 설정은 각 기기의 `~/.config/orangedeck/`에 있고 다운로드에 포함되지 않습니다. [업데이트 순서](docs/INSTALL.md#업데이트) · [설정을 다시 묻지 않는 이유](docs/INSTALL.md#saved-settings).
 
 [간단 사용법·패드 조작](docs/QUICKSTART_KO.md) · [설치·연결 문제 해결](docs/INSTALL.md) · [English guide](README.en.md) · [변경 기록](docs/CHANGELOG.md)
+
+## 사용 조건
+
+**소스를 확인하고, 수정 없이 설치해 사용할 수 있습니다. OrangeDeck의 수정·재배포·판매는 사전 서면 허락이 필요합니다.** 개인 설정 변경과 자신의 작업 파일 편집은 자유롭게 할 수 있습니다. [이용 조건](LICENSE) · [외부 라이브러리·글꼴 고지](THIRD_PARTY_NOTICES.md). 외부 구성요소와 이전 라이선스로 받은 사본에는 각자의 조건이 적용됩니다.

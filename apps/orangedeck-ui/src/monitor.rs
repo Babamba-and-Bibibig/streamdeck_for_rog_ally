@@ -530,7 +530,6 @@ fn fitted(
         width.max(1.0),
     );
     job.wrap.max_rows = lines;
-    job.wrap.break_anywhere = true;
     let galley = p.layout_job(job);
     p.galley(at, galley, color);
 }

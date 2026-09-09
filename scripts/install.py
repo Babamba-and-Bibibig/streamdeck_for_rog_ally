@@ -394,6 +394,8 @@ def main():
     if previous_config != config:
         run([source, "migrate-config", "--from", previous_config, "--config", config], env=process_env, capture=True)
         print("Previous settings imported / 기존 설정을 새 이름으로 이어받았습니다. 인증값과 이전 파일은 유지합니다.")
+    for notice in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+        secure_write(directory / "licenses" / notice, (ROOT / notice).read_bytes())
     secure_write(binary, source.read_bytes(), 0o700)
     if not config.exists():
         if role == "connector":

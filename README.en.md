@@ -1,9 +1,18 @@
-<h3 align="center"><a href="README.md">🇰🇷 한국어</a>　|　🌐 English · Current page</h3>
+<div align="center">
+<table>
+<tr>
+<td align="center"><h2><a href="README.ko.md">🇰🇷 한국어</a></h2></td>
+<td align="center"><h2><a href="README.en.md">🌐 English</a></h2></td>
+</tr>
+</table>
+</div>
 
 <h1 align="center">OrangeDeck</h1>
 <h2 align="center">Your Mac's Codex agents.<br>Use a handheld like Steam Deck as your Stream Deck.</h2>
 
 OrangeDeck is a Codex remote for **handheld gaming PCs, the category that includes Steam Deck and ROG Ally**. **Follow progress, read replies and approval requests, and open changed files in your Mac editor.**
+
+Use the **한국어 / English buttons at the top right of the app** to switch languages instantly. OrangeDeck remembers your choice next time.
 
 The current setup guide covers **ROG Ally running CachyOS Handheld**. Installation and operation on Steam Deck, SteamOS and other handhelds have not yet been verified.
 
@@ -49,7 +58,7 @@ The lower key opens **only the changed file list for this question**. **Selectin
 
 A confirmed empty edit record shows **No file changes**. [File lists, retry and editor settings](docs/INSTALL.en.md#host-shortcuts).
 
-All screenshots use **simulated data**. Click a screenshot to enlarge it. [Screenshot details](docs/SCREENSHOTS.md).
+All screenshots use **simulated data**. Click a screenshot to enlarge it. [Explore all app screens](docs/SCREENSHOTS.md).
 
 ## How the two devices connect
 
@@ -68,7 +77,7 @@ This guide covers that configuration. Steam Deck and SteamOS installation and op
 
 ## Installation
 
-**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.32**.
+**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.33**.
 
 Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
 
@@ -94,7 +103,7 @@ Copy **`orangedeck-pairing.toml`** to **your handheld's Downloads folder** using
 
 ### 3. Install the remote UI on your handheld
 
-This step covers **ROG Ally running CachyOS Handheld in desktop mode**. Open the extracted folder, right-click an empty area and select **Open Terminal Here**. Run:
+This step covers **ROG Ally running CachyOS Handheld in desktop mode**. Open the extracted folder, right-click an empty area and select **Open Terminal Here**. Use this command instead of the Mac `.command` files:
 
 ```sh
 sh install.sh --role ui
@@ -125,4 +134,8 @@ Keep Codex and Tailscale running. If you launch the app from a terminal, keep th
 
 First setup creates each device's settings and your personal connection file. Updating the same devices keeps your **work folder, editor, connection, language, conversation assignments and sound setting**. Private settings live under `~/.config/orangedeck/` on each device and are not included in downloads. [Update steps](docs/INSTALL.en.md#update) · [Why setup does not ask again](docs/INSTALL.en.md#saved-settings).
 
-[Controls and everyday use](docs/CONTROLS.md) · [Setup and connection help](docs/INSTALL.en.md) · [한국어 안내](README.md) · [Changelog](docs/CHANGELOG.md)
+[Controls and everyday use](docs/CONTROLS.md) · [Setup and connection help](docs/INSTALL.en.md) · [한국어 안내](README.ko.md) · [Changelog](docs/CHANGELOG.md)
+
+## Use terms
+
+**You may inspect the source and install and use OrangeDeck without modifying it. Modifying, redistributing or selling OrangeDeck requires prior written permission.** You can freely change your settings and work on your own files. [License](LICENSE) · [Third-party library and font notices](THIRD_PARTY_NOTICES.md). Third-party components and copies received under earlier licenses retain their separate terms.

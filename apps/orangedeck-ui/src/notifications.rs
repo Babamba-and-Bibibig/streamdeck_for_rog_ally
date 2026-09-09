@@ -36,9 +36,27 @@ pub fn approval_panel(
                 .id_salt(("approval_details", approval.id))
                 .max_height(130.0)
                 .show(ui, |ui| {
-                    for detail in &approval.details {
+                    for (index, detail) in approval.details.iter().enumerate() {
+                        // These two labels belong to OrangeDeck's local hook wrapper.
+                        // Preserve the complete path, tool and supplied command/JSON.
+                        let label = match index {
+                            0 => Some(("작업 폴더: ", "Working folder: ")),
+                            1 => Some(("도구: ", "Tool: ")),
+                            _ => None,
+                        };
+                        let translated = label.and_then(|(ko, en)| {
+                            (approval.title == "Mac Codex 승인 요청")
+                                .then(|| detail.strip_prefix(ko))
+                                .flatten()
+                                .map(|value| format!("{}{value}", lang.text(ko, en)))
+                        });
                         ui.add(
-                            egui::Label::new(RichText::new(detail).monospace().size(12.0)).wrap(),
+                            egui::Label::new(
+                                RichText::new(translated.as_deref().unwrap_or(detail))
+                                    .monospace()
+                                    .size(12.0),
+                            )
+                            .wrap(),
                         );
                     }
                 });

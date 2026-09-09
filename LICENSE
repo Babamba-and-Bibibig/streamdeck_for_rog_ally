@@ -1,22 +1,54 @@
-MIT License
+OrangeDeck Limited Use License 1.0
 
-Copyright (c) 2026 OrangeDeck contributors
+Copyright (c) 2026 OrangeDeck copyright holders.
+All rights reserved except as expressly granted below.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Scope
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+These terms apply to the original OrangeDeck source code, executables and
+documentation supplied with this license, only to the extent that the
+OrangeDeck copyright holders have the right to license that material.
+Third-party components are excluded; see section 4.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Permitted use
 
+You may view and download the source, make the copies needed to compile the
+unmodified source, and install and run OrangeDeck on devices you own or
+control for your own personal or internal use, without a license fee.
+Changing your settings, connecting your devices and working with your own
+files through the app are permitted and do not count as modifying OrangeDeck.
+Keep this license and the applicable third-party notices with permitted copies.
+You may share a link to the official OrangeDeck repository or download.
+
+3. Restrictions
+
+Except as permitted in sections 2 and 4 or by prior written permission from
+the relevant copyright holders, you may not modify OrangeDeck, create
+derivative works from it, redistribute its source or executables, or sell,
+rent, sublicense or bundle copies for others. These restrictions apply to
+both free and paid redistribution. Source visibility does not grant an
+open-source license or permission to reuse OrangeDeck code in another product.
+
+4. Rights that remain separate
+
+Third-party libraries, fonts and other components retain their own licenses
+and copyright notices. This license does not replace or restrict rights
+granted by those licenses, including rights to their source, modification,
+redistribution or the reverse engineering needed to debug modifications to
+an LGPL-covered library. See THIRD_PARTY_NOTICES.md for the component notices
+and source locations.
+
+You may change third-party components and the build configuration needed to
+rebuild or relink OrangeDeck with them to the extent required by their licenses.
+
+This license does not limit rights that cannot be excluded under applicable
+law, or rights separately granted by the applicable GitHub Terms of Service
+for viewing and forking a public repository. It does not revoke permissions
+already granted for earlier copies under an earlier license.
+
+5. No warranty
+
+To the extent permitted by applicable law, OrangeDeck is provided "as is",
+without warranties, including warranties of merchantability, fitness for a
+particular purpose or noninfringement. To that same extent, the copyright
+holders are not liable for damages arising from use of the software.

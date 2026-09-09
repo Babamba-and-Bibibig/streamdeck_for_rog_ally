@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.33 — Language controls, English README and clear use terms
+
+- Show full **한국어 / English** names in larger, high-contrast buttons at the top right of every tab. Switch immediately and remember the choice without changing conversation assignments.
+- Translate remaining OrangeDeck status messages, desktop notification titles and hook approval labels in the selected UI language, including messages from existing Connectors. Preserve original questions, replies, paths and complete approval arguments.
+- Make the default README English, with matching Korean/English editions and large language links. Preserve the existing Mac Connector compatibility.
+- Apply limited-use terms to OrangeDeck's own code, while preserving separate third-party rights. Include library/font notices with the source and installed app.
+- Keep illustrated setup and everyday-use guides in the download; exclude release-server tools and developer-only documents.
+
 ## 0.1.32 — Choose a file before opening the Mac editor
 
 - The lower conversation key opens only a full-width list of file names, full paths and recorded changed lines. Remove the in-dialog diff and content preview.
@@ -105,7 +113,6 @@
 - Preserve orphaned credentials when configuration is missing. Native setup checks all destinations, refuses collisions/symlinks/special files and requires explicit replacement of existing files.
 - Check every historical filename even when blobs share identical content. Scan commit/tag metadata and sensitive filenames with redacted reports, reject shallow history and bound regular-file reads.
 - Validate reused TAR files as well as ZIPs, requiring identical source content and permissions. Reject ambiguous paths, special files, unsafe permissions, extra metadata and oversized members.
-- Add `python3 download-page/manage.py export` to prepare a separate GitHub source tree with a file checksum manifest; no Git initialization or upload. Existing archives and edited exports are preserved.
 - Document exactly which files to publish and why local checks must precede a push.
 
 A clean local export does not establish the state of an existing remote repository, its history or release assets.

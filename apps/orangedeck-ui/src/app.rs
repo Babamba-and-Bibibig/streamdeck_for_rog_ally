@@ -440,7 +440,7 @@ impl OrangeDeckApp {
         let lang = self.preferences.language;
         let ctx = root.ctx().clone();
         egui::Panel::top("header")
-            .exact_size(56.0)
+            .exact_size(64.0)
             .frame(egui::Frame::new().fill(theme::PANEL).inner_margin(10.0))
             .show(root, |ui| {
                 ui.spacing_mut().interact_size = Vec2::new(44.0, 32.0);
@@ -462,18 +462,18 @@ impl OrangeDeckApp {
                     .on_hover_text(self.controller.detected().join(" · "));
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                         for (language, label, width) in [
-                            (Language::English, "EN", 44.0),
-                            (Language::Korean, "한국어", 62.0),
+                            (Language::English, "English", 96.0),
+                            (Language::Korean, "한국어", 88.0),
                         ] {
                             let selected = lang == language;
                             if ui
                                 .add_sized(
-                                    [width, 32.0],
+                                    [width, 44.0],
                                     egui::Button::new(
                                         RichText::new(label)
-                                            .size(13.0)
+                                            .size(16.0)
                                             .strong()
-                                            .color(if selected { theme::BG } else { theme::MUTED }),
+                                            .color(if selected { theme::BG } else { theme::TEXT }),
                                     )
                                     .fill(if selected {
                                         theme::ORANGE
@@ -897,12 +897,19 @@ impl OrangeDeckApp {
             )
             .show(root, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new(message).size(12.0).color(theme::MUTED));
+                    ui.label(
+                        RichText::new(i18n::status_message(lang, message))
+                            .size(12.0)
+                            .color(theme::MUTED),
+                    );
                     if let Some(retry) = self.model.retry_ms {
                         ui.label(
-                            RichText::new(format!("retry {retry}ms"))
-                                .size(12.0)
-                                .color(theme::YELLOW),
+                            RichText::new(format!(
+                                "{} {retry}ms",
+                                lang.text("다시 연결", "Retry in")
+                            ))
+                            .size(12.0)
+                            .color(theme::YELLOW),
                         );
                     }
                 });

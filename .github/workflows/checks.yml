@@ -25,8 +25,6 @@ jobs:
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" git . --redact=100 --no-banner --log-opts=--all
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
-      - run: python3 download-page/test_manage.py
-      - run: python3 download-page/manage.py export
 
   linux:
     runs-on: ubuntu-latest

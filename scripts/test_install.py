@@ -270,6 +270,10 @@ class NativeInstallerTests(unittest.TestCase):
             self.assertEqual((connector_dir / "connector.token").read_bytes(), token_before)
             self.assertEqual(editor_registrations.read_bytes(), registrations_before)
             self.assertEqual(observed_profiles, [str(profile), str(profile)])
+            for folder in (connector_dir, ui_dir):
+                for notice in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+                    self.assertEqual((folder / "licenses" / notice).read_bytes(),
+                                     (install.ROOT / notice).read_bytes())
             for folder, launcher in [(connector_dir, "start-connector.command"), (ui_dir, "start-ui.sh"),
                                      (connector_dir, "check-connector.command"), (ui_dir, "check-ui.sh")]:
                 self.assertEqual(stat.S_IMODE((folder / launcher).stat().st_mode), 0o700)
