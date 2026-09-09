@@ -14,7 +14,10 @@ OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC
 
 **앱 오른쪽 위의 한국어 / English 버튼**으로 언어를 바로 바꿀 수 있습니다. 선택한 언어는 다음 실행에도 유지됩니다.
 
-현재 설치 안내는 **ROG Ally + CachyOS Handheld** 기준입니다. Steam Deck·SteamOS와 다른 핸드헬드 기기의 설치·동작은 아직 확인하지 않았습니다.
+**테스트한 구성: Mac Studio(macOS) + ASUS ROG Ally(CachyOS Handheld, 데스크톱 모드).**
+
+- **Codex와 통신 모듈을 실행하는 메인 PC:** macOS만 지원합니다. Linux·Windows 메인 PC는 미지원입니다.
+- **핸드헬드 리모컨:** 위 CachyOS 구성에서 테스트했습니다. Windows는 미지원입니다. 다른 Linux 배포판·Steam Deck·SteamOS·다른 핸드헬드는 리모컨으로서의 설치·동작이 미검증입니다.
 
 [⬇ ZIP 다운로드](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [설치하기](#설치하기) · [간단 사용법](docs/QUICKSTART_KO.md)
 
@@ -62,22 +65,22 @@ OrangeDeck은 **핸드헬드 PC**(스팀덱·ROG Ally 같은 휴대용 게임 PC
 
 ## 두 기기는 이렇게 연결됩니다
 
-아래 그림은 **ROG Ally를 핸드헬드 리모컨으로 사용하는 설치 예시**입니다.
+아래 그림은 **테스트한 Mac Studio + ASUS ROG Ally 구성**을 설명합니다.
 
 ![Mac의 Codex와 통신 모듈을 핸드헬드의 LIVE·에이전트들 화면에 연결하고, 승인과 파일 열기 요청을 Mac으로 보냅니다.](docs/diagrams/device-roles-ko.svg)
 
 **AI 작업은 Mac의 Codex가 하고, OrangeDeck은 두 기기를 연결합니다.** 리모컨으로 쓸 핸드헬드에는 Codex를 설치할 필요가 없습니다.
 
-| 기기 | 설치할 것 |
-| --- | --- |
-| **macOS 작업용 Mac** · Mac Studio를 기준으로 개발 | Codex CLI + OrangeDeck **통신 모듈(Connector)** |
-| **핸드헬드 PC** · 이 안내의 설치 예시: ROG Ally + CachyOS Handheld, 데스크톱 모드 | OrangeDeck **리모컨(UI)** |
+| 역할 | 테스트한 기기·OS | 설치할 것 |
+| --- | --- | --- |
+| **메인 PC** | Mac Studio · macOS | Codex CLI + OrangeDeck **통신 모듈(Connector)** |
+| **핸드헬드 리모컨** | ASUS ROG Ally · CachyOS Handheld, 데스크톱 모드 | OrangeDeck **리모컨(UI)** |
 
-이 설명서는 위 구성을 대상으로 합니다. Steam Deck·SteamOS는 설치·동작을 확인하지 않았으며, 다른 Linux 배포판과 Windows는 안내 대상에 포함하지 않습니다.
+**CachyOS는 Linux 배포판이며, 이 구성에서는 리모컨을 실행합니다.** Mac용 `.command` 파일은 메인 PC의 통신 모듈을 설치·실행하는 데 쓰입니다. 리모컨은 `install.sh`로 설치합니다.
 
 ## 설치하기
 
-**Mac 설치 → 연결 파일 옮기기 → 핸드헬드에 리모컨 설치**, 세 단계입니다. 현재 버전은 **0.1.33**입니다.
+**Mac 설치 → 연결 파일 옮기기 → 핸드헬드에 리모컨 설치**, 세 단계입니다. 현재 버전은 **0.1.34**입니다.
 
 먼저 두 기기에 [Tailscale](https://tailscale.com/download)을 설치하고 같은 계정으로 로그인하세요. Mac에는 [Codex CLI](https://learn.chatgpt.com/docs/cli)를 설치하고 로그인해 둡니다. 두 기기에 Python 3.9 이상이 필요합니다. [준비물 확인](docs/INSTALL.md#준비물).
 

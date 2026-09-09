@@ -4,11 +4,13 @@
 
 처음 설치한다면 [README의 세 단계](../README.ko.md#설치하기)를 따라 하세요. 이 문서는 설치가 막히거나 설정을 바꾸고 싶을 때 보시면 됩니다.
 
-설치 대상은 **macOS를 쓰는 Mac(작업용 통신 모듈) + ROG Ally의 CachyOS Handheld(리모컨)**입니다. Mac 쪽은 Mac Studio를 기준으로 개발했습니다. Steam Deck·SteamOS와 다른 Linux 배포판의 설치는 확인하지 않았습니다. Windows는 지원하지 않습니다.
+**테스트한 구성은 Mac Studio(macOS) + ASUS ROG Ally(CachyOS Handheld, 데스크톱 모드)입니다.**
+
+Codex와 통신 모듈을 실행하는 **메인 PC는 macOS만 지원하며, Linux·Windows 메인 PC는 지원하지 않습니다.** 리모컨은 위 CachyOS 구성에서 테스트했습니다. Windows 리모컨도 미지원이며, 다른 Linux 배포판·Steam Deck·SteamOS·다른 핸드헬드의 리모컨 동작은 미검증입니다.
 
 ## 어떤 파일을 어디에서 실행하나요?
 
-**Mac에서만** 압축을 푼 폴더의 세 파일을 **① → ② → ③** 순서로 두 번 누릅니다.
+다운로드에 들어 있는 세 `.command` 파일은 **메인 PC의 macOS용 실행 스크립트**입니다. **Mac에서만 ① → ② → ③** 순서로 두 번 누릅니다.
 
 | Mac 파일 | 하는 일 | 창을 닫아도 되나요? |
 | --- | --- | --- |
@@ -18,7 +20,7 @@
 
 ③ 다음에는 **평소 사용하는 Mac Codex에서 `/hooks` → OrangeDeck 확인·신뢰**를 진행하세요. **Mac에서 계속 켜둘 OrangeDeck 창은 ② 하나이며, 평소에는 Start만 실행합니다.** Codex와 Tailscale도 켜 두세요.
 
-**ROG Ally의 CachyOS Handheld에서는 위의 Mac 파일을 쓰지 않습니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.ko.md#3-핸드헬드에-리모컨-설치).
+**CachyOS는 Linux 배포판이며, ASUS ROG Ally에서는 리모컨을 실행합니다.** 설치·업데이트할 때 압축을 푼 폴더에서 `sh install.sh --role ui`를 실행합니다. 평소에는 `sh "$HOME/.config/orangedeck/start-ui.sh"`로 리모컨을 켭니다. [처음 설치 순서](../README.ko.md#3-핸드헬드에-리모컨-설치).
 
 ## 준비물
 

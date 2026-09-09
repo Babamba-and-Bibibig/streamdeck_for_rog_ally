@@ -1,8 +1,10 @@
 # macOS Connector setup
 
-Start with [Installation](INSTALL.en.md) or the [한국어 README](../README.ko.md#설치하기). This guide pairs a macOS work Mac with a ROG Ally running CachyOS Handheld in desktop mode. Steam Deck and SteamOS are untested.
+Start with [Installation](INSTALL.en.md) or the [한국어 README](../README.ko.md#설치하기). **The tested setup is Mac Studio (macOS, main PC) + ASUS ROG Ally (CachyOS Handheld, remote in desktop mode).**
 
-The three `.command` files in the downloaded folder are **for the Mac**. Double-click them in this order during first setup:
+**The main PC running Codex and Connector must use macOS. Linux and Windows hosts are not supported.** Windows remotes are also unsupported; other Linux distributions, Steam Deck, SteamOS and other handhelds are unverified as remotes.
+
+The three `.command` files in the downloaded folder are **macOS launcher scripts for the main PC**. Double-click them in this order during first setup:
 
 | File | Purpose | Window after completion |
 | --- | --- | --- |

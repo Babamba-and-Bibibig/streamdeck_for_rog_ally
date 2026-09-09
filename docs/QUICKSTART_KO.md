@@ -1,12 +1,14 @@
 # OrangeDeck 간단 사용법
 
-**Mac은 작업용, ROG Ally는 리모컨입니다.** Mac에서는 macOS와 Codex를, Ally에서는 CachyOS Handheld의 데스크톱 모드를 사용합니다. Steam Deck·SteamOS는 아직 확인하지 않았습니다.
+**테스트한 구성은 Mac Studio(macOS, 작업용 메인 PC) + ASUS ROG Ally(CachyOS Handheld, 리모컨)입니다.** Ally는 데스크톱 모드에서 사용합니다.
+
+**메인 PC는 macOS만 지원하며, Linux·Windows 메인 PC는 미지원입니다.** Windows 리모컨도 미지원이며, 다른 Linux 배포판·Steam Deck·SteamOS·다른 핸드헬드의 리모컨 동작은 미검증입니다.
 
 [처음 설치](../README.ko.md#설치하기) · [설치 도움말·업데이트](INSTALL.md)
 
 ## Mac의 세 파일은 각각 무엇인가요?
 
-**세 파일 모두 Mac용입니다. 처음 설치할 때 ① → ② → ③ 순서로 두 번 눌러 실행하세요.**
+**세 `.command` 파일 모두 메인 PC의 macOS용 실행 스크립트입니다. 처음 설치할 때 ① → ② → ③ 순서로 두 번 눌러 실행하세요.**
 
 | 파일 | 하는 일 | 실행 후 |
 | --- | --- | --- |

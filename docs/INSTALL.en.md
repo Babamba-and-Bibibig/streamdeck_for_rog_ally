@@ -4,11 +4,13 @@
 
 For a first installation, follow [the three README steps](../README.en.md#installation). Use this page when setup gets stuck or you want to change a setting.
 
-This guide targets **macOS on the work Mac, developed around a Mac Studio, and CachyOS Handheld in desktop mode on a ROG Ally remote**. Steam Deck, SteamOS and other Linux distributions have not been validated for this guide. Windows is not supported.
+**The tested setup is Mac Studio (macOS) + ASUS ROG Ally (CachyOS Handheld, desktop mode).**
+
+The **main PC running Codex and Connector must use macOS; Linux and Windows hosts are not supported.** The remote has been tested on the CachyOS setup above. Windows remotes are also unsupported; other Linux distributions, Steam Deck, SteamOS and other handhelds are unverified as remotes.
 
 ## Which files run on which device?
 
-**On the Mac only**, double-click the three files in the extracted folder in order: **1 → 2 → 3**.
+The three `.command` files in the download are **macOS launcher scripts for the main PC**. **On the Mac only**, double-click them in **1 → 2 → 3** order.
 
 | Mac file | Purpose | Can I close its window? |
 | --- | --- | --- |
@@ -18,7 +20,7 @@ This guide targets **macOS on the work Mac, developed around a Mac Studio, and C
 
 After step 3, enter **`/hooks` in your usual Mac Codex session**, then **review and trust OrangeDeck**. **Only window 2 stays open for OrangeDeck on the Mac. For everyday use, run Start only.** Keep Codex and Tailscale running too.
 
-**ROG Ally running CachyOS Handheld uses its own commands.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First handheld setup](../README.en.md#3-install-the-remote-ui-on-your-handheld).
+**CachyOS is a Linux distribution; it runs the remote on the ASUS ROG Ally.** To install or update, run `sh install.sh --role ui` in the extracted folder. For everyday use, run `sh "$HOME/.config/orangedeck/start-ui.sh"` to start the remote. [First handheld setup](../README.en.md#3-install-the-remote-ui-on-your-handheld).
 
 ## Prerequisites
 

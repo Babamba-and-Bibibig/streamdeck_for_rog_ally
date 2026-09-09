@@ -14,7 +14,10 @@ OrangeDeck is a Codex remote for **handheld gaming PCs, the category that includ
 
 Use the **한국어 / English buttons at the top right of the app** to switch languages instantly. OrangeDeck remembers your choice next time.
 
-The current setup guide covers **ROG Ally running CachyOS Handheld**. Installation and operation on Steam Deck, SteamOS and other handhelds have not yet been verified.
+**Tested setup: Mac Studio (macOS) + ASUS ROG Ally (CachyOS Handheld, desktop mode).**
+
+- **Main PC running Codex and Connector:** macOS only. Linux and Windows hosts are not supported.
+- **Handheld remote:** tested on the CachyOS setup above. Windows is not supported. Other Linux distributions, Steam Deck, SteamOS and other handhelds are unverified as remotes.
 
 [⬇ Download ZIP](https://github.com/Babamba-and-Bibibig/streamdeck_for_rog_ally/archive/refs/heads/main.zip) · [Install](#installation) · [Controls](docs/CONTROLS.md)
 
@@ -62,22 +65,22 @@ All screenshots use **simulated data**. Click a screenshot to enlarge it. [Explo
 
 ## How the two devices connect
 
-The diagram below shows **ROG Ally as an example handheld remote**.
+The diagram below shows **the tested Mac Studio + ASUS ROG Ally setup**.
 
 ![Codex and Connector on the Mac send activity to LIVE and Agents on the handheld; approvals and file-open requests return to the Mac.](docs/diagrams/device-roles-en.svg)
 
 **Codex does the AI work on the Mac. OrangeDeck connects the devices.** You do not need to install Codex on the handheld remote.
 
-| Device | Install |
-| --- | --- |
-| **macOS work Mac** · developed around Mac Studio | Codex CLI + OrangeDeck **Connector** |
-| **Handheld gaming PC** · setup example: ROG Ally with CachyOS Handheld, desktop mode | OrangeDeck **remote UI** |
+| Role | Tested device and OS | Install |
+| --- | --- | --- |
+| **Main PC** | Mac Studio · macOS | Codex CLI + OrangeDeck **Connector** |
+| **Handheld remote** | ASUS ROG Ally · CachyOS Handheld, desktop mode | OrangeDeck **remote UI** |
 
-This guide covers that configuration. Steam Deck and SteamOS installation and operation are unverified; other Linux distributions and Windows are outside this guide.
+**CachyOS is a Linux distribution; it runs the remote in this setup.** The Mac `.command` files set up and run Connector on the main PC. The remote uses `install.sh` for installation.
 
 ## Installation
 
-**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.33**.
+**Set up the Mac → transfer the connection file → install the handheld remote.** Current version: **0.1.34**.
 
 Install [Tailscale](https://tailscale.com/download) on both devices and sign in with the same account. Install [Codex CLI](https://learn.chatgpt.com/docs/cli) on the Mac and sign in. Both devices need Python 3.9 or later. [Check prerequisites](docs/INSTALL.en.md#prerequisites).
 
